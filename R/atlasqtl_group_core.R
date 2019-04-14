@@ -1,11 +1,11 @@
-# This file is part of the `locus` R package:
-#     https://github.com/hruffieux/locus
+# This file is part of the `atlasqtl` R package:
+#     https://github.com/hruffieux/atlasqtl
 #
 # Internal core function to call the variational algorithm for group selection
 # with identity link, no fixed covariates and no external annotation variables.
-# See help of `locus` function for details.
+# See help of `atlasqtl` function for details.
 #
-locus_group_core_ <- function(Y, list_X, list_hyper, gam_vb, list_mu_beta_vb,
+atlasqtl_group_core_ <- function(Y, list_X, list_hyper, gam_vb, list_mu_beta_vb,
                                sig2_inv_vb, tau_vb, tol, maxit, verbose,
                                batch = "y", full_output = FALSE, debug = TRUE) {
 
@@ -220,7 +220,7 @@ locus_group_core_ <- function(Y, list_X, list_hyper, gam_vb, list_mu_beta_vb,
 
 
 # Internal function which implements the marginal log-likelihood variational
-# lower bound (ELBO) corresponding to the `locus_group_core` algorithm.
+# lower bound (ELBO) corresponding to the `atlasqtl_group_core` algorithm.
 #
 elbo_group_ <- function(Y, list_X, a, a_vb, b, b_vb, eta, eta_vb, g_sizes,
                         gam_vb, kappa, kappa_vb, lambda, lambda_vb, nu, nu_vb,

@@ -63,20 +63,20 @@ non-\code{NULL}. Its inverse square root corresponds to the typical size of
 non-zero effects. Must be \code{NULL} if \code{G} is \code{NULL}.}
 
 \item{G}{Number of candidate predictor groups when using the group selection
-model from the \code{\link{locus}} function. Default is \code{NULL},
+model from the \code{\link{atlasqtl}} function. Default is \code{NULL},
 for no group selection.}
 }
 \value{
 An object of class "\code{init}" preparing user initial values for
   the variational parameters in a form that can be passed to the
-  \code{\link{locus}} function.
+  \code{\link{atlasqtl}} function.
 }
 \description{
 This function must be used to provide initial values for the variational
-parameters used in \code{\link{locus}}.
+parameters used in \code{\link{atlasqtl}}.
 }
 \details{
-The \code{\link{locus}} function can also be used with default initial
+The \code{\link{atlasqtl}} function can also be used with default initial
 parameter choices (without using \code{\link{set_init}}) by setting
 its argument \code{list_init} to \code{NULL}.
 }
@@ -150,7 +150,7 @@ list_init_g <- set_init(d, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb,
 # advised to set p0_av as a slightly overestimated guess of p0, or perform
 # cross-validation using function `set_cv'.
 
-vb_g <- locus(Y = Y, X = X, p0_av = p0, link = "identity",
+vb_g <- atlasqtl(Y = Y, X = X, p0_av = p0, link = "identity",
               list_init = list_init_g)
 
 # With covariates
@@ -163,7 +163,7 @@ list_init_g_z <- set_init(d, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb,
                           mu_alpha_vb = mu_alpha_vb,
                           sig2_alpha_vb = sig2_alpha_vb)
 
-vb_g_z <- locus(Y = Y, X = X, p0_av = p0, Z = Z, link = "identity",
+vb_g_z <- atlasqtl(Y = Y, X = X, p0_av = p0, Z = Z, link = "identity",
                 list_init = list_init_g_z)
 
 ## Binary responses
@@ -177,7 +177,7 @@ list_init_logit <- set_init(d, p, gam_vb, mu_beta_vb, sig2_beta_vb_logit,
                             mu_alpha_vb = mu_alpha_vb,
                             sig2_alpha_vb = sig2_alpha_vb)
 
-vb_logit <- locus(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "logit",
+vb_logit <- atlasqtl(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "logit",
                   list_init = list_init_logit)
 
 sig2_alpha_vb_probit <- sig2_alpha_vb[, 1]
@@ -187,7 +187,7 @@ list_init_probit <- set_init(d, p, gam_vb, mu_beta_vb, sig2_beta_vb_probit,
                              mu_alpha_vb = mu_alpha_vb,
                              sig2_alpha_vb = sig2_alpha_vb_probit)
 
-vb_probit <- locus(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "probit",
+vb_probit <- atlasqtl(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "probit",
                    list_init = list_init_probit)
 
 ## Mix of continuous and binary responses
@@ -210,10 +210,10 @@ list_init_mix <- set_init(2*d, p, gam_vb_mix, mu_beta_vb_mix,
                           mu_alpha_vb = mu_alpha_vb_mix,
                           sig2_alpha_vb = sig2_alpha_vb_mix)
 
-vb_mix <- locus(Y = Y_mix, X = X, p0_av = p0, Z = Z, link = "mix",
+vb_mix <- atlasqtl(Y = Y_mix, X = X, p0_av = p0, Z = Z, link = "mix",
                 ind_bin = ind_bin, list_init = list_init_mix)
 
 }
 \seealso{
-\code{\link{set_hyper}}, \code{\link{locus}}
+\code{\link{set_hyper}}, \code{\link{atlasqtl}}
 }

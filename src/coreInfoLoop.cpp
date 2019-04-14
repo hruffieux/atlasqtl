@@ -1,7 +1,7 @@
 /*
  *
- * This file is part of the `locus` R package:
- *     https://github.com/hruffieux/locus
+ * This file is part of the `atlasqtl` R package:
+ *     https://github.com/hruffieux/atlasqtl
  *
  * Functions for computationally expensive updates in external info algorithms.
  *
@@ -15,7 +15,7 @@
 
 #include "utils.h"
 
-// for locus_info_core function
+// for atlasqtl_info_core function
 // [[Rcpp::export]]
 void coreInfoLoop(const MapMat X,
                   const MapMat Y,
@@ -55,7 +55,7 @@ void coreInfoLoop(const MapMat X,
 }
 
 
-// for locus_z_info_core and locus_mix_info_core function
+// for atlasqtl_z_info_core and atlasqtl_mix_info_core function
 // [[Rcpp::export]]
 void coreZInfoLoop(const MapMat X,
                    const MapMat Y,
@@ -95,7 +95,7 @@ void coreZInfoLoop(const MapMat X,
 }
 
 
-// for locus_logit_info_core function
+// for atlasqtl_logit_info_core function
 // [[Rcpp::export]]
 void coreLogitInfoLoop(const MapMat X,
                        const MapArr2D Y,
@@ -133,7 +133,7 @@ void coreLogitInfoLoop(const MapMat X,
 
 
 
-// for locus_probit_info_core function
+// for atlasqtl_probit_info_core function
 // [[Rcpp::export]]
 void coreProbitInfoLoop(const MapMat X,
                         const MapMat Wy,

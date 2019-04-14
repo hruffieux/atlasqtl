@@ -1,7 +1,7 @@
-# This file is part of the `locus` R package:
-#     https://github.com/hruffieux/locus
+# This file is part of the `atlasqtl` R package:
+#     https://github.com/hruffieux/atlasqtl
 
-#' Gather settings for the cross-validation procedure used in \code{locus}.
+#' Gather settings for the cross-validation procedure used in \code{atlasqtl}.
 #'
 #' The cross-validation procedure uses the variational lower bound as objective
 #' function and is used to select the prior average number of predictors
@@ -31,7 +31,7 @@
 #'
 #' @return An object of class "\code{cv}" preparing the settings for the
 #'   cross-validation settings in a form that can be passed to the
-#'   \code{\link{locus}} function.
+#'   \code{\link{atlasqtl}} function.
 #'
 #' @examples
 #' seed <- 123; set.seed(seed)
@@ -75,10 +75,10 @@
 #'
 #' list_cv <- set_cv(n, p, n_folds = 3, size_p0_av_grid = 3, n_cpus = 2)
 #'
-#' vb <- locus(Y = Y, X = X, p0_av = NULL, link = "identity", list_cv = list_cv,
+#' vb <- atlasqtl(Y = Y, X = X, p0_av = NULL, link = "identity", list_cv = list_cv,
 #'             user_seed = seed)
 #'
-#' @seealso \code{\link{locus}}
+#' @seealso \code{\link{atlasqtl}}
 #'
 #' @export
 #'
@@ -312,7 +312,7 @@ cross_validate_ <- function(Y, X, Z, link, ind_bin, list_cv, user_seed, verbose)
         if (link == "identity") {
 
           if (nq) {
-            vb_tr <- locus_core_(Y_tr, X_tr, list_hyper_pg,
+            vb_tr <- atlasqtl_core_(Y_tr, X_tr, list_hyper_pg,
                                  list_init_pg$gam_vb, list_init_pg$mu_beta_vb,
                                  list_init_pg$sig2_beta_vb, list_init_pg$tau_vb,
                                  tol_cv, maxit_cv, anneal = NULL,
@@ -328,7 +328,7 @@ cross_validate_ <- function(Y, X, Z, link, ind_bin, list_cv, user_seed, verbose)
 
             })
           } else {
-            vb_tr <- locus_z_core_(Y_tr, X_tr, Z_tr, list_hyper_pg,
+            vb_tr <- atlasqtl_z_core_(Y_tr, X_tr, Z_tr, list_hyper_pg,
                                    list_init_pg$gam_vb, list_init_pg$mu_alpha_vb,
                                    list_init_pg$mu_beta_vb, list_init_pg$sig2_alpha_vb,
                                    list_init_pg$sig2_beta_vb, list_init_pg$tau_vb,
@@ -349,7 +349,7 @@ cross_validate_ <- function(Y, X, Z, link, ind_bin, list_cv, user_seed, verbose)
 
         } else if (link == "probit") {
 
-          vb_tr <- locus_probit_core_(Y_tr, X_tr, Z_tr, list_hyper_pg,
+          vb_tr <- atlasqtl_probit_core_(Y_tr, X_tr, Z_tr, list_hyper_pg,
                                       list_init_pg$gam_vb, list_init_pg$mu_alpha_vb,
                                       list_init_pg$mu_beta_vb, list_init_pg$sig2_alpha_vb,
                                       list_init_pg$sig2_beta_vb, tol_cv, maxit_cv,
@@ -368,7 +368,7 @@ cross_validate_ <- function(Y, X, Z, link, ind_bin, list_cv, user_seed, verbose)
 
         } else if (link == "mix") {
 
-          vb_tr <- locus_mix_core_(Y_tr, X_tr, Z_tr, ind_bin, list_hyper_pg,
+          vb_tr <- atlasqtl_mix_core_(Y_tr, X_tr, Z_tr, ind_bin, list_hyper_pg,
                                    list_init_pg$gam_vb, list_init_pg$mu_alpha_vb,
                                    list_init_pg$mu_beta_vb, list_init_pg$sig2_alpha_vb,
                                    list_init_pg$sig2_beta_vb, list_init_pg$tau_vb,

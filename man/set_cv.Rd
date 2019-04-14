@@ -2,7 +2,7 @@
 % Please edit documentation in R/cross_validate.R
 \name{set_cv}
 \alias{set_cv}
-\title{Gather settings for the cross-validation procedure used in \code{locus}.}
+\title{Gather settings for the cross-validation procedure used in \code{atlasqtl}.}
 \usage{
 set_cv(n, p, n_folds, size_p0_av_grid, n_cpus, tol_cv = 0.001,
   maxit_cv = 1000, verbose = TRUE)
@@ -36,7 +36,7 @@ algorithm used within the cross-validation procedure.}
 \value{
 An object of class "\code{cv}" preparing the settings for the
   cross-validation settings in a form that can be passed to the
-  \code{\link{locus}} function.
+  \code{\link{atlasqtl}} function.
 }
 \description{
 The cross-validation procedure uses the variational lower bound as objective
@@ -90,10 +90,10 @@ Y <- cbind(Y_act, Y_inact)[, shuff_y_ind]
 
 list_cv <- set_cv(n, p, n_folds = 3, size_p0_av_grid = 3, n_cpus = 2)
 
-vb <- locus(Y = Y, X = X, p0_av = NULL, link = "identity", list_cv = list_cv,
+vb <- atlasqtl(Y = Y, X = X, p0_av = NULL, link = "identity", list_cv = list_cv,
             user_seed = seed)
 
 }
 \seealso{
-\code{\link{locus}}
+\code{\link{atlasqtl}}
 }

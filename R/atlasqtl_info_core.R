@@ -1,11 +1,11 @@
-# This file is part of the `locus` R package:
-#     https://github.com/hruffieux/locus
+# This file is part of the `atlasqtl` R package:
+#     https://github.com/hruffieux/atlasqtl
 #
 # Internal core function to call the variational algorithm for identity link, no
 # fixed covariates and external annotation variables.
-# See help of `locus` function for details.
+# See help of `atlasqtl` function for details.
 #
-locus_info_core_ <- function(Y, X, V, list_hyper, gam_vb, mu_beta_vb,
+atlasqtl_info_core_ <- function(Y, X, V, list_hyper, gam_vb, mu_beta_vb,
                              sig2_beta_vb, tau_vb, tol, maxit, anneal, verbose,
                              batch = "y", full_output = FALSE, debug = TRUE) {
 
@@ -248,7 +248,7 @@ locus_info_core_ <- function(Y, X, V, list_hyper, gam_vb, mu_beta_vb,
 
 
 # Internal function which implements the marginal log-likelihood variational
-# lower bound (ELBO) corresponding to the `locus_info_core` algorithm.
+# lower bound (ELBO) corresponding to the `atlasqtl_info_core` algorithm.
 #
 elbo_info_ <- function(Y, V, eta, gam_vb, kappa, lambda, m0, mu_c0_vb, mu_c_vb,
                        nu, sig2_beta_vb, sig2_c0_vb, sig2_c_vb, sig2_inv_vb,

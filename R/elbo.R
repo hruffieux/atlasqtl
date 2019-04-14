@@ -1,5 +1,5 @@
-# This file is part of the `locus` R package:
-#     https://github.com/hruffieux/locus
+# This file is part of the `atlasqtl` R package:
+#     https://github.com/hruffieux/atlasqtl
 #
 # Internal functions gathering the ELBO terms common to core algorithms.
 #

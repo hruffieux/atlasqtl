@@ -1,11 +1,11 @@
-# This file is part of the `locus` R package:
-#     https://github.com/hruffieux/locus
+# This file is part of the `atlasqtl` R package:
+#     https://github.com/hruffieux/atlasqtl
 #
 # Internal core function to call the variational algorithm for logit link,
 # optional fixed covariates and external annotation variables.
-# See help of `locus` function for details.
+# See help of `atlasqtl` function for details.
 #
-locus_logit_info_core_ <- function(Y, X, Z, V, list_hyper, chi_vb, gam_vb,
+atlasqtl_logit_info_core_ <- function(Y, X, Z, V, list_hyper, chi_vb, gam_vb,
                                    mu_alpha_vb, mu_beta_vb, sig2_alpha_vb, 
                                    sig2_beta_vb, tol, maxit, verbose, 
                                    batch = "y", full_output = FALSE, 
@@ -244,7 +244,7 @@ locus_logit_info_core_ <- function(Y, X, Z, V, list_hyper, chi_vb, gam_vb,
 
 
 # Internal function which implements the marginal log-likelihood variational
-# lower bound (ELBO) corresponding to the `locus_logit_info_core` algorithm.
+# lower bound (ELBO) corresponding to the `atlasqtl_logit_info_core` algorithm.
 #
 elbo_logit_info_ <- function(Y, X, Z, V, chi_vb, gam_vb, m0,  mu_c0_vb,
                              mu_c_vb, lambda, nu, phi, phi_vb, psi_vb,

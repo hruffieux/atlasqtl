@@ -11,7 +11,7 @@ generate_null(n_perm, Y, X, p0_av, Z = NULL, link = "identity",
   results_dir = NULL, n_cpus = 1)
 }
 \arguments{
-\item{n_perm}{Number of permuted datasets on which \code{\link{locus}} is
+\item{n_perm}{Number of permuted datasets on which \code{\link{atlasqtl}} is
 run.}
 
 \item{Y}{Response data matrix (without permuted sample indices) of size
@@ -86,7 +86,7 @@ execution.}
 }
 \value{
 If \code{results_dir} is \code{NULL}, list of length \code{n_perm}
-  with each element corresponding to the output of \code{\link{locus}} on one
+  with each element corresponding to the output of \code{\link{atlasqtl}} on one
   permuted dataset. Each contains:
  \item{ind_perm}{Vector of length n containing the permuted response sample
                  labels.}
@@ -98,7 +98,7 @@ If \code{results_dir} is \code{NULL}, list of length \code{n_perm}
               candidate predictor s.}
 }
 \description{
-This function runs \code{\link{locus}} on data with permuted response sample
+This function runs \code{\link{atlasqtl}} on data with permuted response sample
 labels. A common use is for estimatimation of data-driven false discovery
 rates of given thresholds on the posterior probabilities of inclusion.
 }
@@ -147,6 +147,6 @@ list_perm <- generate_null(n_perm = 10, Y, X, p0_av = p0, link = "identity",
 
 }
 \seealso{
-@seealso \code{\link{locus}}, \code{\link{set_hyper}},
+@seealso \code{\link{atlasqtl}}, \code{\link{set_hyper}},
   \code{\link{set_init}}, \code{\link{set_blocks}}, \code{\link{set_groups}}.
 }

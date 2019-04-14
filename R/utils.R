@@ -1,5 +1,5 @@
-# This file is part of the `locus` R package:
-#     https://github.com/hruffieux/locus
+# This file is part of the `atlasqtl` R package:
+#     https://github.com/hruffieux/atlasqtl
 #
 
 # Diverse utility functions implementing sanity checks, basic preprocessing,
