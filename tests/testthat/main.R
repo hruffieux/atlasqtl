@@ -36,29 +36,29 @@ X <- rm_coll(X); Z <- rm_coll(Z)
 
 p <- ncol(X); q <- ncol(Z)
 
-####################
-## locus settings ##
-####################
+#######################
+## atlasqtl settings ##
+#######################
 
 # hyperparameter (prior number of active predictors)
 p0_av <- p0
 
 
-#####################
-## locus inference ##
-#####################
+########################
+## atlasqtl inference ##
+########################
 
 # Continuous outcomes, no covariates
 #
-vb <- locus(Y = Y, X = X, p0_av = p0_av, link = "identity")
+vb <- atlasqtl(Y = Y, X = X, p0_av = p0_av, link = "identity")
 
 # Continuous outcomes, with covariates
 #
-vb_z <- locus(Y = Y, X = X, p0_av = p0_av, Z = Z, link = "identity")
+vb_z <- atlasqtl(Y = Y, X = X, p0_av = p0_av, Z = Z, link = "identity")
 
 # Binary outcomes, no covariates
-vb_logit <- locus(Y = Y_bin, X = X, p0_av = p0_av, link = "logit")
+vb_logit <- atlasqtl(Y = Y_bin, X = X, p0_av = p0_av, link = "logit")
 
 # Binary outcomes, with covariates
-vb_logit_z <- locus(Y = Y_bin, X = X, p0_av = p0_av, Z = Z, link = "logit")
+vb_logit_z <- atlasqtl(Y = Y_bin, X = X, p0_av = p0_av, Z = Z, link = "logit")
 

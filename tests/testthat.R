@@ -1,4 +1,4 @@
 library(testthat)
-library(locus)
+library(atlasqtl)
 
-test_check("locus")
+test_check("atlasqtl")
