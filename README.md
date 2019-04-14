@@ -1,36 +1,40 @@
-## LOCUS: Large-scale variational inference for Bayesian variable selection in multiple-response regression
-
-[![Travis-CI Build Status](https://travis-ci.org/hruffieux/locus.svg?branch=master)](https://travis-ci.org/hruffieux/locus)
+## atlasqtl – fAsT gLobal-locAl hotSpot QTL detection
 
 ## Overview
 
-**LOCUS** is an R package providing efficient variational algorithms for
-simultaneous selection of responses and associated predictors based
-on hierarchical sparse regression models. The method can for instance be 
-used for genome-wide association analyses with multiple clinical endpoints
-or for molecular quantitative trait locus (QTL) analyses which involve 
-hundreds of thousands of genetic variants as candidate predictors and
-thousands of molecular levels as responses, for thousands of samples.  
+**atlasqtl** is an R package implementing a flexible hierarchical modelling of 
+hotspot predictors in multiple-response regression, i.e., predictors which are
+associated with several responses simultaneously. The *hotspot propensity* of 
+each candidate predictor is modelled using a horseshoe distribution (Carvalho 
+et al. 2009), whose local scales flexibly capture the large hotspot effects 
+and whose  global scale adapts to the overall sparsity level. Inference is 
+performed using highly-scalable variational inference updates which are coupled 
+with simulated annealing schemes to improve the exploration of multimodal 
+parameter spaces. The method can be employed in any sparse multiple-response 
+regression settings, and is particularly suited to large molecular quantitative 
+trait locus (QTL) problems,in which hotspot genetic variants, controlling many 
+molecular levels at once, may be responsible for decisive regulatory mechanisms 
+and shape the functional architecture of the genome; our approach is a tool to 
+describe the *hotspot atlas* of the human genome. 
 
-**LOCUS** is described and extensively assessed in H. Ruffieux, 
-A. C. Davison, J. Hager and I. Irincheeva, Efficient inference
-for genetic association studies with multiple outcomes, *Biostatistics*, 
-18:618:636, 2017, doi: 10.1093/biostatistics/kxx007.
+Reference: Hélène Ruffieux, Anthony C. Davison, Jörg Hager, Jamie Inshaw, 
+Benjamin P. Fairfax, Sylvia Richardson, Leonardo Bottolo, A global-local approach 
+for detecting hotspots in multiple-response regression, arXiv:1811.03334, 2018.
 
 ## Installation
 
 To install, run the following commands in R:
 
 ``` r
-require(devtools) # after having installed devtools (install.packages("devtools"))
-devtools::install_github("hruffieux/locus")
+install.packages("devtools")
+devtools::install_github("hruffieux/atlasqtl")
 ```
+
 ## License and authors
 
-This software uses the GPL v2 license, see [LICENSE](LICENSE).
-Authors and copyright are provided in [DESCRIPTION](DESCRIPTION). Loris Michel
-has also contributed to the development of this project.
+This software uses the GPL v3 license, see [LICENSE](LICENSE).
+Authors and copyright are provided in [DESCRIPTION](DESCRIPTION).
 
 ## Issues
 
-To report an issue, please use the [locus issue tracker](https://github.com/hruffieux/locus/issues) at github.com.
+To report an issue, please use the [atlasqtl issue tracker](https://github.com/hruffieux/atlasqtl/issues) at github.com.

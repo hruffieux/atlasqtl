@@ -1,13 +1,13 @@
-# This file is part of the `locus` R package:
-#     https://github.com/hruffieux/locus
+# This file is part of the `atlasqtl` R package:
+#     https://github.com/hruffieux/atlasqtl
 #
 
 #' Gather model hyperparameters provided by the user.
 #'
 #' This function must be used to provide hyperparameter values for the model
-#' used in \code{\link{locus}}.
+#' used in \code{\link{atlasqtl}}.
 #'
-#' The \code{\link{locus}} function can also be used with default hyperparameter
+#' The \code{\link{atlasqtl}} function can also be used with default hyperparameter
 #' choices (without using \code{\link{set_hyper}}) by setting its argument
 #' \code{list_hyper} to \code{NULL}.
 #'
@@ -61,14 +61,29 @@
 #'   repeated q times. Default is \code{NULL}, for \code{Z} \code{NULL}.
 #' @param r Number of variables representing external information on the
 #'   candidate predictors. Default is \code{NULL}, for \code{V} \code{NULL}.
-#' @param m0 Vector of length 1 or p providing the values of hyperparameter
-#'   \eqn{m0} for the prior distribution of \eqn{c0} linked to the proportion of
-#'   responses associated with each candidate predictor. If of length 1, the
-#'   provided value is repeated p times. Default is \code{NULL}, for \code{V}
+#' @param m0 Vector of length 1 or p. Hyperparameter when \code{V},
+#'   \code{list_struct} or \code{dual} is non-\code{NULL}. Default is
 #'   \code{NULL}.
+#' @param n0 Vector of length 1 or d. Hyperparameter when \code{dual} is
+#'    non-\code{NULL}. Default is \code{NULL}.
+#' @param s02 Variance hyperparameter when \code{V}, \code{list_struct} or
+#'    \code{dual} is non-\code{NULL} non-\code{NULL}. Default is \code{NULL}.
+#' @param s2 Variance hyperparameter when \code{V} is non-\code{NULL}
+#'   non-\code{NULL}. Default is \code{NULL}.
+#' @param t02 Variance hyperparameter when \code{dual} is non-\code{NULL}
+#'   non-\code{NULL}. Default is \code{NULL}.
+#' @param G Number of candidate predictor groups when using the group selection
+#'   model from the \code{\link{atlasqtl}} function. Default is \code{NULL},
+#'   for no group selection.
+#' @param dual If \code{TRUE}, dual propensity control (by candidate predictors
+#'   and by responses). Functionality under development and with limited
+#'   associated functionalities. Default is \code{FALSE}.
+#' @param struct Boolean indicating the use of structured sparse priors
+#'   set through the \code{\link{set_struct}} function. Default is \code{FALSE},
+#'   for no structured selection.
 #'
 #' @return An object of class "\code{hyper}" preparing user hyperparameter in a
-#'   form that can be passed to the \code{\link{locus}} function.
+#'   form that can be passed to the \code{\link{atlasqtl}} function.
 #'
 #' @examples
 #' seed <- 123; set.seed(seed)
@@ -140,7 +155,7 @@
 #' # advised to set p0_av as a slightly overestimated guess of p0, or perform
 #' # cross-validation using function `set_cv'.
 #'
-#' vb_g <- locus(Y = Y, X = X, p0_av = p0, link = "identity",
+#' vb_g <- atlasqtl(Y = Y, X = X, p0_av = p0, link = "identity",
 #'               list_hyper = list_hyper_g, user_seed = seed)
 #'
 #' # With covariates
@@ -149,7 +164,7 @@
 #'                             eta = 1, kappa = apply(Y, 2, var),
 #'                             link = "identity", q = q, phi = 1, xi = 1)
 #'
-#' vb_g_z <- locus(Y = Y, X = X, p0_av = p0, Z = Z, link = "identity",
+#' vb_g_z <- atlasqtl(Y = Y, X = X, p0_av = p0, Z = Z, link = "identity",
 #'                 list_hyper = list_hyper_g_z, user_seed = seed)
 #'
 #'
@@ -157,9 +172,10 @@
 #' #
 #' list_hyper_g_v <- set_hyper(d, p, lambda = 1, nu = 1, a = NULL, b = NULL,
 #'                             eta = 1, kappa = apply(Y, 2, var),
-#'                             link = "identity", r = r, m0 = 0)
+#'                             link = "identity", r = r, m0 = 0, s02 = 0.1,
+#'                             s2 = 0.001)
 #'
-#' vb_g_v <- locus(Y = Y, X = X, p0_av = p0,  V = V, link = "identity",
+#' vb_g_v <- atlasqtl(Y = Y, X = X, p0_av = p0,  V = V, link = "identity",
 #'                 list_hyper = list_hyper_g_v, user_seed = seed)
 #'
 #' ## Binary responses
@@ -168,14 +184,14 @@
 #'                               eta = NULL, kappa = NULL, link = "logit",
 #'                               q = q, phi = 1, xi = 1)
 #'
-#' vb_logit <- locus(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "logit",
+#' vb_logit <- atlasqtl(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "logit",
 #'                   list_hyper = list_hyper_logit, user_seed = seed)
 #'
 #' list_hyper_probit <- set_hyper(d, p, lambda = 1, nu = 1, a = 1, b = 4*d-1,
 #'                                eta = NULL, kappa = NULL, link = "probit",
 #'                                q = q, phi = 1, xi = 1)
 #'
-#' vb_probit <- locus(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "probit",
+#' vb_probit <- atlasqtl(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "probit",
 #'                    list_hyper = list_hyper_probit, user_seed = seed)
 #'
 #'
@@ -188,17 +204,18 @@
 #'                             eta = 1, kappa = apply(Y, 2, var), link = "mix",
 #'                             ind_bin = ind_bin, q = q, phi = 1, xi = 1)
 #'
-#' vb_mix <- locus(Y = Y_mix, X = X, p0_av = p0, Z = Z, link = "mix",
+#' vb_mix <- atlasqtl(Y = Y_mix, X = X, p0_av = p0, Z = Z, link = "mix",
 #'                 ind_bin = ind_bin, list_hyper = list_hyper_mix,
 #'                 user_seed = seed)
 #'
-#' @seealso  \code{\link{set_init}}, \code{\link{locus}}
+#' @seealso  \code{\link{set_init}}, \code{\link{atlasqtl}}
 #'
 #' @export
 #'
 set_hyper <- function(d, p, lambda, nu, a, b, eta, kappa, link = "identity",
                       ind_bin = NULL, q = NULL, phi = NULL, xi = NULL,
-                      r = NULL, m0 = NULL) {
+                      r = NULL, m0 = NULL, n0 = NULL, s02 = NULL, s2 = NULL,
+                      t02 = NULL, G = NULL, dual = FALSE, struct = FALSE) {
 
   check_structure_(d, "vector", "numeric", 1)
   check_natural_(d)
@@ -212,39 +229,99 @@ set_hyper <- function(d, p, lambda, nu, a, b, eta, kappa, link = "identity",
   check_structure_(r, "vector", "numeric", 1, null_ok = TRUE)
   if (!is.null(r)) check_natural_(r)
 
+  check_structure_(G, "vector", "numeric", 1, null_ok = TRUE)
+  if (!is.null(G)) check_natural_(G)
+
+  check_structure_(struct, "vector", "logical", 1)
+
   stopifnot(link %in% c("identity", "logit", "probit", "mix"))
+
+  if (!is.null(G) && (link != "identity" | !is.null(q) | !is.null(r) | struct | dual))
+    stop("Group selection (G non-NULL) implemented only for identity link, Z = NULL, V = NULL, list_struct = NULL and dual = FALSE. Exit.")
+
+  if (struct && (link != "identity" | !is.null(q) | !is.null(r)))
+    stop("Structured sparse priors (list_struct non-NULL) enabled only for identity link, Z = NULL and V = NULL. Exit.")
 
   ind_bin <- prepare_ind_bin_(d, ind_bin, link)
 
-  if (is.null(r)) {
+  nr <- is.null(r)
+  ns <- !struct
 
-    check_structure_(a, "vector", "double", c(1, p))
+  if (!dual & nr & ns) {
+
+    if (!is.null(m0) | !is.null(n0) | !is.null(s02) | !is.null(s2)| !is.null(t02))
+      stop("Provided r = NULL, dual = FALSE and struct = FALSE, not consitent with m0, n0, s02, s2 or t02 being non-null.")
+
+    if (is.null(G)) {
+
+      check_structure_(a, "vector", "double", c(1, p))
+      if (length(a) == 1) a <- rep(a, p)
+
+      check_structure_(b, "vector", "double", c(1, p))
+      if (length(b) == 1) b <- rep(b, p)
+
+    } else {
+
+      check_structure_(a, "vector", "double", c(1, G))
+      if (length(a) == 1) a <- rep(a, G)
+
+      check_structure_(b, "vector", "double", c(1, G))
+      if (length(b) == 1) b <- rep(b, G)
+
+    }
+
     check_positive_(a)
-    if (length(a) == 1) a <- rep(a, p)
-
-    check_structure_(b, "vector", "double", c(1, p))
     check_positive_(b)
-    if (length(b) == 1) b <- rep(b, p)
 
-    s02 <- s2 <- NULL
+  } else if (dual){
 
-    if (!is.null(m0))
-      stop("Provided r = NULL, not consitent with m0 being non-null.")
+    if (nr) {
 
-  } else {
+      if (!is.null(a) | !is.null(b) | !is.null(s2))
+        stop("Provided dual = TRUE not consitent with a, b or s2 being non-null.")
+
+    } else {
+
+      check_structure_(a, "vector", "double", c(1, r))
+      if (length(a) == 1) a <- rep(a, r)
+
+      check_structure_(b, "vector", "double", c(1, r))
+      if (length(b) == 1) b <- rep(b, r)
+
+      check_structure_(s2, "vector", "double", 1)
+      check_positive_(s2)
+
+    }
+
 
     check_structure_(m0, "vector", "double", c(1, p))
     if (length(m0) == 1) m0 <- rep(m0, p)
 
-    # prior info
-    s02 <- 0.1 # prior variance for the intercept, bernoulli-probit
-    s2 <- 1e-2 # prior variance for external info coefficients
-    # (effects likely to be concentrated around zero)
+    check_structure_(n0, "vector", "double", c(1, d))
+    if (length(n0) == 1) n0 <- rep(n0, d)
 
-    if (!is.null(a) | !is.null(b))
-      stop("Provided r != NULL, not consitent with a and b being non-null.")
+    check_structure_(s02, "vector", "double", 1)
+    check_positive_(s02)
+
+    check_structure_(t02, "vector", "double", 1)
+    check_positive_(t02)
+
+  } else {
+
+    if (!is.null(a) | !is.null(b) | !is.null(t02))
+      stop("Provided r != NULL or struct = TRUE, not consitent with a, b or t02 being non-null.")
+
+    check_structure_(m0, "vector", "double", c(1, p))
+    if (length(m0) == 1) m0 <- rep(m0, p)
+
+    check_structure_(s02, "vector", "double", 1)
+    check_positive_(s02)
+
+    check_structure_(s2, "vector", "double", 1)
+    check_positive_(s2)
 
   }
+
 
   check_structure_(lambda, "vector", "double", 1)
   check_positive_(lambda)
@@ -291,14 +368,15 @@ set_hyper <- function(d, p, lambda, nu, a, b, eta, kappa, link = "identity",
   p_hyper <- p
   q_hyper <- q
   r_hyper <- r
+  G_hyper <- G
 
   ind_bin_hyper <- ind_bin
 
   link_hyper <- link
 
-  list_hyper <- create_named_list_(d_hyper, p_hyper, q_hyper, r_hyper, link_hyper,
-                                   ind_bin_hyper, eta, kappa, lambda, nu, a, b,
-                                   phi, xi, m0, s02, s2)
+  list_hyper <- create_named_list_(d_hyper, G_hyper, p_hyper, q_hyper, r_hyper,
+                                   link_hyper, ind_bin_hyper, eta, kappa,
+                                   lambda, nu, a, b, phi, xi, m0, n0, s02, s2, t02)
 
   class(list_hyper) <- "hyper"
 
@@ -310,11 +388,25 @@ set_hyper <- function(d, p, lambda, nu, a, b, eta, kappa, link = "identity",
 # Internal function setting default model hyperparameters when not provided by
 # the user.
 #
-auto_set_hyper_ <- function(Y, p, p_star, q, r, link, ind_bin) {
+auto_set_hyper_ <- function(Y, p, p_star, q, r, dual, link, ind_bin, struct, vec_fac_gr, s02) {
 
   d <- ncol(Y)
 
-  lambda <- 1e-2
+  if (is.null(vec_fac_gr)) {
+
+    G <- NULL
+    lambda <- 1e-2
+
+  } else {
+
+    G <- length(unique(vec_fac_gr))
+    lambda <- 50 * median(table(vec_fac_gr)) # we found empirically that the prior size
+                                             # of sig2_inv_vb should be proportional to median group size
+                                             # since the larger the groups, the smaller 1 / sig2_inv_vb.
+                                             # Otherwise, if 1 / sig2_inv_vb is too large, no group will be selected
+                                             # (as there are usually only a few `causal' covariates in the group).
+  }
+
   nu <- 1
 
   if (link %in% c("identity", "mix")) {
@@ -335,30 +427,103 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, link, ind_bin) {
 
   }
 
-  a <- rep(1, p)
-  b <- d * (p - p_star) / p_star
-  if (length(b) == 1) b <- rep(b, p)
+  if (!dual) {
+    if (is.null(G)) {
+      a <- rep(1, p)
+      b <- d * (p - p_star) / p_star
+      if (length(b) == 1) b <- rep(b, p)
+    } else {
+      a <- rep(1, G)
+      b <- d * (G - p_star) / p_star
+      if (length(b) == 1) b <- rep(b, G)
+    }
 
-  # hyperparameters of beta distributions
-  check_positive_(a)
-  check_positive_(b)
+    # hyperparameters of beta distributions
+    check_positive_(a)
+    check_positive_(b)
+  }
 
-  if (is.null(r)) {
 
-    m0 <- s02 <- s2 <- NULL
+  if (dual | !is.null(r) | struct) {
+
+    if (dual) {
+
+      E_p_t <- p_star[1]
+      V_p_t <- p_star[2]
+      
+      dn <- 1e-6
+      up <- 1e5
+
+      # Get n0 and t02 similarly as for a_omega_t and b_omega_t in HESS
+      # (specify expectation and variance of number of active predictors per response)
+      #
+      # Look at : gam_st | theta_s = 0
+      #
+      tryCatch(t02 <- uniroot(function(x)
+        get_V_p_t(get_mu(E_p_t, x, p), x, p) - V_p_t,
+        interval = c(dn, up))$root,
+        error = function(e) {
+          stop(paste0("No hyperparameter values matching the expectation and variance ",
+                      "of the number of active predictors per responses supplied in p0_av.",
+                      "Please change p0_av."))
+        })
+
+      # n0 sets the level of sparsity.
+      n0 <- get_mu(E_p_t, t02, p)
+
+      # Look at : gam_st
+      #
+      s02 <- s02  # take a small variance for the modulation to avoid `all-response activation' artefact.
+                  # if lots of relevant predictors affect multiple responses,
+                  # better to have it a bit larger (even if some artefact appears)
+
+      # adjust the mean of theta_s so that E_p_t = p * E(gam | theta = 0) = p * E(gam)
+      m0 <- get_mu(E_p_t, s02 + t02, p) - n0
+
+      m0 <- - m0  # m0 = - m0_star
+      n0 <- - n0  # n0 = - n0_star
+
+      if (is.null(G)) {
+        m0 <- rep(m0, p)
+      } else {
+        m0 <- rep(m0, G)
+      }
+      n0 <- rep(n0, d)
+
+      check_positive_(s02)
+      check_positive_(t02)
+
+      if (!is.null(r)) {
+        a <- b <- rep(1 / 2, r) # Jeffrey prior for the annotations # /! not the same a and b as above!
+      } else {
+        a <- b <- NULL
+      }
+
+    } else {
+
+      s02 <- 0.1 # prior variance for the intercept, bernoulli-probit
+      t02 <- NULL
+
+      m0 <- - qnorm(b / (a + b)) * sqrt(1 + s02) # calibrate the sparsity level on that of the base model.
+                                                 # we have pr(\gamma_st) = 1 - Phi( m0_star / sqrt(1 + s02))
+                                                 # and set this to be equal to pr(\gamma_st) for the base model,
+                                                 # i.e., a / (a + b), then solve for m0_star. m0 = - m_star
+
+      a <- b <- n0 <- NULL
+
+      check_positive_(s02)
+    }
+
+    # hyperparameters external info model
+    if (!is.null(r)){
+      s2 <- 1e-2
+    } else {
+      s2 <- NULL
+    }
 
   } else {
 
-    # hyperparameters external info model
-    s02 <- 0.1 # prior variance for the intercept, bernoulli-probit
-    s2 <- 1e-2 # prior variance for external info coefficients (effects likely to be concentrated around zero)
-
-    m0 <- - qnorm(b / (a + b)) * sqrt(1 + s02) # calibrate the sparsity level on that of the base model.
-                                               # we have pr(\gamma_st) = 1 - Phi( m0_star / sqrt(1 + s02))
-                                               # and set this to be equal to pr(\gamma_st) for the base model,
-                                               # i.e., a / (a + b), then solve for m0_star. m0 = - m_star
-
-    a <- b <- NULL
+    m0 <- n0 <- s02 <- s2 <- t02 <- NULL
 
   }
 
@@ -373,6 +538,7 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, link, ind_bin) {
   }
 
   d_hyper <- d
+  G_hyper <- G
   p_hyper <- p
   q_hyper <- q
   r_hyper <- r
@@ -381,9 +547,9 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, link, ind_bin) {
 
   link_hyper <- link
 
-  list_hyper <- create_named_list_(d_hyper, p_hyper, q_hyper, r_hyper, link_hyper,
-                                   ind_bin_hyper, eta, kappa, lambda, nu, a, b,
-                                   phi, xi, m0, s02, s2)
+  list_hyper <- create_named_list_(d_hyper, G_hyper, p_hyper, q_hyper, r_hyper,
+                                   link_hyper, ind_bin_hyper, eta, kappa,
+                                   lambda, nu, a, b, phi, xi, m0, n0, s02, s2, t02)
 
   class(list_hyper) <- "out_hyper"
 
@@ -394,9 +560,9 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, link, ind_bin) {
 #' Gather initial variational parameters provided by the user.
 #'
 #' This function must be used to provide initial values for the variational
-#' parameters used in \code{\link{locus}}.
+#' parameters used in \code{\link{atlasqtl}}.
 #'
-#' The \code{\link{locus}} function can also be used with default initial
+#' The \code{\link{atlasqtl}} function can also be used with default initial
 #' parameter choices (without using \code{\link{set_init}}) by setting
 #' its argument \code{list_init} to \code{NULL}.
 #'
@@ -438,10 +604,16 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, link, ind_bin) {
 #'   for the variational parameter yielding estimates of effect variances for
 #'   covariate-response pairs. Vector of length q for \code{link = "probit"}.
 #'   Default is \code{NULL}, for \code{Z} \code{NULL}.
+#' @param G Number of candidate predictor groups when using the group selection
+#'   model from the \code{\link{atlasqtl}} function. Default is \code{NULL},
+#'   for no group selection.
+#' @param sig2_inv_vb Initial parameters necessary when \code{G} is
+#'   non-\code{NULL}. Its inverse square root corresponds to the typical size of
+#'   non-zero effects. Must be \code{NULL} if \code{G} is \code{NULL}.
 #'
 #' @return An object of class "\code{init}" preparing user initial values for
 #'   the variational parameters in a form that can be passed to the
-#'   \code{\link{locus}} function.
+#'   \code{\link{atlasqtl}} function.
 #'
 #' @examples
 #' seed <- 123; set.seed(seed)
@@ -513,7 +685,7 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, link, ind_bin) {
 #' # advised to set p0_av as a slightly overestimated guess of p0, or perform
 #' # cross-validation using function `set_cv'.
 #'
-#' vb_g <- locus(Y = Y, X = X, p0_av = p0, link = "identity",
+#' vb_g <- atlasqtl(Y = Y, X = X, p0_av = p0, link = "identity",
 #'               list_init = list_init_g)
 #'
 #' # With covariates
@@ -526,7 +698,7 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, link, ind_bin) {
 #'                           mu_alpha_vb = mu_alpha_vb,
 #'                           sig2_alpha_vb = sig2_alpha_vb)
 #'
-#' vb_g_z <- locus(Y = Y, X = X, p0_av = p0, Z = Z, link = "identity",
+#' vb_g_z <- atlasqtl(Y = Y, X = X, p0_av = p0, Z = Z, link = "identity",
 #'                 list_init = list_init_g_z)
 #'
 #' ## Binary responses
@@ -540,7 +712,7 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, link, ind_bin) {
 #'                             mu_alpha_vb = mu_alpha_vb,
 #'                             sig2_alpha_vb = sig2_alpha_vb)
 #'
-#' vb_logit <- locus(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "logit",
+#' vb_logit <- atlasqtl(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "logit",
 #'                   list_init = list_init_logit)
 #'
 #' sig2_alpha_vb_probit <- sig2_alpha_vb[, 1]
@@ -550,7 +722,7 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, link, ind_bin) {
 #'                              mu_alpha_vb = mu_alpha_vb,
 #'                              sig2_alpha_vb = sig2_alpha_vb_probit)
 #'
-#' vb_probit <- locus(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "probit",
+#' vb_probit <- atlasqtl(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "probit",
 #'                    list_init = list_init_probit)
 #'
 #' ## Mix of continuous and binary responses
@@ -573,16 +745,17 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, link, ind_bin) {
 #'                           mu_alpha_vb = mu_alpha_vb_mix,
 #'                           sig2_alpha_vb = sig2_alpha_vb_mix)
 #'
-#' vb_mix <- locus(Y = Y_mix, X = X, p0_av = p0, Z = Z, link = "mix",
+#' vb_mix <- atlasqtl(Y = Y_mix, X = X, p0_av = p0, Z = Z, link = "mix",
 #'                 ind_bin = ind_bin, list_init = list_init_mix)
 #'
-#' @seealso  \code{\link{set_hyper}}, \code{\link{locus}}
+#' @seealso  \code{\link{set_hyper}}, \code{\link{atlasqtl}}
 #'
 #' @export
 #'
 set_init <- function(d, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb,
                      link = "identity", ind_bin = NULL, q = NULL,
-                     mu_alpha_vb = NULL, sig2_alpha_vb = NULL) {
+                     mu_alpha_vb = NULL, sig2_alpha_vb = NULL,
+                     sig2_inv_vb = NULL, G = NULL) {
 
   check_structure_(d, "vector", "numeric", 1)
   check_natural_(d)
@@ -593,19 +766,45 @@ set_init <- function(d, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb,
   check_structure_(q, "vector", "numeric", 1, null_ok = TRUE)
   if (!is.null(q)) check_natural_(q)
 
+  check_structure_(G, "vector", "numeric", 1, null_ok = TRUE)
+  if (!is.null(G)) check_natural_(G)
+
   stopifnot(link %in% c("identity", "logit", "probit", "mix"))
+
+  if(!is.null(G) && (link != "identity" | !is.null(q)))
+    stop("Group selection (G non-NULL) implemented only for identity link, Z = NULL. Exit.")
 
   ind_bin <- prepare_ind_bin_(d, ind_bin, link)
 
-  check_structure_(gam_vb, "matrix", "double", c(p, d))
+
+  if(is.null(G)) {
+
+    check_structure_(gam_vb, "matrix", "double", c(p, d))
+
+  } else {
+
+    check_structure_(gam_vb, "matrix", "double", c(G, d))
+
+  }
   check_zero_one_(gam_vb)
 
   check_structure_(mu_beta_vb, "matrix", "double", c(p, d))
 
-
   if (link %in% c("identity", "mix")) {
 
-    check_structure_(sig2_beta_vb, "vector", "double", d)
+    if(is.null(G)) {
+
+      check_structure_(sig2_beta_vb, "vector", "double", d)
+      if (!is.null(sig2_inv_vb))
+        stop("sig2_inv_vb is not used when G is NULL.")
+
+    } else {
+
+      check_structure_(sig2_inv_vb, "vector", "double", 1)
+      if (!is.null(sig2_beta_vb))
+        stop("sig2_beta_vb is not used when G is non-NULL.")
+
+    }
 
     d_cont <- d - length(ind_bin) # length(NULL) = 0 for link = "identity"
 
@@ -623,12 +822,18 @@ set_init <- function(d, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb,
 
     check_structure_(sig2_beta_vb, "matrix", "double", c(p, d))
 
+    if (!is.null(sig2_inv_vb))
+      stop("sig2_inv_vb is not used when G is NULL.")
+
     if (!is.null(tau_vb))
       stop("tau_vb must be NULL for logistic regression.")
 
   } else {
 
     check_structure_(sig2_beta_vb, "vector", "double", 1)
+
+    if (!is.null(sig2_inv_vb))
+      stop("sig2_inv_vb is not used when G is NULL.")
 
     if (!is.null(tau_vb))
       stop("tau_vb must be NULL for probit regression.")
@@ -661,15 +866,17 @@ set_init <- function(d, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb,
   }
 
   d_init <- d
+  G_init <- G
   p_init <- p
   q_init <- q
   ind_bin_init <- ind_bin
 
   link_init <- link
 
-  list_init <- create_named_list_(d_init, p_init, q_init, link_init,
-                                  ind_bin_init, gam_vb, mu_beta_vb, sig2_beta_vb,
-                                  tau_vb, mu_alpha_vb, sig2_alpha_vb)
+  list_init <- create_named_list_(d_init, G_init, p_init, q_init, link_init,
+                                  ind_bin_init, gam_vb, mu_beta_vb,
+                                  sig2_beta_vb, sig2_inv_vb, tau_vb, mu_alpha_vb,
+                                  sig2_alpha_vb)
 
   class(list_init) <- "init"
 
@@ -679,21 +886,96 @@ set_init <- function(d, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb,
 
 # Internal function setting default starting values when not provided by the user.
 #
-auto_set_init_ <- function(Y, p, p_star, q, user_seed, link, ind_bin) {
+auto_set_init_ <- function(Y, G, p, p_star, q, user_seed, dual, link, ind_bin) {
+
+  # Initialisation not modified for dual = TRUE (should not matter, but maybe change this)
 
   d <- ncol(Y)
 
   if (!is.null(user_seed)) set.seed(user_seed)
 
-  shape1_gam <- 1
-  if (length(p_star) > 1) shape1_gam <- rep(shape1_gam, p)
 
-  shape2_gam <- d * (p - p_star) / p_star
+  if (dual) {
 
-  gam_vb <- matrix(rbeta(p * d, shape1 = shape1_gam, shape2 = shape2_gam),
-                   nrow = p)
+    E_p_t <- p_star[1]
+    V_p_t <- p_star[2]
+
+    dn <- 1e-6
+    up <- 1e5
+
+    # Get n0 and t02 similarly as for a_omega_t and b_omega_t in HESS
+    # (specify expectation and variance of number of active predictors per response)
+    #
+    # Look at : gam_st | theta_s = 0
+    #
+    tryCatch(t02 <- uniroot(function(x)
+      get_V_p_t(get_mu(E_p_t, x, p), x, p) - V_p_t,
+      interval = c(dn, up))$root,
+      error = function(e) {
+        stop(paste0("No hyperparameter values matching the expectation and variance ",
+                    "of the number of active predictors per responses supplied in p0_av.",
+                    "Please change p0_av."))
+      })
+
+
+    # n0 sets the level of sparsity.
+    n0 <- get_mu(E_p_t, t02, p)
+
+    # Look at : gam_st
+    #
+    s02 <- 1e-4 # 1 / d # take a small variance for the modulation to avoid `all-response activation' artefact.
+                 # we noticed *empirically* that the artefact tends to strenghten with the number of responses
+                 # probably because it gets triggered by pleiotropic effects.
+                 # side note: if lots of relevant predictors affect multiple responses,
+                 # better to have it a bit larger (even if some artefact appears)
+                 # because it make sense to borrow information across responses then,
+                 # so theta_s should be allowed to vary more.
+
+    # adjust the mean of theta_s so that E_p_t = p * E(gam | theta = 0) = p * E(gam)
+    m0 <- get_mu(E_p_t, s02 + t02, p) - n0
+
+    m0 <- - m0  # n0 = - n0_star
+    n0 <- - n0  # m0 = - m0_star
+
+    check_positive_(s02)
+    check_positive_(t02)
+
+    if (is.null(G)) {
+      gam_vb <- matrix(pnorm(rnorm(p * d, mean = m0 + n0, sd = s02 + t02)), # Phi(theta + chi), and not 1 - Phi(theta + chi)
+                       nrow = p)                                            # as reparametrisation theta* = - theta, chi* = - chi
+    } else {
+      gam_vb <- matrix(pnorm(rnorm(G * d, mean = m0 + n0, sd = s02 + t02)), 
+                       nrow = G)     
+    }
+  } else {
+
+    shape1_gam <- 1
+
+    if (is.null(G)) {
+
+      shape2_gam <- d * (p - p_star) / p_star
+
+      if (length(p_star) > 1)
+        shape1_gam <- rep(shape1_gam, p)
+
+      gam_vb <- matrix(rbeta(p * d, shape1 = shape1_gam, shape2 = shape2_gam),
+                       nrow = p)
+
+    } else {
+
+      shape2_gam <- d * (G - p_star) / p_star
+
+      if (length(p_star) > 1)
+        shape1_gam <- rep(shape1_gam, G)
+
+      gam_vb <- matrix(rbeta(G * d, shape1 = shape1_gam, shape2 = shape2_gam),
+                       nrow = G)
+
+    }
+
+  }
+
   mu_beta_vb <- matrix(rnorm(p * d), nrow = p)
-
 
   sig2_inv_vb <- 1e-2
 
@@ -716,7 +998,11 @@ auto_set_init_ <- function(Y, p, p_star, q, user_seed, link, ind_bin) {
 
     }
 
-    sig2_beta_vb <- 1 / rgamma(d, shape = 2, rate = 1 / (sig2_inv_vb * tau_vb))
+    if (is.null(G)) {
+      sig2_beta_vb <- 1 / rgamma(d, shape = 2, rate = 1 / (sig2_inv_vb * tau_vb))
+    } else {
+      sig2_beta_vb <- NULL
+    }
 
   } else if (link == "logit") {
 
@@ -749,7 +1035,8 @@ auto_set_init_ <- function(Y, p, p_star, q, user_seed, link, ind_bin) {
     } else if (link == "logit"){
 
       zeta2_inv_vb <- matrix(rgamma(q * d, shape = 1, rate = 1), nrow = q)
-      sig2_alpha_vb <- 1 / apply(zeta2_inv_vb, 2, function(zeta2_inv_vb_t) rgamma(q, shape = 2, rate = 1 / zeta2_inv_vb_t))
+      sig2_alpha_vb <- 1 / apply(zeta2_inv_vb, 2,
+                                 function(zeta2_inv_vb_t) rgamma(q, shape = 2, rate = 1 / zeta2_inv_vb_t))
 
     } else {
 
@@ -767,15 +1054,17 @@ auto_set_init_ <- function(Y, p, p_star, q, user_seed, link, ind_bin) {
   }
 
   d_init <- d
+  G_init <- G
   p_init <- p
   q_init <- q
   ind_bin_init <- ind_bin
 
   link_init <- link
 
-  list_init <- create_named_list_(d_init, p_init, q_init, link_init,
-                                  ind_bin_init, gam_vb, mu_beta_vb, sig2_beta_vb,
-                                  tau_vb, mu_alpha_vb, sig2_alpha_vb)
+  list_init <- create_named_list_(d_init, G_init, p_init, q_init,
+                                  link_init, ind_bin_init, gam_vb, mu_beta_vb,
+                                  sig2_inv_vb, sig2_beta_vb, tau_vb, mu_alpha_vb,
+                                  sig2_alpha_vb)
 
   class(list_init) <- "out_init"
 

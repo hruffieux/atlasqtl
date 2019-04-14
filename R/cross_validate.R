@@ -1,7 +1,7 @@
-# This file is part of the `locus` R package:
-#     https://github.com/hruffieux/locus
+# This file is part of the `atlasqtl` R package:
+#     https://github.com/hruffieux/atlasqtl
 
-#' Gather settings for the cross-validation procedure used in \code{locus}.
+#' Gather settings for the cross-validation procedure used in \code{atlasqtl}.
 #'
 #' The cross-validation procedure uses the variational lower bound as objective
 #' function and is used to select the prior average number of predictors
@@ -11,11 +11,11 @@
 #' This cross-validation procedure is available only for
 #' \code{link = "identity"}.
 #'
-#' @param n Number of observations.
+#' @param n Number of samples.
 #' @param p Number of candidate predictors.
 #' @param n_folds Number of number of folds. Large folds are not recommended for
 #'   large datasets as the procedure may become computationally expensive. Must
-#'   be greater than 2 and smaller than the number of observations.
+#'   be greater than 2 and smaller than the number of samples.
 #' @param size_p0_av_grid Number of possible values of p0_av to be compared.
 #'   Large numbers are not recommended for large datasets as the procedure may
 #'   become computationally expensive.
@@ -31,7 +31,7 @@
 #'
 #' @return An object of class "\code{cv}" preparing the settings for the
 #'   cross-validation settings in a form that can be passed to the
-#'   \code{\link{locus}} function.
+#'   \code{\link{atlasqtl}} function.
 #'
 #' @examples
 #' seed <- 123; set.seed(seed)
@@ -75,10 +75,10 @@
 #'
 #' list_cv <- set_cv(n, p, n_folds = 3, size_p0_av_grid = 3, n_cpus = 2)
 #'
-#' vb <- locus(Y = Y, X = X, p0_av = NULL, link = "identity", list_cv = list_cv,
+#' vb <- atlasqtl(Y = Y, X = X, p0_av = NULL, link = "identity", list_cv = list_cv,
 #'             user_seed = seed)
 #'
-#' @seealso \code{\link{locus}}
+#' @seealso \code{\link{atlasqtl}}
 #'
 #' @export
 #'
@@ -89,7 +89,7 @@ set_cv <- function(n, p, n_folds, size_p0_av_grid, n_cpus, tol_cv = 1e-3,
   check_natural_(n_folds)
 
   if (!(n_folds %in% 2:n))
-    stop("n_folds must be a natural number greater than 2 and smaller than the number of observations.")
+    stop("n_folds must be a natural number greater than 2 and smaller than the number of samples.")
 
   # 16 may correspond to (a multiple of) the number of cores available
   if (n_folds > 16) warning("n_folds is large and may induce expensive computations.")
@@ -252,10 +252,11 @@ cross_validate_ <- function(Y, X, Z, link, ind_bin, list_cv, user_seed, verbose)
 
         if (verbose) cat(paste("Evaluating p0_av = ", pg, "... \n", sep=""))
 
-        list_hyper_pg <- auto_set_hyper_(Y_tr, p, pg, q, r = NULL, link = link,
-                                         ind_bin = ind_bin)
-        list_init_pg <- auto_set_init_(Y_tr, p, pg, q, user_seed,
-                                       link = link, ind_bin = ind_bin)
+        list_hyper_pg <- auto_set_hyper_(Y_tr, p, pg, q, r = NULL, dual = FALSE,
+                                         link = link, ind_bin = ind_bin,
+                                         struct = FALSE,  vec_fac_gr = NULL)
+        list_init_pg <- auto_set_init_(Y_tr, G = NULL, p, pg, q, user_seed,
+                                       dual = FALSE, link = link, ind_bin = ind_bin)
 
         nq <- is.null(q)
 
@@ -311,10 +312,11 @@ cross_validate_ <- function(Y, X, Z, link, ind_bin, list_cv, user_seed, verbose)
         if (link == "identity") {
 
           if (nq) {
-            vb_tr <- locus_core_(Y_tr, X_tr, list_hyper_pg,
+            vb_tr <- atlasqtl_core_(Y_tr, X_tr, list_hyper_pg,
                                  list_init_pg$gam_vb, list_init_pg$mu_beta_vb,
                                  list_init_pg$sig2_beta_vb, list_init_pg$tau_vb,
-                                 tol_cv, maxit_cv, verbose = FALSE, full_output = TRUE)
+                                 tol_cv, maxit_cv, anneal = NULL,
+                                 verbose = FALSE, full_output = TRUE)
 
             lb_vec[ind_pg] <- with(vb_tr, {
 
@@ -326,7 +328,7 @@ cross_validate_ <- function(Y, X, Z, link, ind_bin, list_cv, user_seed, verbose)
 
             })
           } else {
-            vb_tr <- locus_z_core_(Y_tr, X_tr, Z_tr, list_hyper_pg,
+            vb_tr <- atlasqtl_z_core_(Y_tr, X_tr, Z_tr, list_hyper_pg,
                                    list_init_pg$gam_vb, list_init_pg$mu_alpha_vb,
                                    list_init_pg$mu_beta_vb, list_init_pg$sig2_alpha_vb,
                                    list_init_pg$sig2_beta_vb, list_init_pg$tau_vb,
@@ -347,7 +349,7 @@ cross_validate_ <- function(Y, X, Z, link, ind_bin, list_cv, user_seed, verbose)
 
         } else if (link == "probit") {
 
-          vb_tr <- locus_probit_core_(Y_tr, X_tr, Z_tr, list_hyper_pg,
+          vb_tr <- atlasqtl_probit_core_(Y_tr, X_tr, Z_tr, list_hyper_pg,
                                       list_init_pg$gam_vb, list_init_pg$mu_alpha_vb,
                                       list_init_pg$mu_beta_vb, list_init_pg$sig2_alpha_vb,
                                       list_init_pg$sig2_beta_vb, tol_cv, maxit_cv,
@@ -366,7 +368,7 @@ cross_validate_ <- function(Y, X, Z, link, ind_bin, list_cv, user_seed, verbose)
 
         } else if (link == "mix") {
 
-          vb_tr <- locus_mix_core_(Y_tr, X_tr, Z_tr, ind_bin, list_hyper_pg,
+          vb_tr <- atlasqtl_mix_core_(Y_tr, X_tr, Z_tr, ind_bin, list_hyper_pg,
                                    list_init_pg$gam_vb, list_init_pg$mu_alpha_vb,
                                    list_init_pg$mu_beta_vb, list_init_pg$sig2_alpha_vb,
                                    list_init_pg$sig2_beta_vb, list_init_pg$tau_vb,

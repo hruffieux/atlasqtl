@@ -1,11 +1,11 @@
-# This file is part of the `locus` R package:
-#     https://github.com/hruffieux/locus
+# This file is part of the `atlasqtl` R package:
+#     https://github.com/hruffieux/atlasqtl
 #
 # Internal core function to call the variational algorithm for identity link, fixed
 # covariates and external annotation variables.
-# See help of `locus` function for details.
+# See help of `atlasqtl` function for details.
 #
-locus_z_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
+atlasqtl_z_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
                                mu_beta_vb, sig2_alpha_vb, sig2_beta_vb, tau_vb, 
                                tol, maxit, verbose, batch = "y", 
                                full_output = FALSE, debug = FALSE) {
@@ -85,7 +85,7 @@ locus_z_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
 
       if (batch == "y") { # some updates are made batch-wise
 
-        for (i in 1:q) {
+        for (i in sample(1:q)) {
           mat_z_mu <- mat_z_mu - tcrossprod(Z[, i], mu_alpha_vb[i, ])
 
           mu_alpha_vb[i, ] <- sig2_alpha_vb[i, ] * (tau_vb *
@@ -98,9 +98,11 @@ locus_z_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
         log_1_min_Phi_mat_v_mu <- pnorm(mat_v_mu, lower.tail = FALSE, log.p = TRUE)
 
         # C++ Eigen call for expensive updates
+        shuffled_ind <- as.numeric(sample(0:(p-1))) # Zero-based index in C++
+
         coreZInfoLoop(X, Y, gam_vb, log_Phi_mat_v_mu, log_1_min_Phi_mat_v_mu,
                       log_sig2_inv_vb, log_tau_vb, m1_beta, mat_x_m1, mat_z_mu,
-                      mu_beta_vb, sig2_beta_vb, tau_vb)
+                      mu_beta_vb, sig2_beta_vb, tau_vb, shuffled_ind)
 
 
         mat_v_mu <- sweep(mat_v_mu, 1, mu_c0_vb, `-`)
@@ -110,7 +112,7 @@ locus_z_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
         mat_v_mu <- sweep(mat_v_mu, 1, mu_c0_vb, `+`)
 
 
-        for (l in 1:r) {
+        for (l in sample(1:r)) {
 
           mat_v_mu <- mat_v_mu - tcrossprod(V[, l], mu_c_vb[l, ])
 
@@ -122,9 +124,9 @@ locus_z_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
 
       } else if (batch == "0"){
 
-        for (k in 1:d) {
+        for (k in sample(1:d)) {
 
-          for (i in 1:q) {
+          for (i in sample(1:q)) {
 
             mat_z_mu[, k] <- mat_z_mu[, k] - Z[, i] * mu_alpha_vb[i, k]
 
@@ -135,7 +137,7 @@ locus_z_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
           }
 
 
-          for (j in 1:p) {
+          for (j in sample(1:p)) {
 
             mat_x_m1[, k] <- mat_x_m1[, k] - X[, j] * m1_beta[j, k]
 
@@ -159,7 +161,7 @@ locus_z_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
 
           mat_v_mu <- sweep(mat_v_mu, 1, mu_c0_vb, `+`)
 
-          for (l in 1:r) {
+          for (l in sample(1:r)) {
 
             mat_v_mu[, k] <- mat_v_mu[, k] - V[, l] * mu_c_vb[l, k]
 
@@ -253,7 +255,7 @@ locus_z_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
 
 
 # Internal function which implements the marginal log-likelihood variational
-# lower bound (ELBO) corresponding to the `locus_z_info_core` algorithm.
+# lower bound (ELBO) corresponding to the `atlasqtl_z_info_core` algorithm.
 #
 elbo_z_info_ <- function(Y, Z, V, eta, gam_vb, kappa, lambda, m0,
                          mu_alpha_vb, mu_c0_vb, mu_c_vb, nu, phi, phi_vb,

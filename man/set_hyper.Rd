@@ -6,7 +6,8 @@
 \usage{
 set_hyper(d, p, lambda, nu, a, b, eta, kappa, link = "identity",
   ind_bin = NULL, q = NULL, phi = NULL, xi = NULL, r = NULL,
-  m0 = NULL)
+  m0 = NULL, n0 = NULL, s02 = NULL, s2 = NULL, t02 = NULL, G = NULL,
+  dual = FALSE, struct = FALSE)
 }
 \arguments{
 \item{d}{Number of responses.}
@@ -73,22 +74,44 @@ repeated q times. Default is \code{NULL}, for \code{Z} \code{NULL}.}
 \item{r}{Number of variables representing external information on the
 candidate predictors. Default is \code{NULL}, for \code{V} \code{NULL}.}
 
-\item{m0}{Vector of length 1 or p providing the values of hyperparameter
-\eqn{m0} for the prior distribution of \eqn{c0} linked to the proportion of
-responses associated with each candidate predictor. If of length 1, the
-provided value is repeated p times. Default is \code{NULL}, for \code{V}
+\item{m0}{Vector of length 1 or p. Hyperparameter when \code{V},
+\code{list_struct} or \code{dual} is non-\code{NULL}. Default is
 \code{NULL}.}
+
+\item{n0}{Vector of length 1 or d. Hyperparameter when \code{dual} is
+non-\code{NULL}. Default is \code{NULL}.}
+
+\item{s02}{Variance hyperparameter when \code{V}, \code{list_struct} or
+\code{dual} is non-\code{NULL} non-\code{NULL}. Default is \code{NULL}.}
+
+\item{s2}{Variance hyperparameter when \code{V} is non-\code{NULL}
+non-\code{NULL}. Default is \code{NULL}.}
+
+\item{t02}{Variance hyperparameter when \code{dual} is non-\code{NULL}
+non-\code{NULL}. Default is \code{NULL}.}
+
+\item{G}{Number of candidate predictor groups when using the group selection
+model from the \code{\link{atlasqtl}} function. Default is \code{NULL},
+for no group selection.}
+
+\item{dual}{If \code{TRUE}, dual propensity control (by candidate predictors
+and by responses). Functionality under development and with limited
+associated functionalities. Default is \code{FALSE}.}
+
+\item{struct}{Boolean indicating the use of structured sparse priors
+set through the \code{\link{set_struct}} function. Default is \code{FALSE},
+for no structured selection.}
 }
 \value{
 An object of class "\code{hyper}" preparing user hyperparameter in a
-  form that can be passed to the \code{\link{locus}} function.
+  form that can be passed to the \code{\link{atlasqtl}} function.
 }
 \description{
 This function must be used to provide hyperparameter values for the model
-used in \code{\link{locus}}.
+used in \code{\link{atlasqtl}}.
 }
 \details{
-The \code{\link{locus}} function can also be used with default hyperparameter
+The \code{\link{atlasqtl}} function can also be used with default hyperparameter
 choices (without using \code{\link{set_hyper}}) by setting its argument
 \code{list_hyper} to \code{NULL}.
 }
@@ -162,7 +185,7 @@ list_hyper_g <- set_hyper(d, p, lambda = 1, nu = 1, a = 1, b = 4*d-1,
 # advised to set p0_av as a slightly overestimated guess of p0, or perform
 # cross-validation using function `set_cv'.
 
-vb_g <- locus(Y = Y, X = X, p0_av = p0, link = "identity",
+vb_g <- atlasqtl(Y = Y, X = X, p0_av = p0, link = "identity",
               list_hyper = list_hyper_g, user_seed = seed)
 
 # With covariates
@@ -171,7 +194,7 @@ list_hyper_g_z <- set_hyper(d, p, lambda = 1, nu = 1, a = 1, b = 4*d-1,
                             eta = 1, kappa = apply(Y, 2, var),
                             link = "identity", q = q, phi = 1, xi = 1)
 
-vb_g_z <- locus(Y = Y, X = X, p0_av = p0, Z = Z, link = "identity",
+vb_g_z <- atlasqtl(Y = Y, X = X, p0_av = p0, Z = Z, link = "identity",
                 list_hyper = list_hyper_g_z, user_seed = seed)
 
 
@@ -179,9 +202,10 @@ vb_g_z <- locus(Y = Y, X = X, p0_av = p0, Z = Z, link = "identity",
 #
 list_hyper_g_v <- set_hyper(d, p, lambda = 1, nu = 1, a = NULL, b = NULL,
                             eta = 1, kappa = apply(Y, 2, var),
-                            link = "identity", r = r, m0 = 0)
+                            link = "identity", r = r, m0 = 0, s02 = 0.1,
+                            s2 = 0.001)
 
-vb_g_v <- locus(Y = Y, X = X, p0_av = p0,  V = V, link = "identity",
+vb_g_v <- atlasqtl(Y = Y, X = X, p0_av = p0,  V = V, link = "identity",
                 list_hyper = list_hyper_g_v, user_seed = seed)
 
 ## Binary responses
@@ -190,14 +214,14 @@ list_hyper_logit <- set_hyper(d, p, lambda = 1, nu = 1, a = 1, b = 4*d-1,
                               eta = NULL, kappa = NULL, link = "logit",
                               q = q, phi = 1, xi = 1)
 
-vb_logit <- locus(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "logit",
+vb_logit <- atlasqtl(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "logit",
                   list_hyper = list_hyper_logit, user_seed = seed)
 
 list_hyper_probit <- set_hyper(d, p, lambda = 1, nu = 1, a = 1, b = 4*d-1,
                                eta = NULL, kappa = NULL, link = "probit",
                                q = q, phi = 1, xi = 1)
 
-vb_probit <- locus(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "probit",
+vb_probit <- atlasqtl(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "probit",
                    list_hyper = list_hyper_probit, user_seed = seed)
 
 
@@ -210,11 +234,11 @@ list_hyper_mix <- set_hyper(2*d, p, lambda = 1, nu = 1, a = 1, b = 8*d-1,
                             eta = 1, kappa = apply(Y, 2, var), link = "mix",
                             ind_bin = ind_bin, q = q, phi = 1, xi = 1)
 
-vb_mix <- locus(Y = Y_mix, X = X, p0_av = p0, Z = Z, link = "mix",
+vb_mix <- atlasqtl(Y = Y_mix, X = X, p0_av = p0, Z = Z, link = "mix",
                 ind_bin = ind_bin, list_hyper = list_hyper_mix,
                 user_seed = seed)
 
 }
 \seealso{
-\code{\link{set_init}}, \code{\link{locus}}
+\code{\link{set_init}}, \code{\link{atlasqtl}}
 }

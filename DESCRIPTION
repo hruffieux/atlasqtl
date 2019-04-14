@@ -1,30 +1,33 @@
-Package: locus
+Package: atlasqtl
 Type: Package
-Title: Large-scale variational inference for Bayesian variable selection in 
-    multiple-response regression
-Version: 0.6.3
-Date: 2018-10-19
+Title: fAsT gLobal-locAl hotSpot QTL detection
+Version: 0.1.0
+Date: 2019-04-14
 Authors@R: c(
-    person("Helene", "Ruffieux", email = "helene.ruffieux@epfl.ch",
+    person("Helene", "Ruffieux", email = "helene.ruffieux@alumni.epfl.ch",
             role = c("aut", "cre")),
-    person(given = "Nestle Institute of Health Sciences SA, Lausanne, Switzerland",
-            role = "cph"))
-Description: Variational inference for sparse multivariate regression models
-    that allow combined selection of responses and associated predictos in
-    high-dimensional set-ups (H. Ruffieux, A. C. Davison, J. Hager and 
-    I. Irincheeva, Efficient inference for genetic association studies with 
-    multiple outcomes, *Biostatistics*, 18:618:636, 2017, 
-    doi: 10.1093/biostatistics/kxx007). This software has been used with
-    genetic data from molecular quantitative trait locus (QTL) problems with over
-    500K single nucleotide polymorphisms (SNPs), thousands of molecular expression
-    levels and thousands of individuals.
+    person("Sylvia", "Richardson", email = "sylvia.richardson@mrc-bsu.cam.ac.uk",
+            role = c("aut")),
+    person("Leonardo", "Bottolo", email = "lb664@cam.ac.uk",
+            role = c("aut")))
+Description: Global-local hierachical approach for joint detection of hotspot 
+    predictors in multiple-response regression. Inference uses closed-form 
+    variational updates coupled with a simulated annealing algorithm to enhance 
+    exploration of highly multimodal spaces. This software allows joint inference 
+    at large-scale, e.g., for molecular quantitative trait locus (QTL) studies 
+    where the hotspots are genetic variants regulating several molecular traits 
+    simultaneously. See H. Ruffieux, et al., A global-local approach for detecting
+    hotspots in multiple-response regression, 2018, arxiv:1811.03334). 
 Depends:
     R (>= 3.2.0)
 License: GPL (>= 2) | file LICENSE
 LazyData: TRUE
 Imports:
+    gsl (>= 1.9-10.3),
     Matrix (>= 1.2-2),
     parallel,
+    plyr (>= 1.8.4),
+    PowerTOST (>= 1.4-6),
     Rcpp (>= 0.12.9),
     RcppEigen (>= 0.3.2.9.0)
 RoxygenNote: 6.0.1

@@ -2,7 +2,7 @@
 #define LOCUS_UTILS_H_
 
 #include <RcppEigen.h>
-#include "locus_types.h"
+#include "atlasqtl_types.h"
 
 // [[Rcpp::depends(RcppEigen)]]
 

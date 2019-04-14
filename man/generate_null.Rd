@@ -6,15 +6,16 @@
 \usage{
 generate_null(n_perm, Y, X, p0_av, Z = NULL, link = "identity",
   ind_bin = NULL, list_hyper = NULL, list_init = NULL,
-  list_blocks = NULL, user_seed = NULL, tol = 0.001, maxit = 1000,
-  verbose = TRUE, results_dir = NULL, n_cpus = 1)
+  list_blocks = NULL, list_groups = NULL, list_struct = NULL,
+  user_seed = NULL, tol = 0.001, maxit = 1000, verbose = TRUE,
+  results_dir = NULL, n_cpus = 1)
 }
 \arguments{
-\item{n_perm}{Number of permuted datasets on which \code{\link{locus}} is
+\item{n_perm}{Number of permuted datasets on which \code{\link{atlasqtl}} is
 run.}
 
 \item{Y}{Response data matrix (without permuted sample indices) of size
-n x d, where n is the number of observations and d is the number of
+n x d, where n is the number of samples and d is the number of
 response variables.}
 
 \item{X}{Input matrix of size n x p, where p is the number of candidate
@@ -55,6 +56,16 @@ parallel inference on a partitioned predictor space. Must be filled using
 the \code{\link{set_blocks}} function or must be \code{NULL} for no
 partitioning.}
 
+\item{list_groups}{An object of class "\code{groups}" containing settings for
+group selection of candidate predictors. Must be filled using the
+\code{\link{set_groups}} function or must be \code{NULL} for group
+selection.}
+
+\item{list_struct}{An object of class "\code{struct}" containing settings for
+structure sparsity priors. Must be filled using the
+\code{\link{set_struct}} function or must be \code{NULL} for structured
+selection.}
+
 \item{user_seed}{Seed set for reproducible default choices of hyperparameters
 (if \code{list_hyper} is \code{NULL}) and inital variational parameters (if
 \code{list_init} is \code{NULL}). Default is \code{NULL}, no seed set.}
@@ -75,7 +86,7 @@ execution.}
 }
 \value{
 If \code{results_dir} is \code{NULL}, list of length \code{n_perm}
-  with each element corresponding to the output of \code{\link{locus}} on one
+  with each element corresponding to the output of \code{\link{atlasqtl}} on one
   permuted dataset. Each contains:
  \item{ind_perm}{Vector of length n containing the permuted response sample
                  labels.}
@@ -87,7 +98,7 @@ If \code{results_dir} is \code{NULL}, list of length \code{n_perm}
               candidate predictor s.}
 }
 \description{
-This function runs \code{\link{locus}} on data with permuted response sample
+This function runs \code{\link{atlasqtl}} on data with permuted response sample
 labels. A common use is for estimatimation of data-driven false discovery
 rates of given thresholds on the posterior probabilities of inclusion.
 }
@@ -136,5 +147,6 @@ list_perm <- generate_null(n_perm = 10, Y, X, p0_av = p0, link = "identity",
 
 }
 \seealso{
-\code{\link{locus}}
+@seealso \code{\link{atlasqtl}}, \code{\link{set_hyper}},
+  \code{\link{set_init}}, \code{\link{set_blocks}}, \code{\link{set_groups}}.
 }
