@@ -1,11 +1,11 @@
-# This file is part of the `locus` R package:
-#     https://github.com/hruffieux/locus
+# This file is part of the `atlasqtl` R package:
+#     https://github.com/hruffieux/atlasqtl
 #
 # Core function to call the variational algorithm for identity-probit link,
 # optional fixed covariates and external annotation variables.
-# See help of `locus` function for details.
+# See help of `atlasqtl` function for details.
 #
-locus_mix_info_core_ <- function(Y, X, Z, V, ind_bin, list_hyper, gam_vb,
+atlasqtl_mix_info_core_ <- function(Y, X, Z, V, ind_bin, list_hyper, gam_vb,
                                  mu_alpha_vb, mu_beta_vb, sig2_alpha_vb, 
                                  sig2_beta_vb, tau_vb, tol, maxit, verbose, 
                                  batch = "y", full_output = FALSE, debug = FALSE) {
@@ -284,7 +284,7 @@ locus_mix_info_core_ <- function(Y, X, Z, V, ind_bin, list_hyper, gam_vb,
 
 
 # Function which implements the marginal log-likelihood variational lower bound
-# (ELBO) corresponding to the `locus_mix_info_core` algorithm.
+# (ELBO) corresponding to the `atlasqtl_mix_info_core` algorithm.
 #
 elbo_mix_info_ <- function(Y_bin, Y_cont, ind_bin, X, V, Z, eta, gam_vb, kappa,
                            lambda, m0, mu_alpha_vb, mu_c0_vb, mu_c_vb, nu, phi,

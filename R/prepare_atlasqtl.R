@@ -1,16 +1,20 @@
-# This file is part of the `locus` R package:
-#     https://github.com/hruffieux/locus
+# This file is part of the `atlasqtl` R package:
+#     https://github.com/hruffieux/atlasqtl
 #
 
 # Internal function implementing sanity checks and needed preprocessing before
-# the application of the different `locus_*_core` algorithms.
+# the application of the different `atlasqtl_*_core` algorithms.
 #
-prepare_data_ <- function(Y, X, Z, V, link, ind_bin, user_seed, tol, maxit, verbose) {
+prepare_data_ <- function(Y, X, Z, V, link, ind_bin, s02, hs, df, user_seed, tol, 
+                          maxit, verbose, checkpoint_path, trace_path) {
 
   stopifnot(link %in% c("identity", "logit", "probit", "mix"))
 
+  check_structure_(s02, "vector", "numeric", 1)
+  check_positive_(s02)
+  
   check_structure_(user_seed, "vector", "numeric", 1, null_ok = TRUE)
-
+  
   check_structure_(tol, "vector", "numeric", 1)
   check_positive_(tol, eps=.Machine$double.eps)
 
@@ -20,7 +24,31 @@ prepare_data_ <- function(Y, X, Z, V, link, ind_bin, user_seed, tol, maxit, verb
   check_structure_(verbose, "vector", "logical", 1)
 
   check_structure_(X, "matrix", "numeric")
-
+  
+  check_natural_(df)
+  
+  if (!is.null(checkpoint_path)) {
+    
+    if (!dir.exists(checkpoint_path)) {
+      stop("The directory specified in checkpoint_path doesn't exist. Please make sure to provide a valid path.")
+    }
+    
+    if (!is.null(Z) | !is.null(V) | link != "identity")
+      warning("Checkpointing only implemented for Z and V NULL and link = identity. Path specified in checkpoint_path is ignored.")
+    
+  }
+  
+  if (!is.null(trace_path)) {
+    
+    if (!dir.exists(trace_path)) {
+      stop("The directory specified in trace_path doesn't exist. Please make sure to provide a valid path.")
+    }
+    
+    if (!hs | !is.null(V))
+      warning("Trace display only valid for the horseshoe model with V = NULL. Path specified in trace_path is ignored.")
+    
+  }
+  
   n <- nrow(X)
   p <- ncol(X)
 
@@ -184,7 +212,7 @@ prepare_data_ <- function(Y, X, Z, V, link, ind_bin, user_seed, tol, maxit, verb
 
 
 # Internal function implementing sanity checks and needed preprocessing for
-# argument p0_av before the application of the different `locus_*_core` algorithms.
+# argument p0_av before the application of the different `atlasqtl_*_core` algorithms.
 #
 convert_p0_av_ <- function(p0_av, p, list_blocks, dual, verbose, eps = .Machine$double.eps^0.5) {
 
@@ -251,9 +279,9 @@ convert_p0_av_ <- function(p0_av, p, list_blocks, dual, verbose, eps = .Machine$
 
     }
 
-    # the sparsity level needs to be adapted when block-wise inference is used
-    # otherwise the selected models may be too small (empirical considerations here)
     if (!is.null(list_blocks)) {
+      # the sparsity level needs to be adapted when block-wise inference is used
+      # otherwise the selected models may be too small (empirical considerations here)
       p_star <- sapply(p_star, function(p_star_j) min(p_star_j * list_blocks$n_bl, 0.975 * p))
 
       if (verbose) cat(paste("The sparsity level is adapted for block-wise inference ",
@@ -267,13 +295,41 @@ convert_p0_av_ <- function(p0_av, p, list_blocks, dual, verbose, eps = .Machine$
 
 
 
+check_annealing_ <- function(anneal, link, Z, V, list_groups, list_struct, dual) {
+
+  check_structure_(anneal, "vector", "numeric", 3, null_ok = TRUE)
+
+  if (!is.null(anneal)) {
+
+    if (link != "identity" | !is.null(list_groups))
+      stop(paste0("Annealing procedure not yet implemented when link is different ",
+                 "from identity, Z, V, list_groups or list_struct is non-NULL. Exit."))
+
+    check_natural_(anneal[c(1, 3)])
+    check_positive_(anneal[2])
+
+    stopifnot(anneal[1] %in% 1:3)
+
+    if (anneal[2] < 1.5)
+      stop(paste0("Initial temperature very small. May not be large enough ",
+                  "for a successful exploration. Please increase it or select no annealing."))
+
+    if (anneal[3] > 1000)
+      stop(paste0("Temperature ladder size very large. This may be unnecessarily ",
+                  "computationally demanding. Please decrease it."))
+    
+  }
+
+}
+
+
 # Internal function implementing sanity checks and needed preprocessing for the
-# model hyperparameters before the application of the different `locus_*_core`
+# model hyperparameters before the application of the different `atlasqtl_*_core`
 # algorithms.
 #
 prepare_list_hyper_ <- function(list_hyper, Y, p, p_star, q, r, dual, link, ind_bin,
                                 vec_fac_gr, vec_fac_st, bool_rmvd_x, bool_rmvd_z,
-                                bool_rmvd_v, names_x, names_y, names_z, verbose) {
+                                bool_rmvd_v, names_x, names_y, names_z, verbose, s02) {
 
   d <- ncol(Y)
   if (!is.null(vec_fac_gr)) {
@@ -288,12 +344,12 @@ prepare_list_hyper_ <- function(list_hyper, Y, p, p_star, q, r, dual, link, ind_
 
     if (verbose) cat("list_hyper set automatically. \n")
 
-    list_hyper <- auto_set_hyper_(Y, p, p_star, q, r, dual, link, ind_bin, !ns, vec_fac_gr)
+    list_hyper <- auto_set_hyper_(Y, p, p_star, q, r, dual, link, ind_bin, !ns, vec_fac_gr, s02)
 
   } else {
 
     if (xor(is.null(G), is.null(list_hyper$G_hyper)))
-      stop("If group selection was enabled when setting list_hyper, it must be used in locus and vice-versa.")
+      stop("If group selection was enabled when setting list_hyper, it must be used in atlasqtl and vice-versa.")
 
     if (!inherits(list_hyper, c("hyper", "out_hyper")))
       stop(paste("The provided list_hyper must be an object of class ``hyper'' ",
@@ -322,7 +378,7 @@ prepare_list_hyper_ <- function(list_hyper, Y, p, p_star, q, r, dual, link, ind_
 
     if (!is.null(G) && list_hyper$G_hyper != G_hyper_match)
       stop(paste("The number of groups (G) provided when setting the hyperparameters ",
-                 "(list_hyper) is not consistent with that provided in the locus function.\n", sep=""))
+                 "(list_hyper) is not consistent with that provided in the atlasqtl function.\n", sep=""))
 
     if (list_hyper$p_hyper != p_hyper_match)
       stop(paste("The dimensions (p) of the provided hyperparameters ",
@@ -450,7 +506,7 @@ prepare_list_hyper_ <- function(list_hyper, Y, p, p_star, q, r, dual, link, ind_
 
 
 # Internal function implementing sanity checks and needed preprocessing for the
-# starting values before the application of the different `locus_*_core`
+# starting values before the application of the different `atlasqtl_*_core`
 # algorithms.
 #
 prepare_list_init_ <- function(list_init, Y, p, p_star, q,  dual, link, ind_bin,
@@ -478,7 +534,7 @@ prepare_list_init_ <- function(list_init, Y, p, p_star, q,  dual, link, ind_bin,
   } else {
 
     if (xor(is.null(G), is.null(list_init$G_init)))
-      stop("If group selection was enabled when setting list_init, it must be used in locus and vice-versa.")
+      stop("If group selection was enabled when setting list_init, it must be used in atlasqtl and vice-versa.")
 
 
     if (!is.null(user_seed))
@@ -521,7 +577,7 @@ prepare_list_init_ <- function(list_init, Y, p, p_star, q,  dual, link, ind_bin,
 
     if (!is.null(G) && list_init$G_init != G_init_match)
       stop(paste("The number of groups (G) provided when setting the initial parameters ",
-                 "(list_init) is not consistent with that provided in the locus function.\n", sep=""))
+                 "(list_init) is not consistent with that provided in the atlasqtl function.\n", sep=""))
 
     if (list_init$link_init != link)
       stop(paste("The argument link is not consistent with the variable
@@ -653,17 +709,17 @@ prepare_cv_ <- function(list_cv, n, p, r, bool_rmvd_x, p0_av, link, list_hyper,
 # Internal function implementing sanity checks and needed preprocessing to the
 # settings provided by the user for block-wise parallel inference.
 #
-prepare_blocks_ <- function(list_blocks, bool_rmvd_x, dual, list_cv, list_groups, list_struct) {
+prepare_blocks_ <- function(list_blocks, eb, bool_rmvd_x, dual, list_cv, list_groups, list_struct) {
 
   if (!inherits(list_blocks, "blocks"))
     stop(paste("The provided list_blocks must be an object of class ``blocks''. \n",
                "*** you must either use the function set_blocks to give the settings ",
-               "for parallels applications of locus on blocks of candidate ",
-               "predictors or set list_blocks to NULL to apply locus jointly on ",
+               "for parallels applications of atlasqtl on blocks of candidate ",
+               "predictors or set list_blocks to NULL to apply atlasqtl jointly on ",
                "all the candidate predictors (sufficient RAM required). ***",
                sep=""))
 
-  if (dual)
+  if (xor(dual, eb))
     stop(paste("dual must be FALSE if list_blocks is provided (block-wise ",
                "inference not yet implemented for the corresponding model).",sep = ""))
 
@@ -712,7 +768,7 @@ prepare_blocks_ <- function(list_blocks, bool_rmvd_x, dual, list_cv, list_groups
 #'   \code{set_blocks}.
 #'
 #' @return An object of class "\code{blocks}" preparing the settings for parallel
-#'   inference in a form that can be passed to the \code{\link{locus}}
+#'   inference in a form that can be passed to the \code{\link{atlasqtl}}
 #'   function.
 #'
 #' @examples
@@ -759,10 +815,10 @@ prepare_blocks_ <- function(list_blocks, bool_rmvd_x, dual, list_cv, list_groups
 #' pos_bl <- seq(1, p, by = ceiling(p/n_bl))
 #' list_blocks <- set_blocks(p, pos_bl, n_cpus = 2)
 #'
-#' vb <- locus(Y = Y, X = X, p0_av = p0, link = "identity",
+#' vb <- atlasqtl(Y = Y, X = X, p0_av = p0, link = "identity",
 #'             list_blocks = list_blocks, user_seed = seed)
 #'
-#' @seealso \code{\link{locus}}
+#' @seealso \code{\link{atlasqtl}}
 #'
 #' @export
 set_blocks <- function(p, pos_bl, n_cpus, verbose = TRUE) {
@@ -814,7 +870,7 @@ set_blocks <- function(p, pos_bl, n_cpus, verbose = TRUE) {
       n_cpus <- n_bl
     }
 
-    if (verbose) cat(paste("locus applied in parallel on ", n_bl,
+    if (verbose) cat(paste("atlasqtl applied in parallel on ", n_bl,
                            " blocks of candidate predictors, using ", n_cpus, " CPUs.\n",
                            "Please make sure that enough RAM is available. \n", sep=""))
   }
@@ -830,7 +886,7 @@ set_blocks <- function(p, pos_bl, n_cpus, verbose = TRUE) {
 
 
 # Internal function implementing sanity checks the index of binary responses in
-# case `locus_mix_core` or `locus_mix_info_core` is used.
+# case `atlasqtl_mix_core` or `atlasqtl_mix_info_core` is used.
 #
 prepare_ind_bin_ <- function(d, ind_bin, link) {
 
@@ -869,10 +925,6 @@ prepare_groups_ <- function(list_groups, X, q, r, bool_rmvd_x, dual, link, list_
                "for group selection. ***",
                sep=""))
 
-  if (dual)
-    stop(paste("dual must be FALSE if list_groups is provided (group-wise ",
-               "inference not yet implemented for the corresponding model).",sep = ""))
-
   if (!is.null(list_cv))
     stop(paste("list_cv must be NULL if non NULL ",
                "list_groups is provided (cross-validation not yet implemented). \n",sep = ""))
@@ -898,7 +950,7 @@ prepare_groups_ <- function(list_groups, X, q, r, bool_rmvd_x, dual, link, list_
 }
 
 
-#' Gather settings for application of the `locus` function with group selection.
+#' Gather settings for application of the `atlasqtl` function with group selection.
 #'
 #' [FUNCTIONALITY UNDER ACTIVE DEVELOPMENT, PERFORMANCE (CPU TIME) NOT OPTIMIZED].
 #' Posterior probabilities of associations are computed for predefined groups of
@@ -915,7 +967,7 @@ prepare_groups_ <- function(list_groups, X, q, r, bool_rmvd_x, dual, link, list_
 #'   \code{set_blocks}.
 #'
 #' @return An object of class "\code{groups}" preparing the settings for group
-#'   selection in a form that can be passed to the \code{\link{locus}}
+#'   selection in a form that can be passed to the \code{\link{atlasqtl}}
 #'   function.
 #'
 #' @examples
@@ -965,10 +1017,10 @@ prepare_groups_ <- function(list_groups, X, q, r, bool_rmvd_x, dual, link, list_
 #' g0_av <- 50 # Number of active groups. /!\ Often best to set it large, as a
 #'             # too small value may (wrong) result in no group being selected.
 #'
-#' vb <- locus(Y = Y, X = X, p0_av = g0_av, link = "identity",
+#' vb <- atlasqtl(Y = Y, X = X, p0_av = g0_av, link = "identity",
 #'   list_groups = list_groups, user_seed = seed)
 #'
-#' @seealso \code{\link{locus}}
+#' @seealso \code{\link{atlasqtl}}
 #'
 #' @export
 #'
@@ -1002,7 +1054,7 @@ set_groups <- function(n, p, pos_gr, verbose = TRUE) {
 
   if (length(unique(vec_fac_gr)) == p)
     stop(paste("All the groups are of size one, no group selection will be performed. ",
-               "Set argument list_groups to NULL in the locus function.", sep = ""))
+               "Set argument list_groups to NULL in the atlasqtl function.", sep = ""))
 
   if (max(table(vec_fac_gr)) >= n)
     stop(paste("One or more group size(s) is greater or equal to n.  ",
@@ -1027,7 +1079,7 @@ set_groups <- function(n, p, pos_gr, verbose = TRUE) {
 # Internal function implementing sanity checks and needed preprocessing to the
 # settings provided by the user for structured sparsity priors.
 #
-prepare_struct_ <- function(list_struct, n, q, r, bool_rmvd_x, link, list_cv, list_groups) {
+prepare_struct_ <- function(list_struct, n, q, r, bool_rmvd_x, link, list_cv, list_groups, hyper) {
 
   if (!inherits(list_struct, "struct"))
     stop(paste("The provided list_struct must be an object of class ``struct''. \n",
@@ -1055,6 +1107,8 @@ prepare_struct_ <- function(list_struct, n, q, r, bool_rmvd_x, link, list_cv, li
   if(link != "identity" | !is.null(q) | !is.null(r) | !is.null(list_groups))
     stop("Structured sparse priors enabled only for identity link, Z = NULL, V = NULL and with no group selection. Exit.")
 
+  if (xor(hyper, list_struct$hyper))
+    stop("Argument hyper and must be TRUE if passed as TRUE in set_struct, or they should be both FALSE.")
 
   vec_fac_st <- list_struct$vec_fac_st[!bool_rmvd_x] # some blocks may disappear here, but this is not a problem
 
@@ -1070,7 +1124,7 @@ prepare_struct_ <- function(list_struct, n, q, r, bool_rmvd_x, link, list_cv, li
 
 
 
-#' Gather settings for application of the `locus` function with structured
+#' Gather settings for application of the `atlasqtl` function with structured
 #' sparse prior.
 #'
 #' [FUNCTIONALITY UNDER ACTIVE DEVELOPMENT, PERFORMANCE (CPU TIME) NOT OPTIMIZED].
@@ -1086,14 +1140,19 @@ prepare_struct_ <- function(list_struct, n, q, r, bool_rmvd_x, link, list_cv, li
 #' @param p Number of candidate predictors.
 #' @param pos_st Vector gathering the predictor block positions (first index of
 #'   each block). The predictors must be ordered by blocks.
-#' @param n_cpus Number of CPUs to be used. If large, one should ensure that
-#'   enough RAM will be available for parallel execution. Set to 1 for serial
+#' @param n_cpus Number of CPUs to be used. Only used if \code{hyper} is 
+#'   \code{FALSE}, otherwise set it to 1. If large, one should ensure that 
+#'   enough RAM will be available for parallel execution. Set to 1 for serial 
 #'   execution.
 #' @param verbose If \code{TRUE}, messages are displayed when calling
 #'   \code{set_struct}.
+#' @param hyper If \code{TRUE}, \code{set_struct} will be used to define blocks
+#'   for blockwise hotspot variance estimation (hyperparameter setting on this
+#'   variance); only valid when arguments \code{dual} and \code{hyper} set to 
+#'   \code{TRUE} in the  \code{\link{atlasqtl}} function.
 #'
 #' @return An object of class "\code{struct}" preparing the settings for group
-#'   selection in a form that can be passed to the \code{\link{locus}}
+#'   selection in a form that can be passed to the \code{\link{atlasqtl}}
 #'   function.
 #'
 #' @examples
@@ -1140,14 +1199,14 @@ prepare_struct_ <- function(list_struct, n, q, r, bool_rmvd_x, link, list_cv, li
 #' pos_st <- seq(1, p, by = ceiling(p/n_st))
 #' list_struct <- set_struct(n, p, pos_st, n_cpus = 1)
 #'
-#' vb <- locus(Y = Y, X = X, p0_av = p0, link = "identity",
+#' vb <- atlasqtl(Y = Y, X = X, p0_av = p0, link = "identity",
 #'    list_struct = list_struct, user_seed = seed)
 #'
-#' @seealso \code{\link{locus}}
+#' @seealso \code{\link{atlasqtl}}
 #'
 #' @export
 #'
-set_struct <- function(n, p, pos_st, n_cpus, verbose = TRUE) {
+set_struct <- function(n, p, pos_st, n_cpus, verbose = TRUE, hyper = FALSE) {
 
   check_structure_(n, "vector", "numeric", 1)
   check_natural_(n)
@@ -1157,15 +1216,15 @@ set_struct <- function(n, p, pos_st, n_cpus, verbose = TRUE) {
 
   check_structure_(verbose, "vector", "logical", 1)
 
-  check_structure_(n_cpus, "vector", "numeric", 1)
-  check_natural_(n_cpus)
+  if (hyper & n_cpus !=1) {
+   stop("No parallel implementation when hyper is TRUE. Please set n_cpus to 1.") 
+  } else {
+    check_structure_(n_cpus, "vector", "numeric", 1)
+    check_natural_(n_cpus)
+  }
 
   check_structure_(pos_st, "vector", "numeric")
   check_natural_(pos_st)
-
-  if (p / length(pos_st) > 500)
-    warning(paste("The provided number of blocks may be too small for tractable ",
-                  "inference. If possible, use more blocks.", sep = ""))
 
   if (any(pos_st < 1) | any(pos_st > p))
     stop("The positions provided in pos_st must range between 1 and total number of variables in X, p.")
@@ -1181,20 +1240,26 @@ set_struct <- function(n, p, pos_st, n_cpus, verbose = TRUE) {
   n_gr <- length(unique(vec_fac_st))
 
   if (length(unique(vec_fac_st)) == p)
-    stop(paste("All the blocks are of size one, no structured selection will be performed. ",
-               "Set argument list_struct to NULL in the locus function.", sep = ""))
+    stop(paste("All the blocks are of size one, no structured selection or blockwise estimation will be performed. ",
+               "Set argument list_struct to NULL in the atlasqtl function.", sep = ""))
 
-  # Should not be needed as regularization performed anyway.
-  # if (max(table(vec_fac_st)) >= n)
-  #   stop(paste("One or more block size(s) is greater or equal to n.  ",
-  #                 "Corresponding empirical covariances not positive definite. Use smaller block sizes.", sep = ""))
-
-  if (max(table(vec_fac_st)) >= n/2)
-    warning(paste("One or more block size(s) is greater or equal to n/2.  ",
-               "Corresponding empirical covariances may not be positive definite. ",
-               "Regularization will be used but this may affect the quality of inference.", sep = ""))
-
-
+  if (!hyper) {
+    
+    # Should not be needed as regularization performed anyway.
+    # if (max(table(vec_fac_st)) >= n)
+    #   stop(paste("One or more block size(s) is greater or equal to n.  ",
+    #                 "Corresponding empirical covariances not positive definite. Use smaller block sizes.", sep = ""))
+    
+    if (max(table(vec_fac_st)) >= n/2)
+      warning(paste("One or more block size(s) is greater or equal to n/2.  ",
+                    "Corresponding empirical covariances may not be positive definite. ",
+                    "Regularization will be used but this may affect the quality of inference.", sep = ""))
+    
+    if (p / length(pos_st) > 500)
+      warning(paste("The provided number of blocks may be too small for tractable ",
+                    "inference. If possible, use more blocks.", sep = ""))
+  }
+  
   if (n_cpus > 1) {
 
     n_cpus_avail <- parallel::detectCores()
@@ -1221,7 +1286,7 @@ set_struct <- function(n, p, pos_st, n_cpus, verbose = TRUE) {
   n_struct <- n
   p_struct <- p
 
-  list_struct <- create_named_list_(n_struct, p_struct, n_cpus, vec_fac_st)
+  list_struct <- create_named_list_(n_struct, p_struct, n_cpus, vec_fac_st, hyper)
 
   class(list_struct) <- "struct"
 

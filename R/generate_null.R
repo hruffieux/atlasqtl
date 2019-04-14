@@ -1,14 +1,14 @@
-# This file is part of the `locus` R package:
-#     https://github.com/hruffieux/locus
+# This file is part of the `atlasqtl` R package:
+#     https://github.com/hruffieux/atlasqtl
 #
 
 #' Generate empirical null distribution using permuted data.
 #'
-#' This function runs \code{\link{locus}} on data with permuted response sample
+#' This function runs \code{\link{atlasqtl}} on data with permuted response sample
 #' labels. A common use is for estimatimation of data-driven false discovery
 #' rates of given thresholds on the posterior probabilities of inclusion.
 #'
-#' @param n_perm Number of permuted datasets on which \code{\link{locus}} is
+#' @param n_perm Number of permuted datasets on which \code{\link{atlasqtl}} is
 #'   run.
 #' @param Y Response data matrix (without permuted sample indices) of size
 #'   n x d, where n is the number of samples and d is the number of
@@ -65,7 +65,7 @@
 #'   execution.
 #'
 #' @return If \code{results_dir} is \code{NULL}, list of length \code{n_perm}
-#'   with each element corresponding to the output of \code{\link{locus}} on one
+#'   with each element corresponding to the output of \code{\link{atlasqtl}} on one
 #'   permuted dataset. Each contains:
 #'  \item{ind_perm}{Vector of length n containing the permuted response sample
 #'                  labels.}
@@ -76,7 +76,7 @@
 #'               Entry s controls the proportion of responses associated with
 #'               candidate predictor s.}
 #
-#' @seealso @seealso \code{\link{locus}}, \code{\link{set_hyper}},
+#' @seealso @seealso \code{\link{atlasqtl}}, \code{\link{set_hyper}},
 #'   \code{\link{set_init}}, \code{\link{set_blocks}}, \code{\link{set_groups}}.
 #'
 #' @examples
@@ -164,7 +164,7 @@ generate_null <- function(n_perm, Y, X, p0_av, Z = NULL, link = "identity",
     rownames(Y) <- NULL
 
     # user_seed must be NULL here otherwise always the same permutation
-    res_perm <- locus(Y = Y[ind_perm, ], X = X, p0_av = p0_av, Z = Z,
+    res_perm <- atlasqtl(Y = Y[ind_perm, ], X = X, p0_av = p0_av, Z = Z,
                       link = link, ind_bin = ind_bin,
                       list_hyper = list_hyper, list_init = list_init,
                       list_cv = NULL, list_blocks = list_blocks,

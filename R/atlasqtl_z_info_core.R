@@ -1,15 +1,14 @@
-# This file is part of the `locus` R package:
-#     https://github.com/hruffieux/locus
+# This file is part of the `atlasqtl` R package:
+#     https://github.com/hruffieux/atlasqtl
 #
-# Internal core function to call the variational algorithm for probit link,
-# optional fixed covariates and external annotation variables.
-# See help of `locus` function for details.
+# Internal core function to call the variational algorithm for identity link, fixed
+# covariates and external annotation variables.
+# See help of `atlasqtl` function for details.
 #
-locus_probit_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
-                                    mu_beta_vb, sig2_alpha_vb, sig2_beta_vb, 
-                                    tol, maxit, verbose, batch = "y",
-                                    full_output = FALSE, debug = FALSE) {
-
+atlasqtl_z_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
+                               mu_beta_vb, sig2_alpha_vb, sig2_beta_vb, tau_vb, 
+                               tol, maxit, verbose, batch = "y", 
+                               full_output = FALSE, debug = FALSE) {
 
   # Y must have been centered, and X, Z and V standardized (except intercept in Z).
 
@@ -25,10 +24,10 @@ locus_probit_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
     mu_c0_vb <- m0
     mu_c_vb <- matrix(0, nrow = r, ncol = d)
 
-    m2_alpha <- update_m2_alpha_(mu_alpha_vb, sig2_alpha_vb, sweep = TRUE)
+    m2_alpha <- update_m2_alpha_(mu_alpha_vb, sig2_alpha_vb)
 
     m1_beta <- update_m1_beta_(gam_vb, mu_beta_vb)
-    m2_beta <- update_m2_beta_(gam_vb, mu_beta_vb, sig2_beta_vb)
+    m2_beta <- update_m2_beta_(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = TRUE)
 
     mat_x_m1 <- update_mat_x_m1_(X, m1_beta)
     mat_z_mu <- update_mat_z_mu_(Z, mu_alpha_vb)
@@ -36,8 +35,6 @@ locus_probit_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
 
     sig2_c0_vb <- update_sig2_c0_vb_(d, s02)
     sig2_c_vb <-  update_sig2_c_vb_(p, s2)
-
-    Wy <- update_W_probit_(Y, mat_z_mu, mat_x_m1)
 
     phi_vb <- update_phi_z_vb_(phi, d)
 
@@ -54,21 +51,31 @@ locus_probit_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
         cat(paste("Iteration ", format(it), "... \n", sep = ""))
 
       # % #
-      xi_vb <- update_xi_bin_vb_(xi, m2_alpha)
+      xi_vb <- update_xi_z_vb_(xi, tau_vb, m2_alpha)
 
       zeta2_inv_vb <- phi_vb / xi_vb
       # % #
 
       # % #
       lambda_vb <- update_lambda_vb_(lambda, sum(gam_vb))
-      nu_vb <- update_nu_bin_vb_(nu, m2_beta)
+      nu_vb <- update_nu_vb_(nu, m2_beta, tau_vb)
 
       sig2_inv_vb <- lambda_vb / nu_vb
       # % #
 
-      sig2_alpha_vb <- update_sig2_alpha_vb_(n, zeta2_inv_vb, intercept = TRUE)
-      sig2_beta_vb <- update_sig2_beta_vb_(n, sig2_inv_vb)
+      # % #
+      eta_vb <- update_eta_z_vb_(n, q, eta, gam_vb)
+      kappa_vb <- update_kappa_z_vb_(Y, Z, kappa, mu_alpha_vb, m1_beta, m2_alpha,
+                                     m2_beta, mat_x_m1, mat_z_mu, sig2_inv_vb,
+                                     zeta2_inv_vb)
 
+      tau_vb <- eta_vb / kappa_vb
+      # % #
+
+      sig2_alpha_vb <- update_sig2_alpha_vb_(n, zeta2_inv_vb, tau_vb)
+      sig2_beta_vb <- update_sig2_beta_vb_(n, sig2_inv_vb, tau_vb)
+
+      log_tau_vb <- update_log_tau_vb_(eta_vb, kappa_vb)
       log_sig2_inv_vb <- update_log_sig2_inv_vb_(lambda_vb, nu_vb)
 
       W <- update_W_info_(gam_vb, mat_v_mu)
@@ -79,13 +86,12 @@ locus_probit_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
       if (batch == "y") { # some updates are made batch-wise
 
         for (i in sample(1:q)) {
-
           mat_z_mu <- mat_z_mu - tcrossprod(Z[, i], mu_alpha_vb[i, ])
 
-          mu_alpha_vb[i, ] <- sig2_alpha_vb[i] * crossprod(Wy  - mat_z_mu - mat_x_m1, Z[, i])
+          mu_alpha_vb[i, ] <- sig2_alpha_vb[i, ] * (tau_vb *
+                                                      crossprod(Y  - mat_z_mu - mat_x_m1, Z[, i]))
 
           mat_z_mu <- mat_z_mu + tcrossprod(Z[, i], mu_alpha_vb[i, ])
-
         }
 
         log_Phi_mat_v_mu <- pnorm(mat_v_mu, log.p = TRUE)
@@ -94,10 +100,10 @@ locus_probit_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
         # C++ Eigen call for expensive updates
         shuffled_ind <- as.numeric(sample(0:(p-1))) # Zero-based index in C++
 
-        coreProbitInfoLoop(X, Wy, gam_vb, log_Phi_mat_v_mu,
-                           log_1_min_Phi_mat_v_mu, log_sig2_inv_vb, m1_beta,
-                           mat_x_m1, mat_z_mu, mu_beta_vb, sig2_beta_vb,
-                           shuffled_ind)
+        coreZInfoLoop(X, Y, gam_vb, log_Phi_mat_v_mu, log_1_min_Phi_mat_v_mu,
+                      log_sig2_inv_vb, log_tau_vb, m1_beta, mat_x_m1, mat_z_mu,
+                      mu_beta_vb, sig2_beta_vb, tau_vb, shuffled_ind)
+
 
         mat_v_mu <- sweep(mat_v_mu, 1, mu_c0_vb, `-`)
 
@@ -124,8 +130,8 @@ locus_probit_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
 
             mat_z_mu[, k] <- mat_z_mu[, k] - Z[, i] * mu_alpha_vb[i, k]
 
-            mu_alpha_vb[i, k] <- sig2_alpha_vb[i] *
-              crossprod(Z[, i], Wy[,k]  - mat_z_mu[, k] - mat_x_m1[, k])
+            mu_alpha_vb[i, k] <- sig2_alpha_vb[i, k] * tau_vb[k] *
+              crossprod(Z[, i], Y[,k]  - mat_z_mu[, k] - mat_x_m1[, k])
 
             mat_z_mu[, k] <- mat_z_mu[, k] + Z[, i] * mu_alpha_vb[i, k]
           }
@@ -135,13 +141,13 @@ locus_probit_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
 
             mat_x_m1[, k] <- mat_x_m1[, k] - X[, j] * m1_beta[j, k]
 
-            mu_beta_vb[j, k] <- sig2_beta_vb * crossprod(Wy[, k] - mat_x_m1[, k] - mat_z_mu[, k], X[, j])
+            mu_beta_vb[j, k] <- sig2_beta_vb[k] * tau_vb[k] * crossprod(Y[, k] - mat_x_m1[, k] - mat_z_mu[, k], X[, j])
 
             gam_vb[j, k] <- exp(-log_one_plus_exp_(pnorm(mat_v_mu[j, k], lower.tail = FALSE, log.p = TRUE) -
                                                      pnorm(mat_v_mu[j, k], log.p = TRUE) -
-                                                     log_sig2_inv_vb / 2 -
-                                                     mu_beta_vb[j, k] ^ 2 / (2 * sig2_beta_vb) -
-                                                     log(sig2_beta_vb) / 2))
+                                                     log_tau_vb[k] / 2 - log_sig2_inv_vb / 2 -
+                                                     mu_beta_vb[j, k] ^ 2 / (2 * sig2_beta_vb[k]) -
+                                                     log(sig2_beta_vb[k]) / 2))
 
             m1_beta[j, k] <- gam_vb[j, k] * mu_beta_vb[j, k]
 
@@ -167,26 +173,27 @@ locus_probit_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
 
         }
 
-      } else {
+      }  else {
 
         stop ("Batch scheme not defined. Exit.")
 
       }
 
-      m2_alpha <- update_m2_alpha_(mu_alpha_vb, sig2_alpha_vb, sweep = TRUE)
-      m2_beta <- update_m2_beta_(gam_vb, mu_beta_vb, sig2_beta_vb)
+      m2_alpha <- update_m2_alpha_(mu_alpha_vb, sig2_alpha_vb)
+      m2_beta <- update_m2_beta_(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = TRUE)
 
-      Wy <- update_W_probit_(Y, mat_z_mu, mat_x_m1)
 
-      lb_new <- elbo_probit_info_(Y, X, V, Z, gam_vb, lambda, m0, mu_alpha_vb,
-                                  mu_c0_vb, mu_c_vb, nu, phi, phi_vb,
-                                  sig2_alpha_vb, sig2_beta_vb, sig2_c0_vb,
-                                  sig2_c_vb, sig2_inv_vb, s02, s2, xi,
-                                  zeta2_inv_vb, m2_alpha, m1_beta, m2_beta,
-                                  mat_x_m1, mat_v_mu, mat_z_mu)
+      lb_new <- elbo_z_info_(Y, Z, V, eta, gam_vb, kappa, lambda, m0,
+                             mu_alpha_vb, mu_c0_vb, mu_c_vb, nu, phi, phi_vb,
+                             sig2_alpha_vb, sig2_beta_vb, sig2_c0_vb, sig2_c_vb,
+                             sig2_inv_vb, s02, s2, tau_vb,  xi, zeta2_inv_vb,
+                             m2_alpha, m1_beta, m2_beta, mat_x_m1, mat_v_mu,
+                             mat_z_mu)
+
 
       if (verbose & (it == 1 | it %% 5 == 0))
         cat(paste("ELBO = ", format(lb_new), "\n\n", sep = ""))
+
 
       if (debug && lb_new < lb_old)
         stop("ELBO not increasing monotonically. Exit. ")
@@ -194,6 +201,8 @@ locus_probit_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
       converged <- (abs(lb_new - lb_old) < tol)
 
     }
+
+
 
     if (verbose) {
       if (converged) {
@@ -209,10 +218,11 @@ locus_probit_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
 
     if (full_output) { # for internal use only
 
-      create_named_list_(gam_vb, lambda, m0, mu_alpha_vb, mu_c0_vb, mu_c_vb, nu,
-                         phi, phi_vb, sig2_alpha_vb, sig2_beta_vb, sig2_c0_vb,
-                         sig2_c_vb, sig2_inv_vb, s02, s2, xi, zeta2_inv_vb,
-                         m2_alpha, m1_beta, m2_beta, mat_x_m1, mat_v_mu, mat_z_mu)
+      create_named_list_(eta, gam_vb, kappa, lambda, m0, mu_alpha_vb, mu_c0_vb,
+                         mu_c_vb, nu, phi, phi_vb, sig2_alpha_vb, sig2_beta_vb,
+                         sig2_c0_vb, sig2_c_vb, sig2_inv_vb, s02, s2, tau_vb,
+                         xi, zeta2_inv_vb, m2_alpha, m1_beta, m2_beta, mat_x_m1,
+                         mat_v_mu, mat_z_mu)
 
     } else {
 
@@ -243,40 +253,56 @@ locus_probit_info_core_ <- function(Y, X, Z, V, list_hyper, gam_vb, mu_alpha_vb,
 }
 
 
-# Internal function which implements the marginal log-likelihood variational
-# lower bound (ELBO) corresponding to the `locus_probit_info_core` algorithm.
-#
-elbo_probit_info_ <- function(Y, X, V, Z, gam_vb, lambda, m0, mu_alpha_vb,
-                              mu_c0_vb, mu_c_vb, nu, phi, phi_vb, sig2_alpha_vb,
-                              sig2_beta_vb, sig2_c0_vb, sig2_c_vb, sig2_inv_vb,
-                              s02, s2, xi, zeta2_inv_vb, m2_alpha, m1_beta,
-                              m2_beta, mat_x_m1, mat_v_mu, mat_z_mu) {
 
-  xi_vb <- update_xi_bin_vb_(xi, m2_alpha)
+# Internal function which implements the marginal log-likelihood variational
+# lower bound (ELBO) corresponding to the `atlasqtl_z_info_core` algorithm.
+#
+elbo_z_info_ <- function(Y, Z, V, eta, gam_vb, kappa, lambda, m0,
+                         mu_alpha_vb, mu_c0_vb, mu_c_vb, nu, phi, phi_vb,
+                         sig2_alpha_vb, sig2_beta_vb, sig2_c0_vb, sig2_c_vb,
+                         sig2_inv_vb, s02, s2, tau_vb,  xi, zeta2_inv_vb,
+                         m2_alpha, m1_beta, m2_beta, mat_x_m1, mat_v_mu,
+                         mat_z_mu) {
+
+  n <- nrow(Y)
+  q <- ncol(Z)
+
+  xi_vb <- update_xi_z_vb_(xi, tau_vb, m2_alpha)
+
+  eta_vb <- update_eta_z_vb_(n, q, eta, gam_vb)
+
+  kappa_vb <- update_kappa_z_vb_(Y, Z, kappa, mu_alpha_vb, m1_beta, m2_alpha,
+                                 m2_beta, mat_x_m1, mat_z_mu, sig2_inv_vb,
+                                 zeta2_inv_vb)
 
   lambda_vb <- update_lambda_vb_(lambda, sum(gam_vb))
-  nu_vb <- update_nu_bin_vb_(nu, m2_beta)
+  nu_vb <- update_nu_vb_(nu, m2_beta, tau_vb)
 
+  log_tau_vb <- update_log_tau_vb_(eta_vb, kappa_vb)
   log_zeta2_inv_vb <- update_log_zeta2_inv_vb_(phi_vb, xi_vb)
   log_sig2_inv_vb <- update_log_sig2_inv_vb_(lambda_vb, nu_vb)
 
+  elbo_A <- e_y_(n, kappa, kappa_vb, log_tau_vb, m2_beta, sig2_inv_vb, tau_vb,
+                 m2_alpha, zeta2_inv_vb)
 
-  elbo_A <- e_y_probit_(X, Y, Z, m1_beta, m2_beta, mat_x_m1, mat_z_mu, sig2_alpha_vb)
-
-  elbo_B <- e_beta_gamma_info_bin_(V, gam_vb, log_sig2_inv_vb, mat_v_mu, m2_beta,
-                                   sig2_beta_vb, sig2_c0_vb, sig2_c_vb, sig2_inv_vb)
+  elbo_B <- e_beta_gamma_info_(V, gam_vb, log_sig2_inv_vb, log_tau_vb, mat_v_mu,
+                               m2_beta, sig2_beta_vb, sig2_c0_vb, sig2_c_vb,
+                               sig2_inv_vb, tau_vb)
 
   elbo_C <- e_c0_(m0, mu_c0_vb, s02, sig2_c0_vb)
 
   elbo_D <- e_c_(mu_c_vb, s2, sig2_c_vb)
 
-  elbo_E <- e_sig2_inv_(lambda, lambda_vb, log_sig2_inv_vb, nu, nu_vb, sig2_inv_vb)
+  elbo_E <- e_tau_(eta, eta_vb, kappa, kappa_vb, log_tau_vb, tau_vb)
 
-  elbo_F <- e_alpha_probit_(m2_alpha, log_zeta2_inv_vb, sig2_alpha_vb, zeta2_inv_vb)
+  elbo_F <- e_sig2_inv_(lambda, lambda_vb, log_sig2_inv_vb, nu, nu_vb, sig2_inv_vb)
 
-  elbo_G <- e_zeta2_inv_(log_zeta2_inv_vb, phi, phi_vb, xi, xi_vb, zeta2_inv_vb)
+  elbo_G <- e_alpha_(m2_alpha, log_tau_vb, log_zeta2_inv_vb, sig2_alpha_vb, tau_vb,
+                zeta2_inv_vb)
 
-  elbo_A + elbo_B + elbo_C + elbo_D + elbo_E + elbo_F + elbo_G
+  elbo_H <- e_zeta2_inv_(log_zeta2_inv_vb, phi, phi_vb, xi, xi_vb, zeta2_inv_vb)
+
+  elbo_A + elbo_B + elbo_C + elbo_D + elbo_E + elbo_F + elbo_G + elbo_H
 
 }
 

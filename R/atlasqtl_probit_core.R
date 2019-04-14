@@ -1,11 +1,11 @@
-# This file is part of the `locus` R package:
-#     https://github.com/hruffieux/locus
+# This file is part of the `atlasqtl` R package:
+#     https://github.com/hruffieux/atlasqtl
 #
 # Internal core function to call the variational algorithm for probit link, optional
 # fixed covariates and no external annotation variables.
-# See help of `locus` function for details.
+# See help of `atlasqtl` function for details.
 #
-locus_probit_core_ <- function(Y, X, Z, list_hyper, gam_vb, mu_alpha_vb,
+atlasqtl_probit_core_ <- function(Y, X, Z, list_hyper, gam_vb, mu_alpha_vb,
                                mu_beta_vb, sig2_alpha_vb, sig2_beta_vb, tol,
                                maxit, verbose, batch = "y", full_output = FALSE,
                                debug = FALSE) {
@@ -249,7 +249,7 @@ locus_probit_core_ <- function(Y, X, Z, list_hyper, gam_vb, mu_alpha_vb,
 
 
 # Internal function which implements the marginal log-likelihood variational
-# lower bound (ELBO) corresponding to the `locus_probit_core` algorithm.
+# lower bound (ELBO) corresponding to the `atlasqtl_probit_core` algorithm.
 #
 elbo_probit_ <- function(Y, X, Z, a, a_vb, b, b_vb, gam_vb, lambda, nu, phi,
                          phi_vb, sig2_alpha_vb, sig2_beta_vb, sig2_inv_vb, xi,

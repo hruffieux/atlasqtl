@@ -1,7 +1,7 @@
 /*
 *
-* This file is part of the `locus` R package:
-*     https://github.com/hruffieux/locus
+* This file is part of the `atlasqtl` R package:
+*     https://github.com/hruffieux/atlasqtl
 *
 * Functions for computationally expensive multiconcave block coordinate ascent updates.
 *
@@ -14,7 +14,7 @@
 
 #include "utils.h"
 
-// for locus_core function
+// for atlasqtl_core function
 // [[Rcpp::export]]
 void coreBatch(const MapMat X,
                    const MapMat Y,
@@ -43,7 +43,7 @@ void coreBatch(const MapMat X,
 
 
 
-// for locus_z_core and locus_mix_core function
+// for atlasqtl_z_core and atlasqtl_mix_core function
 // [[Rcpp::export]]
 void coreZBatch(const MapMat X,
                     const MapMat Y,
@@ -73,7 +73,7 @@ void coreZBatch(const MapMat X,
 }
 
 
-// for locus_probit_core function
+// for atlasqtl_probit_core function
 // [[Rcpp::export]]
 void coreProbitBatch(const MapMat X,
                      const MapMat W,

@@ -1,13 +1,13 @@
-# This file is part of the `locus` R package:
-#     https://github.com/hruffieux/locus
+# This file is part of the `atlasqtl` R package:
+#     https://github.com/hruffieux/atlasqtl
 #
 
 #' Gather model hyperparameters provided by the user.
 #'
 #' This function must be used to provide hyperparameter values for the model
-#' used in \code{\link{locus}}.
+#' used in \code{\link{atlasqtl}}.
 #'
-#' The \code{\link{locus}} function can also be used with default hyperparameter
+#' The \code{\link{atlasqtl}} function can also be used with default hyperparameter
 #' choices (without using \code{\link{set_hyper}}) by setting its argument
 #' \code{list_hyper} to \code{NULL}.
 #'
@@ -73,7 +73,7 @@
 #' @param t02 Variance hyperparameter when \code{dual} is non-\code{NULL}
 #'   non-\code{NULL}. Default is \code{NULL}.
 #' @param G Number of candidate predictor groups when using the group selection
-#'   model from the \code{\link{locus}} function. Default is \code{NULL},
+#'   model from the \code{\link{atlasqtl}} function. Default is \code{NULL},
 #'   for no group selection.
 #' @param dual If \code{TRUE}, dual propensity control (by candidate predictors
 #'   and by responses). Functionality under development and with limited
@@ -83,7 +83,7 @@
 #'   for no structured selection.
 #'
 #' @return An object of class "\code{hyper}" preparing user hyperparameter in a
-#'   form that can be passed to the \code{\link{locus}} function.
+#'   form that can be passed to the \code{\link{atlasqtl}} function.
 #'
 #' @examples
 #' seed <- 123; set.seed(seed)
@@ -155,7 +155,7 @@
 #' # advised to set p0_av as a slightly overestimated guess of p0, or perform
 #' # cross-validation using function `set_cv'.
 #'
-#' vb_g <- locus(Y = Y, X = X, p0_av = p0, link = "identity",
+#' vb_g <- atlasqtl(Y = Y, X = X, p0_av = p0, link = "identity",
 #'               list_hyper = list_hyper_g, user_seed = seed)
 #'
 #' # With covariates
@@ -164,7 +164,7 @@
 #'                             eta = 1, kappa = apply(Y, 2, var),
 #'                             link = "identity", q = q, phi = 1, xi = 1)
 #'
-#' vb_g_z <- locus(Y = Y, X = X, p0_av = p0, Z = Z, link = "identity",
+#' vb_g_z <- atlasqtl(Y = Y, X = X, p0_av = p0, Z = Z, link = "identity",
 #'                 list_hyper = list_hyper_g_z, user_seed = seed)
 #'
 #'
@@ -175,7 +175,7 @@
 #'                             link = "identity", r = r, m0 = 0, s02 = 0.1,
 #'                             s2 = 0.001)
 #'
-#' vb_g_v <- locus(Y = Y, X = X, p0_av = p0,  V = V, link = "identity",
+#' vb_g_v <- atlasqtl(Y = Y, X = X, p0_av = p0,  V = V, link = "identity",
 #'                 list_hyper = list_hyper_g_v, user_seed = seed)
 #'
 #' ## Binary responses
@@ -184,14 +184,14 @@
 #'                               eta = NULL, kappa = NULL, link = "logit",
 #'                               q = q, phi = 1, xi = 1)
 #'
-#' vb_logit <- locus(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "logit",
+#' vb_logit <- atlasqtl(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "logit",
 #'                   list_hyper = list_hyper_logit, user_seed = seed)
 #'
 #' list_hyper_probit <- set_hyper(d, p, lambda = 1, nu = 1, a = 1, b = 4*d-1,
 #'                                eta = NULL, kappa = NULL, link = "probit",
 #'                                q = q, phi = 1, xi = 1)
 #'
-#' vb_probit <- locus(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "probit",
+#' vb_probit <- atlasqtl(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "probit",
 #'                    list_hyper = list_hyper_probit, user_seed = seed)
 #'
 #'
@@ -204,11 +204,11 @@
 #'                             eta = 1, kappa = apply(Y, 2, var), link = "mix",
 #'                             ind_bin = ind_bin, q = q, phi = 1, xi = 1)
 #'
-#' vb_mix <- locus(Y = Y_mix, X = X, p0_av = p0, Z = Z, link = "mix",
+#' vb_mix <- atlasqtl(Y = Y_mix, X = X, p0_av = p0, Z = Z, link = "mix",
 #'                 ind_bin = ind_bin, list_hyper = list_hyper_mix,
 #'                 user_seed = seed)
 #'
-#' @seealso  \code{\link{set_init}}, \code{\link{locus}}
+#' @seealso  \code{\link{set_init}}, \code{\link{atlasqtl}}
 #'
 #' @export
 #'
@@ -388,7 +388,7 @@ set_hyper <- function(d, p, lambda, nu, a, b, eta, kappa, link = "identity",
 # Internal function setting default model hyperparameters when not provided by
 # the user.
 #
-auto_set_hyper_ <- function(Y, p, p_star, q, r, dual, link, ind_bin, struct, vec_fac_gr) {
+auto_set_hyper_ <- function(Y, p, p_star, q, r, dual, link, ind_bin, struct, vec_fac_gr, s02) {
 
   d <- ncol(Y)
 
@@ -446,21 +446,11 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, dual, link, ind_bin, struct, vec
 
   if (dual | !is.null(r) | struct) {
 
-    # hyperparameters external info model
-    if (!is.null(r)){
-      if (dual)
-        s2 <- 1e-3 # prior variance for external info coefficients (effects likely to be concentrated around zero)
-      else
-        s2 <- 1e-2
-    } else {
-      s2 <- NULL
-    }
-
     if (dual) {
 
       E_p_t <- p_star[1]
       V_p_t <- p_star[2]
-
+      
       dn <- 1e-6
       up <- 1e5
 
@@ -483,28 +473,28 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, dual, link, ind_bin, struct, vec
 
       # Look at : gam_st
       #
-      s02 <- 1e-4 # 1 / d # take a small variance for the modulation to avoid `all-response activation' artefact.
-                   # we noticed *empirically* that the artefact tends to strenghten with the number of responses
-                   # probably because it gets triggered by pleiotropic effects.
-                   # side note: if lots of relevant predictors affect multiple responses,
-                   # better to have it a bit larger (even if some artefact appears)
-                   # because it make sense to borrow information across responses then,
-                   # so theta_s should be allowed to vary more.
+      s02 <- s02  # take a small variance for the modulation to avoid `all-response activation' artefact.
+                  # if lots of relevant predictors affect multiple responses,
+                  # better to have it a bit larger (even if some artefact appears)
 
       # adjust the mean of theta_s so that E_p_t = p * E(gam | theta = 0) = p * E(gam)
       m0 <- get_mu(E_p_t, s02 + t02, p) - n0
 
-      m0 <- - m0  # n0 = - n0_star
-      n0 <- - n0  # m0 = - m0_star
+      m0 <- - m0  # m0 = - m0_star
+      n0 <- - n0  # n0 = - n0_star
 
-      m0 <- rep(m0, p)
+      if (is.null(G)) {
+        m0 <- rep(m0, p)
+      } else {
+        m0 <- rep(m0, G)
+      }
       n0 <- rep(n0, d)
 
       check_positive_(s02)
       check_positive_(t02)
 
       if (!is.null(r)) {
-        a <- b <- rep(1 / 2, r) # Jeffery prior for the annotations # /! not the same a and b as above!
+        a <- b <- rep(1 / 2, r) # Jeffrey prior for the annotations # /! not the same a and b as above!
       } else {
         a <- b <- NULL
       }
@@ -524,7 +514,12 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, dual, link, ind_bin, struct, vec
       check_positive_(s02)
     }
 
-
+    # hyperparameters external info model
+    if (!is.null(r)){
+      s2 <- 1e-2
+    } else {
+      s2 <- NULL
+    }
 
   } else {
 
@@ -565,9 +560,9 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, dual, link, ind_bin, struct, vec
 #' Gather initial variational parameters provided by the user.
 #'
 #' This function must be used to provide initial values for the variational
-#' parameters used in \code{\link{locus}}.
+#' parameters used in \code{\link{atlasqtl}}.
 #'
-#' The \code{\link{locus}} function can also be used with default initial
+#' The \code{\link{atlasqtl}} function can also be used with default initial
 #' parameter choices (without using \code{\link{set_init}}) by setting
 #' its argument \code{list_init} to \code{NULL}.
 #'
@@ -610,7 +605,7 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, dual, link, ind_bin, struct, vec
 #'   covariate-response pairs. Vector of length q for \code{link = "probit"}.
 #'   Default is \code{NULL}, for \code{Z} \code{NULL}.
 #' @param G Number of candidate predictor groups when using the group selection
-#'   model from the \code{\link{locus}} function. Default is \code{NULL},
+#'   model from the \code{\link{atlasqtl}} function. Default is \code{NULL},
 #'   for no group selection.
 #' @param sig2_inv_vb Initial parameters necessary when \code{G} is
 #'   non-\code{NULL}. Its inverse square root corresponds to the typical size of
@@ -618,7 +613,7 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, dual, link, ind_bin, struct, vec
 #'
 #' @return An object of class "\code{init}" preparing user initial values for
 #'   the variational parameters in a form that can be passed to the
-#'   \code{\link{locus}} function.
+#'   \code{\link{atlasqtl}} function.
 #'
 #' @examples
 #' seed <- 123; set.seed(seed)
@@ -690,7 +685,7 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, dual, link, ind_bin, struct, vec
 #' # advised to set p0_av as a slightly overestimated guess of p0, or perform
 #' # cross-validation using function `set_cv'.
 #'
-#' vb_g <- locus(Y = Y, X = X, p0_av = p0, link = "identity",
+#' vb_g <- atlasqtl(Y = Y, X = X, p0_av = p0, link = "identity",
 #'               list_init = list_init_g)
 #'
 #' # With covariates
@@ -703,7 +698,7 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, dual, link, ind_bin, struct, vec
 #'                           mu_alpha_vb = mu_alpha_vb,
 #'                           sig2_alpha_vb = sig2_alpha_vb)
 #'
-#' vb_g_z <- locus(Y = Y, X = X, p0_av = p0, Z = Z, link = "identity",
+#' vb_g_z <- atlasqtl(Y = Y, X = X, p0_av = p0, Z = Z, link = "identity",
 #'                 list_init = list_init_g_z)
 #'
 #' ## Binary responses
@@ -717,7 +712,7 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, dual, link, ind_bin, struct, vec
 #'                             mu_alpha_vb = mu_alpha_vb,
 #'                             sig2_alpha_vb = sig2_alpha_vb)
 #'
-#' vb_logit <- locus(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "logit",
+#' vb_logit <- atlasqtl(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "logit",
 #'                   list_init = list_init_logit)
 #'
 #' sig2_alpha_vb_probit <- sig2_alpha_vb[, 1]
@@ -727,7 +722,7 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, dual, link, ind_bin, struct, vec
 #'                              mu_alpha_vb = mu_alpha_vb,
 #'                              sig2_alpha_vb = sig2_alpha_vb_probit)
 #'
-#' vb_probit <- locus(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "probit",
+#' vb_probit <- atlasqtl(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "probit",
 #'                    list_init = list_init_probit)
 #'
 #' ## Mix of continuous and binary responses
@@ -750,10 +745,10 @@ auto_set_hyper_ <- function(Y, p, p_star, q, r, dual, link, ind_bin, struct, vec
 #'                           mu_alpha_vb = mu_alpha_vb_mix,
 #'                           sig2_alpha_vb = sig2_alpha_vb_mix)
 #'
-#' vb_mix <- locus(Y = Y_mix, X = X, p0_av = p0, Z = Z, link = "mix",
+#' vb_mix <- atlasqtl(Y = Y_mix, X = X, p0_av = p0, Z = Z, link = "mix",
 #'                 ind_bin = ind_bin, list_init = list_init_mix)
 #'
-#' @seealso  \code{\link{set_hyper}}, \code{\link{locus}}
+#' @seealso  \code{\link{set_hyper}}, \code{\link{atlasqtl}}
 #'
 #' @export
 #'
@@ -945,9 +940,13 @@ auto_set_init_ <- function(Y, G, p, p_star, q, user_seed, dual, link, ind_bin) {
     check_positive_(s02)
     check_positive_(t02)
 
-    gam_vb <- matrix(pnorm(rnorm(p * d, mean = m0 + n0, sd = s02 + t02)), # Phi(theta + chi), and not 1 - Phi(theta + chi)
-                     nrow = p)                                            # as reparametrisation theta* = - theta, chi* = - chi
-
+    if (is.null(G)) {
+      gam_vb <- matrix(pnorm(rnorm(p * d, mean = m0 + n0, sd = s02 + t02)), # Phi(theta + chi), and not 1 - Phi(theta + chi)
+                       nrow = p)                                            # as reparametrisation theta* = - theta, chi* = - chi
+    } else {
+      gam_vb <- matrix(pnorm(rnorm(G * d, mean = m0 + n0, sd = s02 + t02)), 
+                       nrow = G)     
+    }
   } else {
 
     shape1_gam <- 1
