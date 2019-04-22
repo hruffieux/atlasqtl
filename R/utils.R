@@ -154,13 +154,6 @@ log_one_plus_exp_ <- function(x) { # computes log(1 + exp(x)) avoiding
   log(exp(x - m) + exp(- m)) + m
 }
 
-
-log_sigmoid_ <- function(chi) {
-
-  - log(1 + exp(- chi)) # chi is always positive so no overflow possible (underflow neither, thanks to the "+1")
-
-}
-
 log_det <- function(list_mat) {
 
   if (is.list(list_mat)) {
@@ -352,8 +345,6 @@ rm_collinear_ <- function(mat, verbose) {
 
   create_named_list_(mat, bool_coll, rmvd_coll)
 }
-
-make_chunks_ <- function(x, n_g) split(x, factor(sort(rank(x) %% n_g)))
 
 
 Q_approx <- function(x, eps1 = 1e-30, eps2 = 1e-7) {
