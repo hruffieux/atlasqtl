@@ -6,59 +6,36 @@ set.seed(123)
 ## simulate basic dataset ##
 ############################
 
-n <- 100; p <- 75; d <- 20; q <- 3; p0 <- 10
-
-# covariates (not subject to selection)
-Z <- matrix(rnorm(n * q), nrow = n)
-
-alpha <-  matrix(rnorm(q * d), nrow = q)
+n <- 100; p <- 75; q <- 20; p0 <- 10
 
 # candidate predictors (subject to selection)
 X_act <- matrix(rbinom(n * p0, size = 2, p = 0.2), nrow = n)
 X_inact <- matrix(rbinom(n * (p - p0), size = 2, p = 0.2), nrow = n)
 X <- cbind(X_act, X_inact)[, sample(p)]
 
-beta <-  matrix(rnorm(p0 * d), nrow = p0)
+beta <-  matrix(rnorm(p0 * q), nrow = p0)
 
 # Gaussian outcomes
-Y <- matrix(rnorm(n * d, mean = Z %*% alpha + X_act %*% beta, sd = 1), nrow = n)
-
-# Binary outcomes
-Y_bin <- ifelse(Y > 0, 1, 0)
+Y <- matrix(rnorm(n * q, mean = X_act %*% beta, sd = 1), nrow = n)
 
 # remove constant variables (needed for checking dimension consistency)
-X <- scale(X); Z <- scale(Z)
+X <- scale(X)
 rm_cst <- function(mat_sc) mat_sc[, !is.nan(colSums(mat_sc))]
 rm_coll <- function(mat_sc) mat_sc[, !duplicated(mat_sc, MARGIN = 2)]
 
-X <- rm_cst(X); Z <- rm_cst(Z)
-X <- rm_coll(X); Z <- rm_coll(Z)
+X <- rm_cst(X)
+X <- rm_coll(X)
 
-p <- ncol(X); q <- ncol(Z)
-
-#######################
-## atlasqtl settings ##
-#######################
-
-# hyperparameter (prior number of active predictors)
-p0_av <- p0
+p <- ncol(X)
 
 
 ########################
 ## atlasqtl inference ##
 ########################
 
+p0_av <- c(5, 25)
+
 # Continuous outcomes, no covariates
 #
-vb <- atlasqtl(Y = Y, X = X, p0_av = p0_av, link = "identity")
-
-# Continuous outcomes, with covariates
-#
-vb_z <- atlasqtl(Y = Y, X = X, p0_av = p0_av, Z = Z, link = "identity")
-
-# Binary outcomes, no covariates
-vb_logit <- atlasqtl(Y = Y_bin, X = X, p0_av = p0_av, link = "logit")
-
-# Binary outcomes, with covariates
-vb_logit_z <- atlasqtl(Y = Y_bin, X = X, p0_av = p0_av, Z = Z, link = "logit")
+vb <- atlasqtl(Y = Y, X = X, p0_av = p0_av)
 

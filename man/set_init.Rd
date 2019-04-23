@@ -4,67 +4,27 @@
 \alias{set_init}
 \title{Gather initial variational parameters provided by the user.}
 \usage{
-set_init(d, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb, link = "identity",
-  ind_bin = NULL, q = NULL, mu_alpha_vb = NULL, sig2_alpha_vb = NULL,
-  sig2_inv_vb = NULL, G = NULL)
+set_init(q, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb)
 }
 \arguments{
-\item{d}{Number of responses.}
+\item{q}{Number of responses.}
 
 \item{p}{Number of candidate predictors.}
 
-\item{gam_vb}{Matrix of size p x d with initial values for the variational
+\item{gam_vb}{Matrix of size p x q with initial values for the variational
 parameter yielding posterior probabilities of inclusion.}
 
-\item{mu_beta_vb}{Matrix of size p x d with initial values for the
+\item{mu_beta_vb}{Matrix of size p x q with initial values for the
 variational parameter yielding regression coefficient estimates for
 predictor-response pairs included in the model.}
 
-\item{sig2_beta_vb}{Vector of length d, for \code{link = "identity"} and
-for \code{link = "mix"}, of length 1 for \code{link = "probit"}, and a
-matrix of size p x d, for \code{link = "logit"}, with initial values for
-the variational parameter yielding estimates of effect variances for
-predictor-response pairs included in the model. For
-\code{link = "identity"} and \code{link = "mix"}, these values are the same
+\item{sig2_beta_vb}{Vector of length q. For these values are the same
 for all the predictors (as a result of the predictor variables being
-standardized before the variational algorithm). For \code{link = "probit"},
-they are the same for all the predictors and responses.}
+standardized before running the variational algorithm).}
 
-\item{tau_vb}{Vector of length d, for \code{link = "identity"}, and of
-length d_cont = d - length(ind_bin) (number of continuous responses), for
-\code{link = "mix"}, with initial values for the variational parameter
-yielding estimates for the continuous response residual precisions. Must be
-\code{NULL} for \code{link = "logit"} and \code{link = "probit"}.}
-
-\item{link}{Response link. Must be "\code{identity}" for linear regression,
-"\code{logit}" for logistic regression, "\code{probit}" for probit
-regression, or "\code{mix}" for a mix of identity and probit link functions
-(in this case, the indices of the binary responses must be gathered in
-argument \code{ind_bin}, see below).}
-
-\item{ind_bin}{If \code{link = "mix"}, vector of indices corresponding to the
-binary variables in \code{Y}. Must be \code{NULL} if \code{link != "mix"}.}
-
-\item{q}{Number of covariates. Default is \code{NULL}, for \code{Z}
-\code{NULL}.}
-
-\item{mu_alpha_vb}{Matrix of size q x d with initial values for the
-variational parameter yielding regression coefficient estimates for
-covariate-response pairs. Default is \code{NULL}, for \code{Z} \code{NULL}.}
-
-\item{sig2_alpha_vb}{Matrix of size q x d for \code{link = "identity"},
-for \code{link = "logit"} and for \code{link = "mix"} with initial values
-for the variational parameter yielding estimates of effect variances for
-covariate-response pairs. Vector of length q for \code{link = "probit"}.
-Default is \code{NULL}, for \code{Z} \code{NULL}.}
-
-\item{sig2_inv_vb}{Initial parameters necessary when \code{G} is
-non-\code{NULL}. Its inverse square root corresponds to the typical size of
-non-zero effects. Must be \code{NULL} if \code{G} is \code{NULL}.}
-
-\item{G}{Number of candidate predictor groups when using the group selection
-model from the \code{\link{atlasqtl}} function. Default is \code{NULL},
-for no group selection.}
+\item{tau_vb}{Vector of length q with initial values for the variational 
+parameter yielding estimates for the continuous response residual 
+precisions.}
 }
 \value{
 An object of class "\code{init}" preparing user initial values for
@@ -89,7 +49,7 @@ seed <- 123; set.seed(seed)
 
 ## Examples using small problem sizes:
 ##
-n <- 200; p <- 200; p0 <- 20; d <- 20; d0 <- 15; q <- 2
+n <- 200; p <- 200; p0 <- 20; q <- 20; q0 <- 15
 
 ## Candidate predictors (subject to selection)
 ##
@@ -105,26 +65,17 @@ X <- cbind(X_act, X_inact)[, shuff_x_ind]
 
 bool_x_act <- shuff_x_ind <= p0
 
-pat_act <- beta <- matrix(0, nrow = p0, ncol = d0)
-pat_act[sample(p0*d0, floor(p0*d0/5))] <- 1
+pat_act <- beta <- matrix(0, nrow = p0, ncol = q0)
+pat_act[sample(p0*q0, floor(p0*q0/5))] <- 1
 beta[as.logical(pat_act)] <-  rnorm(sum(pat_act))
-
-## Covariates (not subject to selection)
-##
-Z <- matrix(rnorm(n * q), nrow = n)
-
-alpha <-  matrix(rnorm(q * d), nrow = q)
 
 ## Gaussian responses
 ##
-Y_act <- matrix(rnorm(n * d0, mean = X_act \%*\% beta, sd = 0.5), nrow = n)
-Y_inact <- matrix(rnorm(n * (d - d0), sd = 0.5), nrow = n)
-shuff_y_ind <- sample(d)
-Y <- cbind(Y_act, Y_inact)[, shuff_y_ind] + Z \%*\% alpha
+Y_act <- matrix(rnorm(n * q0, mean = X_act \%*\% beta, sd = 0.5), nrow = n)
+Y_inact <- matrix(rnorm(n * (q - q0), sd = 0.5), nrow = n)
+shuff_y_ind <- sample(q)
+Y <- cbind(Y_act, Y_inact)[, shuff_y_ind] 
 
-## Binary responses
-##
-Y_bin <- ifelse(Y > 0, 1, 0)
 
 ########################
 ## Infer associations ##
@@ -133,85 +84,16 @@ Y_bin <- ifelse(Y > 0, 1, 0)
 ## Continuous responses
 ##
 
-# No covariate
-#
 # gam_vb chosen so that the prior mean number of responses associated with
 # each candidate predictor is 1/4.
-gam_vb <- matrix(rbeta(p * d, shape1 = 1, shape2 = 4*d-1), nrow = p)
-mu_beta_vb <- matrix(rnorm(p * d), nrow = p)
+gam_vb <- matrix(rbeta(p * q, shape1 = 1, shape2 = 4*q-1), nrow = p)
+mu_beta_vb <- matrix(rnorm(p * q), nrow = p)
 tau_vb <- 1 / apply(Y, 2, var)
-sig2_beta_vb <- 1 / rgamma(d, shape = 2, rate = 1 / tau_vb)
+sig2_beta_vb <- 1 / rgamma(q, shape = 2, rate = 1 / tau_vb)
 
-list_init_g <- set_init(d, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb,
-                        link = "identity")
+list_init <- set_init(q, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb)
 
-# We take p0_av = p0 (known here); this choice may result in variable
-# selections that are (too) conservative in some cases. In practice, it is
-# advised to set p0_av as a slightly overestimated guess of p0, or perform
-# cross-validation using function `set_cv'.
-
-vb_g <- atlasqtl(Y = Y, X = X, p0_av = p0, link = "identity",
-              list_init = list_init_g)
-
-# With covariates
-#
-mu_alpha_vb <- matrix(rnorm(q * d), nrow = q)
-sig2_alpha_vb <- 1 / matrix(rgamma(q * d, shape = 2, rate = 1), nrow = q)
-
-list_init_g_z <- set_init(d, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb,
-                          link = "identity", q = q,
-                          mu_alpha_vb = mu_alpha_vb,
-                          sig2_alpha_vb = sig2_alpha_vb)
-
-vb_g_z <- atlasqtl(Y = Y, X = X, p0_av = p0, Z = Z, link = "identity",
-                list_init = list_init_g_z)
-
-## Binary responses
-##
-# gam_vb chosen so that the prior mean number of responses associated with
-# each candidate predictor is 1/4.
-sig2_beta_vb_logit <- 1 / t(replicate(p, rgamma(d, shape = 2, rate = 1)))
-
-list_init_logit <- set_init(d, p, gam_vb, mu_beta_vb, sig2_beta_vb_logit,
-                            tau_vb = NULL, link = "logit", q = q,
-                            mu_alpha_vb = mu_alpha_vb,
-                            sig2_alpha_vb = sig2_alpha_vb)
-
-vb_logit <- atlasqtl(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "logit",
-                  list_init = list_init_logit)
-
-sig2_alpha_vb_probit <- sig2_alpha_vb[, 1]
-sig2_beta_vb_probit <- sig2_beta_vb[1]
-list_init_probit <- set_init(d, p, gam_vb, mu_beta_vb, sig2_beta_vb_probit,
-                             tau_vb = NULL, link = "probit", q = q,
-                             mu_alpha_vb = mu_alpha_vb,
-                             sig2_alpha_vb = sig2_alpha_vb_probit)
-
-vb_probit <- atlasqtl(Y = Y_bin, X = X, p0_av = p0, Z = Z, link = "probit",
-                   list_init = list_init_probit)
-
-## Mix of continuous and binary responses
-##
-Y_mix <- cbind(Y, Y_bin)
-ind_bin <- (d+1):(2*d)
-
-# gam_vb chosen so that the prior mean number of responses associated with
-# each candidate predictor is 1/4.
-gam_vb_mix <- matrix(rbeta(p * 2*d, shape1 = 1, shape2 = 8*d-1), nrow = p)
-mu_beta_vb_mix <- matrix(rnorm(p * 2*d), nrow = p)
-sig2_beta_vb_mix <- 1 / c(rgamma(d, shape = 2, rate = 1 / tau_vb),
-                          rgamma(d, shape = 2, rate = 1))
-mu_alpha_vb_mix <- matrix(rnorm(q * 2*d), nrow = q)
-sig2_alpha_vb_mix <- 1 / matrix(rgamma(q * 2*d, shape = 2, rate = 1), nrow = q)
-
-list_init_mix <- set_init(2*d, p, gam_vb_mix, mu_beta_vb_mix,
-                          sig2_beta_vb_mix, tau_vb, link = "mix",
-                          ind_bin = ind_bin, q = q,
-                          mu_alpha_vb = mu_alpha_vb_mix,
-                          sig2_alpha_vb = sig2_alpha_vb_mix)
-
-vb_mix <- atlasqtl(Y = Y_mix, X = X, p0_av = p0, Z = Z, link = "mix",
-                ind_bin = ind_bin, list_init = list_init_mix)
+vb_g <- atlasqtl(Y = Y, X = X, p0_av = c(5, 25), list_init = list_init)
 
 }
 \seealso{
