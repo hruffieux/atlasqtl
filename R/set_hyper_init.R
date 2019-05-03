@@ -42,7 +42,7 @@
 #'
 #' ## Examples using small problem sizes:
 #' ##
-#' n <- 200; p <- 200; p0 <- 20; q <- 20; q0 <- 15
+#' n <- 200; p <- 200; p_act <- 20; q <- 20; q_act <- 15
 #'
 #' ## Candidate predictors (subject to selection)
 #' ##
@@ -50,22 +50,22 @@
 #' # predictors can be supplied).
 #' # 0 = homozygous, major allele, 1 = heterozygous, 2 = homozygous, minor allele
 #'
-#' X_act <- matrix(rbinom(n * p0, size = 2, p = 0.25), nrow = n)
-#' X_inact <- matrix(rbinom(n * (p - p0), size = 2, p = 0.25), nrow = n)
+#' X_act <- matrix(rbinom(n * p_act, size = 2, p = 0.25), nrow = n)
+#' X_inact <- matrix(rbinom(n * (p - p_act), size = 2, p = 0.25), nrow = n)
 #'
 #' shuff_x_ind <- sample(p)
 #' X <- cbind(X_act, X_inact)[, shuff_x_ind]
 #'
-#' bool_x_act <- shuff_x_ind <= p0
+#' bool_x_act <- shuff_x_ind <= p_act
 #'
-#' pat_act <- beta <- matrix(0, nrow = p0, ncol = q0)
-#' pat_act[sample(p0*q0, floor(p0*q0/5))] <- 1
+#' pat_act <- beta <- matrix(0, nrow = p_act, ncol = q_act)
+#' pat_act[sample(p_act*q_act, floor(p_act*q_act/5))] <- 1
 #' beta[as.logical(pat_act)] <-  rnorm(sum(pat_act))
 #'
 #' ## Gaussian responses
 #' ##
-#' Y_act <- matrix(rnorm(n * q0, mean = X_act %*% beta, sd = 0.5), nrow = n)
-#' Y_inact <- matrix(rnorm(n * (q - q0), sd = 0.5), nrow = n)
+#' Y_act <- matrix(rnorm(n * q_act, mean = X_act %*% beta, sd = 0.5), nrow = n)
+#' Y_inact <- matrix(rnorm(n * (q - q_act), sd = 0.5), nrow = n)
 #' shuff_y_ind <- sample(q)
 #' Y <- cbind(Y_act, Y_inact)[, shuff_y_ind]
 #'
@@ -76,7 +76,7 @@
 #' list_hyper <- set_hyper(q, p, lambda = 1, nu = 1, eta = 1, kappa = 1, 
 #'                         n0 = -2.5, t02 = 0.1)
 #'
-#' vb <- atlasqtl(Y = Y, X = X, p0_av = c(5, 25), list_hyper = list_hyper, 
+#' vb <- atlasqtl(Y = Y, X = X, p0 = c(5, 25), list_hyper = list_hyper, 
 #'                user_seed = seed)
 #'
 #' @seealso  \code{\link{set_init}}, \code{\link{atlasqtl}}
@@ -126,7 +126,7 @@ set_hyper <- function(q, p, lambda, nu, eta, kappa, n0, t02) {
 # Internal function setting default model hyperparameters when not provided by
 # the user.
 #
-auto_set_hyper_ <- function(Y, p, p0_av) {
+auto_set_hyper_ <- function(Y, p, p0) {
 
   q <- ncol(Y)
 
@@ -139,8 +139,8 @@ auto_set_hyper_ <- function(Y, p, p0_av) {
   eta <- rep(eta, q)
   kappa <- rep(1, q)
 
-  E_p_t <- p0_av[1]
-  V_p_t <- p0_av[2]
+  E_p_t <- p0[1]
+  V_p_t <- p0[2]
   
   dn <- 1e-6
   up <- 1e5
@@ -155,8 +155,8 @@ auto_set_hyper_ <- function(Y, p, p0_av) {
     interval = c(dn, up))$root,
     error = function(e) {
       stop(paste0("No hyperparameter values matching the expectation and variance ",
-                  "of the number of active predictors per responses supplied in p0_av.",
-                  "Please change p0_av."))
+                  "of the number of active predictors per responses supplied in p0.",
+                  "Please change p0."))
     })
 
   # n0 sets the level of sparsity.
@@ -212,7 +212,7 @@ auto_set_hyper_ <- function(Y, p, p0_av) {
 #'
 #' ## Examples using small problem sizes:
 #' ##
-#' n <- 200; p <- 200; p0 <- 20; q <- 20; q0 <- 15
+#' n <- 200; p <- 200; p_act <- 20; q <- 20; q_act <- 15
 #'
 #' ## Candidate predictors (subject to selection)
 #' ##
@@ -220,22 +220,22 @@ auto_set_hyper_ <- function(Y, p, p0_av) {
 #' # predictors can be supplied).
 #' # 0 = homozygous, major allele, 1 = heterozygous, 2 = homozygous, minor allele
 #'
-#' X_act <- matrix(rbinom(n * p0, size = 2, p = 0.25), nrow = n)
-#' X_inact <- matrix(rbinom(n * (p - p0), size = 2, p = 0.25), nrow = n)
+#' X_act <- matrix(rbinom(n * p_act, size = 2, p = 0.25), nrow = n)
+#' X_inact <- matrix(rbinom(n * (p - p_act), size = 2, p = 0.25), nrow = n)
 #'
 #' shuff_x_ind <- sample(p)
 #' X <- cbind(X_act, X_inact)[, shuff_x_ind]
 #'
-#' bool_x_act <- shuff_x_ind <= p0
+#' bool_x_act <- shuff_x_ind <= p_act
 #'
-#' pat_act <- beta <- matrix(0, nrow = p0, ncol = q0)
-#' pat_act[sample(p0*q0, floor(p0*q0/5))] <- 1
+#' pat_act <- beta <- matrix(0, nrow = p_act, ncol = q_act)
+#' pat_act[sample(p_act*q_act, floor(p_act*q_act/5))] <- 1
 #' beta[as.logical(pat_act)] <-  rnorm(sum(pat_act))
 #'
 #' ## Gaussian responses
 #' ##
-#' Y_act <- matrix(rnorm(n * q0, mean = X_act %*% beta, sd = 0.5), nrow = n)
-#' Y_inact <- matrix(rnorm(n * (q - q0), sd = 0.5), nrow = n)
+#' Y_act <- matrix(rnorm(n * q_act, mean = X_act %*% beta, sd = 0.5), nrow = n)
+#' Y_inact <- matrix(rnorm(n * (q - q_act), sd = 0.5), nrow = n)
 #' shuff_y_ind <- sample(q)
 #' Y <- cbind(Y_act, Y_inact)[, shuff_y_ind] 
 #'
@@ -256,7 +256,7 @@ auto_set_hyper_ <- function(Y, p, p0_av) {
 #'
 #' list_init <- set_init(q, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb)
 #' 
-#' vb_g <- atlasqtl(Y = Y, X = X, p0_av = c(5, 25), list_init = list_init)
+#' vb_g <- atlasqtl(Y = Y, X = X, p0 = c(5, 25), list_init = list_init)
 #'
 #' @seealso  \code{\link{set_hyper}}, \code{\link{atlasqtl}}
 #'
@@ -296,7 +296,7 @@ set_init <- function(q, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb) {
 
 # Internal function setting default starting values when not provided by the user.
 #
-auto_set_init_ <- function(Y, p, p0_av, user_seed) {
+auto_set_init_ <- function(Y, p, p0, user_seed) {
 
   # Initialisation not modified for dual = TRUE (should not matter, but maybe change this)
 
@@ -304,8 +304,8 @@ auto_set_init_ <- function(Y, p, p0_av, user_seed) {
 
   if (!is.null(user_seed)) set.seed(user_seed)
 
-  E_p_t <- p0_av[1]
-  V_p_t <- p0_av[2]
+  E_p_t <- p0[1]
+  V_p_t <- p0[2]
 
   dn <- 1e-6
   up <- 1e5
@@ -320,8 +320,8 @@ auto_set_init_ <- function(Y, p, p0_av, user_seed) {
     interval = c(dn, up))$root,
     error = function(e) {
       stop(paste0("No hyperparameter values matching the expectation and variance ",
-                  "of the number of active predictors per responses supplied in p0_av.",
-                  "Please change p0_av."))
+                  "of the number of active predictors per responses supplied in p0.",
+                  "Please change p0."))
     })
 
 

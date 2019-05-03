@@ -260,8 +260,8 @@ get_n0_t02 <- function(d, p, p_star) {
     interval = c(dn, up))$root,
     error = function(e) {
       stop(paste0("No hyperparameter values matching the expectation and variance ",
-                  "of the number of active predictors per responses supplied in p0_av.",
-                  "Please change p0_av."))
+                  "of the number of active predictors per responses supplied in p0.",
+                  "Please change p0."))
     })
   
   # n0 sets the level of sparsity.

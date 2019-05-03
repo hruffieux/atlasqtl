@@ -5,10 +5,10 @@
 \title{Fit a flexible hierarchical model for hotspot detection using annealed 
 variational inference.}
 \usage{
-atlasqtl(Y, X, p0_av, list_hyper = NULL, list_init = NULL,
-  user_seed = NULL, tol = 0.1, maxit = 1000, anneal = c(1, 2, 10),
-  save_hyper = FALSE, save_init = FALSE, verbose = TRUE,
-  checkpoint_path = NULL, trace_path = NULL)
+atlasqtl(Y, X, p0, list_hyper = NULL, list_init = NULL, user_seed = NULL,
+  tol = 0.1, maxit = 1000, anneal = c(1, 2, 10), save_hyper = FALSE,
+  save_init = FALSE, verbose = TRUE, checkpoint_path = NULL,
+  trace_path = NULL)
 }
 \arguments{
 \item{Y}{Response data matrix of dimension n x q, where n is the number of
@@ -17,7 +17,7 @@ samples and q is the number of response variables.}
 \item{X}{Input matrix of dimension n x p, where p is the number of candidate
 predictors. \code{X} cannot contain NAs. No intercept must be supplied.}
 
-\item{p0_av}{Vector of size 2 whose arguments are the prior expectation and 
+\item{p0}{Vector of size 2 whose arguments are the prior expectation and 
 variance of the number of predictors associated with each response.
 Must be \code{NULL} if \code{list_init} and \code{list_hyper}
 are both non-\code{NULL}.}
@@ -27,8 +27,9 @@ hyperparameters. Must be constructed using the \code{\link{set_hyper}}
 function or set to \code{NULL} for default hyperparameters.}
 
 \item{list_init}{An object of class "\code{init}" containing the initial
-variational parameters. Must be constructed using the \code{\link{set_init}}
-function or set to \code{NULL} for a default initialization.}
+variational parameters. Must be constructed using the 
+\code{\link{set_init}} function or set to \code{NULL} for a default 
+initialization.}
 
 \item{user_seed}{Seed set for reproducible default choices of hyperparameters
 (if \code{list_hyper} is \code{NULL}) and initial variational parameters
@@ -37,13 +38,13 @@ seed set.}
 
 \item{tol}{Tolerance for the stopping criterion (default is 0.1).}
 
-\item{maxit}{Maximum number of iterations allowed.}
+\item{maxit}{Maximum number of iterations allowed (default is 1000).}
 
 \item{anneal}{Parameters for annealing scheme. Must be a vector whose first
-entry is sets the type of schedule: 1 = geometric spacing (default), 
+entry is the type of schedule: 1 = geometric spacing (default), 
 2 = harmonic spacing or 3 = linear spacing, the second entry is the initial 
-temperature (default is 2), and the third entry is the temperature grid size
-(default is 10). If \code{NULL}, no annealing is performed.}
+temperature (default is 2), and the third entry is the temperature grid 
+size (default is 10). If \code{NULL}, no annealing is performed.}
 
 \item{save_hyper}{If \code{TRUE}, the hyperparameters used for the model are
 saved as output.}
@@ -75,8 +76,8 @@ An object of class "\code{vb}" containing the following variational
  \item{lb_opt}{Optimized variational lower bound for the marginal
                log-likelihood (ELBO).}
  \item{diff_lb}{Difference in ELBO between the last and penultimate
-                iterations. Useful to convergence diagnostic when \code{maxit}
-                has been reached.}
+                iterations. Useful to convergence diagnostic when 
+                \code{maxit} has been reached.}
  \item{rmvd_cst_x}{Vectors containing the indices of constant variables in 
                    \code{X} removed prior to the analysis.}
  \item{rmvd_coll_x}{Vectors containing the indices of variables in \code{X} 
@@ -90,6 +91,10 @@ An object of class "\code{vb}" containing the following variational
                               saved as output.}
 }
 \description{
+Fit a flexible hierarchical model for hotspot detection using annealed 
+variational inference.
+}
+\details{
 The columns of \code{Y} are centered before running the variational 
 algorithm, and the columns of \code{X} are standardized.
 }
@@ -102,7 +107,7 @@ seed <- 123; set.seed(seed)
 
 ## Examples using small problem sizes:
 ##
-n <- 200; p <- 250; p0 <- 25; q <- 30; q0 <- 25
+n <- 200; p <- 250; p_act <- 25; q <- 30; q_act <- 25
 
 ## Candidate predictors (subject to selection)
 ##
@@ -110,22 +115,22 @@ n <- 200; p <- 250; p0 <- 25; q <- 30; q0 <- 25
 # predictors can be supplied).
 # 0 = homozygous, major allele, 1 = heterozygous, 2 = homozygous, minor allele
 #
-X_act <- matrix(rbinom(n * p0, size = 2, p = 0.25), nrow = n)
-X_inact <- matrix(rbinom(n * (p - p0), size = 2, p = 0.25), nrow = n)
+X_act <- matrix(rbinom(n * p_act, size = 2, p = 0.25), nrow = n)
+X_inact <- matrix(rbinom(n * (p - p_act), size = 2, p = 0.25), nrow = n)
 
 shuff_x_ind <- sample(p)
 X <- cbind(X_act, X_inact)[, shuff_x_ind]
 
-bool_x_act <- shuff_x_ind <= p0
+bool_x_act <- shuff_x_ind <= p_act
 
-pat_act <- beta <- matrix(0, nrow = p0, ncol = q0)
-pat_act[sample(p0*q0, floor(p0*q0/5))] <- 1
+pat_act <- beta <- matrix(0, nrow = p_act, ncol = q_act)
+pat_act[sample(p_act*q_act, floor(p_act*q_act/5))] <- 1
 beta[as.logical(pat_act)] <-  rnorm(sum(pat_act))
 
 ## Gaussian responses
 ##
-Y_act <- matrix(rnorm(n * q0, mean = X_act \%*\% beta, sd = 0.5), nrow = n)
-Y_inact <- matrix(rnorm(n * (q - q0), sd = 0.5), nrow = n)
+Y_act <- matrix(rnorm(n * q_act, mean = X_act \%*\% beta, sd = 0.5), nrow = n)
+Y_inact <- matrix(rnorm(n * (q - q_act), sd = 0.5), nrow = n)
 shuff_y_ind <- sample(q)
 Y <- cbind(Y_act, Y_inact)[, shuff_y_ind]
 
@@ -133,7 +138,7 @@ Y <- cbind(Y_act, Y_inact)[, shuff_y_ind]
 ## Infer associations ##
 ########################
 
-res_atlas <- atlasqtl(Y = Y, X = X, p0_av = c(5, 25), user_seed = seed)
+res_atlas <- atlasqtl(Y = Y, X = X, p0 = c(5, 25), user_seed = seed)
 
 }
 \references{

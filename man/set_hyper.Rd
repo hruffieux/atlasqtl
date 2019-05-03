@@ -55,7 +55,7 @@ seed <- 123; set.seed(seed)
 
 ## Examples using small problem sizes:
 ##
-n <- 200; p <- 200; p0 <- 20; q <- 20; q0 <- 15
+n <- 200; p <- 200; p_act <- 20; q <- 20; q_act <- 15
 
 ## Candidate predictors (subject to selection)
 ##
@@ -63,22 +63,22 @@ n <- 200; p <- 200; p0 <- 20; q <- 20; q0 <- 15
 # predictors can be supplied).
 # 0 = homozygous, major allele, 1 = heterozygous, 2 = homozygous, minor allele
 
-X_act <- matrix(rbinom(n * p0, size = 2, p = 0.25), nrow = n)
-X_inact <- matrix(rbinom(n * (p - p0), size = 2, p = 0.25), nrow = n)
+X_act <- matrix(rbinom(n * p_act, size = 2, p = 0.25), nrow = n)
+X_inact <- matrix(rbinom(n * (p - p_act), size = 2, p = 0.25), nrow = n)
 
 shuff_x_ind <- sample(p)
 X <- cbind(X_act, X_inact)[, shuff_x_ind]
 
-bool_x_act <- shuff_x_ind <= p0
+bool_x_act <- shuff_x_ind <= p_act
 
-pat_act <- beta <- matrix(0, nrow = p0, ncol = q0)
-pat_act[sample(p0*q0, floor(p0*q0/5))] <- 1
+pat_act <- beta <- matrix(0, nrow = p_act, ncol = q_act)
+pat_act[sample(p_act*q_act, floor(p_act*q_act/5))] <- 1
 beta[as.logical(pat_act)] <-  rnorm(sum(pat_act))
 
 ## Gaussian responses
 ##
-Y_act <- matrix(rnorm(n * q0, mean = X_act \%*\% beta, sd = 0.5), nrow = n)
-Y_inact <- matrix(rnorm(n * (q - q0), sd = 0.5), nrow = n)
+Y_act <- matrix(rnorm(n * q_act, mean = X_act \%*\% beta, sd = 0.5), nrow = n)
+Y_inact <- matrix(rnorm(n * (q - q_act), sd = 0.5), nrow = n)
 shuff_y_ind <- sample(q)
 Y <- cbind(Y_act, Y_inact)[, shuff_y_ind]
 
@@ -89,7 +89,7 @@ Y <- cbind(Y_act, Y_inact)[, shuff_y_ind]
 list_hyper <- set_hyper(q, p, lambda = 1, nu = 1, eta = 1, kappa = 1, 
                         n0 = -2.5, t02 = 0.1)
 
-vb <- atlasqtl(Y = Y, X = X, p0_av = c(5, 25), list_hyper = list_hyper, 
+vb <- atlasqtl(Y = Y, X = X, p0 = c(5, 25), list_hyper = list_hyper, 
                user_seed = seed)
 
 }

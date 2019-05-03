@@ -101,7 +101,7 @@ check_annealing_ <- function(anneal) {
 # model hyperparameters before the application of the different `atlasqtl_*_core`
 # algorithms.
 #
-prepare_list_hyper_ <- function(list_hyper, Y, p, p0_av, bool_rmvd_x, names_x, 
+prepare_list_hyper_ <- function(list_hyper, Y, p, p0, bool_rmvd_x, names_x, 
                                 names_y, verbose) {
 
   q <- ncol(Y)
@@ -110,7 +110,7 @@ prepare_list_hyper_ <- function(list_hyper, Y, p, p0_av, bool_rmvd_x, names_x,
 
     if (verbose) cat("list_hyper set automatically. \n")
 
-    list_hyper <- auto_set_hyper_(Y, p, p0_av)
+    list_hyper <- auto_set_hyper_(Y, p, p0)
 
   } else {
 
@@ -159,7 +159,7 @@ prepare_list_hyper_ <- function(list_hyper, Y, p, p0_av, bool_rmvd_x, names_x,
 # starting values before the application of the different `atlasqtl_*_core`
 # algorithms.
 #
-prepare_list_init_ <- function(list_init, Y, p, p0_av, bool_rmvd_x, user_seed, verbose) {
+prepare_list_init_ <- function(list_init, Y, p, p0, bool_rmvd_x, user_seed, verbose) {
 
   q <- ncol(Y)
   n <- nrow(Y)
@@ -171,7 +171,7 @@ prepare_list_init_ <- function(list_init, Y, p, p0_av, bool_rmvd_x, user_seed, v
 
     if (verbose) cat(paste("list_init set automatically. \n", sep=""))
 
-    list_init <- auto_set_init_(Y, p, p0_av, user_seed)
+    list_init <- auto_set_init_(Y, p, p0, user_seed)
 
   } else {
     
