@@ -80,40 +80,52 @@
 #' ## Simulate data ##
 #' ###################
 #'
-#' ## Examples using small problem sizes:
-#' ##
-#' n <- 200; p <- 250; p_act <- 25; q <- 30; q_act <- 25
+#' # Example with small problem sizes:
+#' #
+#' n <- 200; p <- 100; p_act <- 10; q <- 100; q_act <- 50
 #'
-#' ## Candidate predictors (subject to selection)
-#' ##
-#' # Here we simulate common genetic variants (but any type of candidate
-#' # predictors can be supplied).
-#' # 0 = homozygous, major allele, 1 = heterozygous, 2 = homozygous, minor allele
+#' # Candidate predictors (subject to selection)
+#' #
+#' # Here example with common genetic variants under Hardy-Weinberg equilibrium
 #' #
 #' X_act <- matrix(rbinom(n * p_act, size = 2, p = 0.25), nrow = n)
 #' X_inact <- matrix(rbinom(n * (p - p_act), size = 2, p = 0.25), nrow = n)
 #'
+#' # shuffle indices 
 #' shuff_x_ind <- sample(p)
+#' shuff_y_ind <- sample(q)
+#' 
 #' X <- cbind(X_act, X_inact)[, shuff_x_ind]
 #'
-#' bool_x_act <- shuff_x_ind <= p_act
+#' # Association pattern and effect sizes
+#' #
+#' pat <- matrix(FALSE, ncol = q, nrow = p)
+#' bool_x <- shuff_x_ind <= p_act
+#' bool_y <- shuff_y_ind <= q_act
+#' 
+#' pat_act <- beta_act <- matrix(0, nrow = p_act, ncol = q_act)
+#' pat_act[sample(p_act * q_act, floor(p_act * q_act / 5))] <- 1
+#' beta_act[as.logical(pat_act)] <-  rnorm(sum(pat_act))
+#' 
+#' pat[bool_x, bool_y] <- pat_act
 #'
-#' pat_act <- beta <- matrix(0, nrow = p_act, ncol = q_act)
-#' pat_act[sample(p_act*q_act, floor(p_act*q_act/5))] <- 1
-#' beta[as.logical(pat_act)] <-  rnorm(sum(pat_act))
+#' # Gaussian responses
+#' #
+#' Y_act <- matrix(rnorm(n * q_act, mean = X_act %*% beta_act), nrow = n)
+#' Y_inact <- matrix(rnorm(n * (q - q_act)), nrow = n)
 #'
-#' ## Gaussian responses
-#' ##
-#' Y_act <- matrix(rnorm(n * q_act, mean = X_act %*% beta, sd = 0.5), nrow = n)
-#' Y_inact <- matrix(rnorm(n * (q - q_act), sd = 0.5), nrow = n)
-#' shuff_y_ind <- sample(q)
 #' Y <- cbind(Y_act, Y_inact)[, shuff_y_ind]
 #'
 #' ########################
 #' ## Infer associations ##
 #' ########################
 #'
-#' res_atlas <- atlasqtl(Y = Y, X = X, p0 = c(5, 25), user_seed = seed)
+#' # Expectation and variance for the prior number of predictors associated with
+#' # each response
+#' #
+#' p0 <- c(mean(colSums(pat)), 10)
+#' 
+#' res_atlas <- atlasqtl(Y = Y, X = X, p0 = p0, user_seed = seed)
 #'
 #' @references
 #' Helene Ruffieux, Anthony C. Davison, Jorg Hager, Jamie Inshaw, Benjamin P. 
