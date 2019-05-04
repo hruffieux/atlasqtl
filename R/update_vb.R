@@ -50,7 +50,7 @@ update_mat_x_m1_ <- function(X, beta_vb) X %*% beta_vb
 ## b's updates ##
 ####################
 
-update_annealed_b_vb_ <- function(G_vb, c, df) { # here G_vb <- c * G_vb / df
+update_annealed_lam2_inv_vb_ <- function(G_vb, c, df) { # here G_vb <- c * G_vb / df
   
   if (df == 1) {
     
@@ -96,11 +96,11 @@ update_zeta_vb_ <- function(W, mat_add, n0, sig2_zeta_vb, T0_inv, is_mat = FALSE
 ## sigma's updates ##
 #####################
 
-update_lambda_vb_ <- function(lambda, sum_gam, c = 1) c * (lambda + sum_gam / 2) - c + 1
+update_nu_vb_ <- function(nu, sum_gam, c = 1) c * (nu + sum_gam / 2) - c + 1
 
 update_rho_vb_ <- function(rho, m2_beta, tau_vb, c = 1) c * as.numeric(rho + crossprod(tau_vb, colSums(m2_beta)) / 2)
 
-update_log_sig2_inv_vb_ <- function(lambda_vb, rho_vb) digamma(lambda_vb) - log(rho_vb)
+update_log_sig2_inv_vb_ <- function(nu_vb, rho_vb) digamma(nu_vb) - log(rho_vb)
 
 
 ###################

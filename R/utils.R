@@ -528,7 +528,7 @@ compute_integral_hs_ <- function(alpha, beta, m, n, Q_ab) {
 
 
 checkpoint_ <- function(it, checkpoint_path, 
-                        gam_vb, converged, lb_new, lb_old, b_vb = NULL,
+                        gam_vb, converged, lb_new, lb_old, lam2_inv_vb = NULL,
                         zeta_vb = NULL, theta_vb = NULL, om_vb = NULL,
                         S0_inv_vb = NULL, rate = 100) {
   
@@ -537,7 +537,7 @@ checkpoint_ <- function(it, checkpoint_path,
     diff_lb <- abs(lb_new - lb_old)
     
     tmp_vb <- create_named_list_(gam_vb, converged, it, lb_new, diff_lb, 
-                                 b_vb, theta_vb, zeta_vb, om_vb, S0_inv_vb)
+                                 lam2_inv_vb, theta_vb, zeta_vb, om_vb, S0_inv_vb)
     
     file_save <- paste0(checkpoint_path, "tmp_output_it_", it, ".RData")
     
@@ -569,9 +569,9 @@ checkpoint_clean_up_ <- function(checkpoint_path) {
 }
  
 
-plot_trace_var_hs_ <- function(b_vb, S0_inv_vb, shr_fac_inv, it, trace_ind_max, trace_var_max, path_trace) {
+plot_trace_var_hs_ <- function(lam2_inv_vb, S0_inv_vb, shr_fac_inv, it, trace_ind_max, trace_var_max, path_trace) {
   
-  x <- 1 / S0_inv_vb * 1 / b_vb / shr_fac_inv
+  x <- 1 / S0_inv_vb * 1 / lam2_inv_vb / shr_fac_inv
   
   vec_ind_max <- which(x == max(x))
   
@@ -595,7 +595,7 @@ plot_trace_var_hs_ <- function(b_vb, S0_inv_vb, shr_fac_inv, it, trace_ind_max, 
       res = 600, type="cairo")
   
   matplot(rownames(trace_var_max), trace_var_max, type = "o", col = "black", bg = 2:5, pch = 16,
-          main = "Trace 1 / mu_s0_inv_vb x 1 / mu_b_vb x shr_factor", xlab = "Iteration",
+          main = "Trace 1 / mu_s0_inv_vb x 1 / lam2_inv_vb x shr_factor", xlab = "Iteration",
           ylab = paste0("Traces for the ", nb_max, " largest variataional parameters related to the hotspot variances"))
   for (i in 1:nb_max) {
     points(rownames(trace_var_max)[list_changepoints[[i]]], trace_var_max[list_changepoints[[i]], i], col = "blue", pch = 16)
