@@ -213,7 +213,7 @@ log_sum_exp_ <- function(x) {
 # }
 
 
-# Functions for hyperparameter settings in dual_core (similarly to what is done in HESS)
+# Functions for hyperparameter settings
 #
 E_Phi_X <- function(mu, s2, lower_tail = TRUE) {
 
@@ -529,7 +529,7 @@ compute_integral_hs_ <- function(alpha, beta, m, n, Q_ab) {
 
 checkpoint_ <- function(it, checkpoint_path, 
                         gam_vb, converged, lb_new, lb_old, b_vb = NULL,
-                        mu_rho_vb = NULL, mu_theta_vb = NULL, om_vb = NULL,
+                        zeta_vb = NULL, theta_vb = NULL, om_vb = NULL,
                         S0_inv_vb = NULL, rate = 100) {
   
   if (!is.null(checkpoint_path) && it %% rate == 0) {
@@ -537,7 +537,7 @@ checkpoint_ <- function(it, checkpoint_path,
     diff_lb <- abs(lb_new - lb_old)
     
     tmp_vb <- create_named_list_(gam_vb, converged, it, lb_new, diff_lb, 
-                                 b_vb, mu_theta_vb, mu_rho_vb, om_vb, S0_inv_vb)
+                                 b_vb, theta_vb, zeta_vb, om_vb, S0_inv_vb)
     
     file_save <- paste0(checkpoint_path, "tmp_output_it_", it, ".RData")
     

@@ -298,8 +298,6 @@ set_init <- function(q, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb) {
 #
 auto_set_init_ <- function(Y, p, p0, user_seed) {
 
-  # Initialisation not modified for dual = TRUE (should not matter, but maybe change this)
-
   q <- ncol(Y)
 
   if (!is.null(user_seed)) set.seed(user_seed)

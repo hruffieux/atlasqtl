@@ -9,70 +9,91 @@
 #'   samples and q is the number of response variables.
 #' @param X Input matrix of dimension n x p, where p is the number of candidate
 #'   predictors. \code{X} cannot contain NAs. No intercept must be supplied.
-#' @param p0 Vector of size 2 whose arguments are the prior expectation and 
+#' @param p0 Vector of size 2 whose entries are the prior expectation and 
 #'   variance of the number of predictors associated with each response.
-#'   Must be \code{NULL} if \code{list_init} and \code{list_hyper}
-#'   are both non-\code{NULL}.
-#' @param list_hyper An object of class "\code{hyper}" containing the model
-#'   hyperparameters. Must be constructed using the \code{\link{set_hyper}}
-#'   function or set to \code{NULL} for default hyperparameters.
-#' @param list_init An object of class "\code{init}" containing the initial
-#'   variational parameters. Must be constructed using the 
-#'   \code{\link{set_init}} function or set to \code{NULL} for a default 
-#'   initialization.
-#' @param user_seed Seed set for reproducible default choices of hyperparameters
-#'   (if \code{list_hyper} is \code{NULL}) and initial variational parameters
-#'   (if \code{list_init} is \code{NULL}). Default is \code{NULL}, no
-#'   seed set.
-#' @param tol Tolerance for the stopping criterion (default is 0.1).
-#' @param maxit Maximum number of iterations allowed (default is 1000).
+#'   Must be \code{NULL} if \code{list_init} and \code{list_hyper} are both 
+#'   non-\code{NULL}.
 #' @param anneal Parameters for annealing scheme. Must be a vector whose first
 #'   entry is the type of schedule: 1 = geometric spacing (default), 
 #'   2 = harmonic spacing or 3 = linear spacing, the second entry is the initial 
 #'   temperature (default is 2), and the third entry is the temperature grid 
 #'   size (default is 10). If \code{NULL}, no annealing is performed.
+#' @param tol Tolerance for the stopping criterion (default is 0.1).
+#' @param maxit Maximum number of iterations allowed (default is 1000).
+#' @param user_seed Seed set for reproducible default choices of hyperparameters
+#'   (if \code{list_hyper} is \code{NULL}) and initial variational parameters
+#'   (if \code{list_init} is \code{NULL}). Default is \code{NULL}, no
+#'   seed set.
+#' @param verbose If \code{TRUE}, messages are displayed during execution.
+#' @param list_hyper An object of class "\code{hyper}" containing the model
+#'   hyperparameters. Must be specified using the \code{\link{set_hyper}}
+#'   function or set to \code{NULL} for default hyperparameters.
+#' @param list_init An object of class "\code{init}" containing the initial
+#'   variational parameters. Must be specified using the \code{\link{set_init}} 
+#'   function or set to \code{NULL} for a default initialization.
 #' @param save_hyper If \code{TRUE}, the hyperparameters used for the model are
 #'   saved as output.
 #' @param save_init If \code{TRUE}, the initial variational parameters used for
 #'   the inference are saved as output.
-#' @param verbose If \code{TRUE}, messages are displayed during execution.
 #' @param checkpoint_path Path where to save temporary checkpoint outputs. 
 #'   Default is \code{NULL}, for no checkpointing.
 #' @param trace_path Path where to save trace plot for the variance of hotspot
 #'   propensities. Default is \code{NULL}, for no trace saved.
 #'   
-#' @details The columns of \code{Y} are centered before running the variational 
-#' algorithm, and the columns of \code{X} are standardized.
+#' @details \code{atlasqtl} implements a flexible hierarchical regression 
+#'   framework that allows information-sharing across responses and predictors, 
+#'   thereby enhancing the detection of weak effects. \code{atlasqtl} is 
+#'   tailored to the detection of hotspot predictors, i.e., predictors 
+#'   associated with many responses: it is based on a fully Bayesian model 
+#'   whereby the hotspot propensity is modelled using the horseshoe shrinkage 
+#'   prior: its global-local formulation shrinks noise globally and hence can 
+#'   accommodate highly sparse settings, while being robust to individual 
+#'   signals, thus leaving the effects of hotspots unshrunk. Inference is 
+#'   carried out using a scalable variational algorithm coupled with a novel 
+#'   simulated annealing procedure, which is applicable to large dimensions, 
+#'   i.e., thousands of response variables, and allows efficient exploration of 
+#'   multimodal distributions.
+#' 
+#'   The columns of the response matrix \code{Y} are centered within the 
+#'   \code{atlasqtl} call, and the columns of the candidate predictor matrix 
+#'   \code{X} are standardized.
 #'
-#' @return An object of class "\code{vb}" containing the following variational
-#'   estimates and settings:
+#' @return An object of class "\code{atlasqtl}" containing the following 
+#'   variational estimates and settings:
+#'  \item{beta_vb}{Estimated effect size matrix of dimension p x q. Entry (s, t) 
+#'                 corresponds to the variational posterior mean of the 
+#'                 regression effect between candidate predictor s and response
+#'                 t.}
 #'  \item{gam_vb}{Posterior inclusion probability matrix of dimension p x q.
-#'                Entry (s, t) corresponds to the posterior probability of
-#'                association between candidate predictor s and response t.}
-#'  \item{mu_theta_vb}{Vector of length p containing the posterior mean of
-#'                     theta. Entry s corresponds to the propensity of candidate
-#'                     predictor s to be included in the model. \code{NULL} if
-#'                     \code{dual} is \code{FALSE}.}
+#'                Entry (s, t) corresponds to the variational posterior 
+#'                probability of association between candidate predictor s 
+#'                and response t.}
+#'  \item{rho_vb}{Vector of length q containing the variational posterior 
+#'                mean of the response importance. Entry t corresponds to the 
+#'                propensity of response t have associated predictors.}
+#'  \item{theta_vb}{Vector of length p containing the variational posterior 
+#'                  mean of the hotspot propensity. Entry s corresponds to the 
+#'                  propensity of candidate predictor s to be associated with 
+#'                  many responses.}
 #'  \item{converged}{A boolean indicating whether the algorithm has converged
 #'                   before reaching \code{maxit} iterations.}
 #'  \item{it}{Final number of iterations.}
-#'  \item{lb_opt}{Optimized variational lower bound for the marginal
-#'                log-likelihood (ELBO).}
+#'  \item{lb_opt}{Optimized variational lower bound (ELBO) on the marginal
+#'                log-likelihood.}
 #'  \item{diff_lb}{Difference in ELBO between the last and penultimate
-#'                 iterations. Useful to convergence diagnostic when 
-#'                 \code{maxit} has been reached.}
+#'                 iterations (to be used as a convergence diagnostic when 
+#'                 \code{maxit} has been reached).}
 #'  \item{rmvd_cst_x}{Vectors containing the indices of constant variables in 
 #'                    \code{X} removed prior to the analysis.}
 #'  \item{rmvd_coll_x}{Vectors containing the indices of variables in \code{X} 
 #'                     removed prior to the analysis because collinear to other
 #'                     variables. The entry name indicates the corresponding 
-#'                     variable kept in the analysis (i.e., that causing the 
-#'                     collinearity for the entry in question).}
+#'                     variable kept in the analysis.}
 #'  \item{list_hyper, list_init}{If \code{save_hyper}, resp. \code{save_init},
-#'                               \code{TRUE}, hyperparameters, resp. initial
-#'                               variational parameters, used for inference are
-#'                               saved as output.}
-#'  
+#'                               are \code{TRUE}, the hyperparameters, resp. 
+#'                               initial variational parameters, used for 
+#'                               inference are saved as output.}
+#'                               
 #' @examples
 #' seed <- 123; set.seed(seed)
 #'
@@ -136,16 +157,16 @@
 #'
 #' @export
 #'
-atlasqtl <- function(Y, X, p0, list_hyper = NULL, list_init = NULL,
-                     user_seed = NULL, tol = 1e-1, maxit = 1000, 
-                     anneal = c(1, 2, 10), save_hyper = FALSE, save_init = FALSE, 
-                     verbose = TRUE, checkpoint_path = NULL, trace_path = NULL) {
+atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000, 
+                     user_seed = NULL, verbose = TRUE, list_hyper = NULL, 
+                     list_init = NULL, save_hyper = FALSE, save_init = FALSE, 
+                     checkpoint_path = NULL, trace_path = NULL) {
   
   if (verbose) cat("== Preparing the data ... \n")
   
   check_annealing_(anneal)
   
-  dat <- prepare_data_(Y, X, user_seed, tol, maxit, verbose, checkpoint_path, 
+  dat <- prepare_data_(Y, X, tol, maxit, user_seed, verbose, checkpoint_path, 
                        trace_path)
   
   bool_rmvd_x <- dat$bool_rmvd_x
@@ -176,7 +197,6 @@ atlasqtl <- function(Y, X, p0, list_hyper = NULL, list_init = NULL,
   }
   
   
-  
   if (verbose) cat("== Preparing the hyperparameters ... \n\n")
   
   list_hyper <- prepare_list_hyper_(list_hyper, Y, p, p0, bool_rmvd_x, 
@@ -192,9 +212,9 @@ atlasqtl <- function(Y, X, p0, list_hyper = NULL, list_init = NULL,
   if (verbose) cat("... done. == \n\n")
   
   if (verbose){
-    cat(paste("============================================================== \n",
-              "== Variational inference for sparse multivariate regression == \n",
-              "============================================================== \n\n",
+    cat(paste("============================================= \n",
+              "== fAsT gLobal-locAl hotSpot QTL detection == \n",
+              "============================================= \n\n",
               sep = ""))
   }
   
@@ -203,7 +223,7 @@ atlasqtl <- function(Y, X, p0, list_hyper = NULL, list_init = NULL,
     if (hs) {
       
       df <- 1
-      vb <- atlasqtl_dual_horseshoe_core_(Y, X, list_hyper, list_init$gam_vb,
+      res_atlas <- atlasqtl_horseshoe_core_(Y, X, list_hyper, list_init$gam_vb,
                                           list_init$mu_beta_vb, 
                                           list_init$sig2_beta_vb,
                                           list_init$tau_vb, df, tol, maxit, 
@@ -213,25 +233,25 @@ atlasqtl <- function(Y, X, p0, list_hyper = NULL, list_init = NULL,
       
     } else {
       
-      vb <- atlasqtl_dual_prior_core_(Y, X, list_hyper, list_init$gam_vb,
+      res_atlas <- atlasqtl_prior_core_(Y, X, list_hyper, list_init$gam_vb,
                                       list_init$mu_beta_vb, list_init$sig2_beta_vb,
                                       list_init$tau_vb, tol, maxit, anneal, 
                                       verbose, checkpoint_path = checkpoint_path)
       
     }
          
-  vb$p0 <- p0
+  res_atlas$p0 <- p0
   
-  vb$rmvd_cst_x <- dat$rmvd_cst_x
-  vb$rmvd_coll_x <- dat$rmvd_coll_x
+  res_atlas$rmvd_cst_x <- dat$rmvd_cst_x
+  res_atlas$rmvd_coll_x <- dat$rmvd_coll_x
  
-  if (save_hyper) vb$list_hyper <- list_hyper
-  if (save_init) vb$list_init <- list_init
+  if (save_hyper) res_atlas$list_hyper <- list_hyper
+  if (save_init) res_atlas$list_init <- list_init
   
-  class(vb) <- "atlasqtl"
+  class(res_atlas) <- "atlasqtl"
   
   if (verbose) cat("... done. == \n\n")
   
-  vb
+  res_atlas
   
 }

@@ -14,7 +14,7 @@
 ## beta's updates ##
 ####################
 
-update_m1_beta_ <- function(gam_vb, mu_beta_vb) gam_vb * mu_beta_vb
+update_beta_vb_ <- function(gam_vb, mu_beta_vb) gam_vb * mu_beta_vb
 
 update_m2_beta_ <- function(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = FALSE) {
   
@@ -43,7 +43,7 @@ update_sig2_beta_vb_ <- function(n, sig2_inv_vb, tau_vb = NULL, c = 1) {
   }
 }
 
-update_mat_x_m1_ <- function(X, m1_beta) X %*% m1_beta
+update_mat_x_m1_ <- function(X, beta_vb) X %*% beta_vb
 
 
 ####################
@@ -76,18 +76,18 @@ update_sig2_c0_vb_ <- function(d, s02, c = 1) 1 / (c * (d + (1/s02)))
 
 
 #####################
-## rho's updates ##
+## zeta's updates ##
 #####################
 
-update_mu_rho_vb_ <- function(W, mat_add, n0, sig2_rho_vb, T0_inv, is_mat = FALSE, c = 1) {
+update_zeta_vb_ <- function(W, mat_add, n0, sig2_zeta_vb, T0_inv, is_mat = FALSE, c = 1) {
   
   
   if (is_mat) {
-    as.vector(c * sig2_rho_vb * (colSums(W) + T0_inv * n0 - colSums(mat_add))) # mat_add <- sweep(mat_v_mu, 1, mu_rho_vb, `-`)
+    as.vector(c * sig2_zeta_vb * (colSums(W) + T0_inv * n0 - colSums(mat_add))) # mat_add <- sweep(mat_v_mu, 1, zeta_vb, `-`)
   } else {
-    # as.vector(sig2_rho_vb %*% (colSums(W) + T0_inv %*% n0 - sum(mu_theta_vb)))
-    # sig2_rho_vb and T0_inv is stored as a scalar which represents the value on the diagonal of the corresponding diagonal matrix
-    as.vector(c * sig2_rho_vb * (colSums(W) + T0_inv * n0 - sum(mat_add))) # mat_add = mu_theta_vb
+    # as.vector(sig2_zeta_vb %*% (colSums(W) + T0_inv %*% n0 - sum(theta_vb)))
+    # sig2_zeta_vb and T0_inv is stored as a scalar which represents the value on the diagonal of the corresponding diagonal matrix
+    as.vector(c * sig2_zeta_vb * (colSums(W) + T0_inv * n0 - sum(mat_add))) # mat_add = theta_vb
   }
   
 }
@@ -109,13 +109,13 @@ update_log_sig2_inv_vb_ <- function(lambda_vb, nu_vb) digamma(lambda_vb) - log(n
 
 update_eta_vb_ <- function(n, eta, gam_vb, c = 1) c * (eta + n / 2 + colSums(gam_vb) / 2) - c + 1
 
-update_kappa_vb_ <- function(Y, kappa, mat_x_m1, m1_beta, m2_beta, sig2_inv_vb, c = 1) {
+update_kappa_vb_ <- function(Y, kappa, mat_x_m1, beta_vb, m2_beta, sig2_inv_vb, c = 1) {
   
   n <- nrow(Y)
   
   c * (kappa + (colSums(Y^2) - 2 * colSums(Y * mat_x_m1)  +
                   (n - 1 + sig2_inv_vb) * colSums(m2_beta) +
-                  colSums(mat_x_m1^2) - (n - 1) * colSums(m1_beta^2))/ 2)
+                  colSums(mat_x_m1^2) - (n - 1) * colSums(beta_vb^2))/ 2)
   
 }
 
@@ -126,20 +126,20 @@ update_log_tau_vb_ <- function(eta_vb, kappa_vb) digamma(eta_vb) - log(kappa_vb)
 ## theta's updates ##
 #####################
 
-update_mu_theta_vb_ <- function(W, m0, S0_inv, sig2_theta_vb, vec_fac_st,
+update_theta_vb_ <- function(W, m0, S0_inv, sig2_theta_vb, vec_fac_st,
                                 mat_add = 0, is_mat = FALSE, c = 1) {
   
   if (is.null(vec_fac_st)) {
     
-    # S0_inv and sig2_rho_vb are stored as scalars which represent the values on the diagonal of the corresponding diagonal matrix
+    # S0_inv and sig2_zeta_vb are stored as scalars which represent the values on the diagonal of the corresponding diagonal matrix
     
     if (is_mat) {
       
-      mu_theta_vb <- c * sig2_theta_vb * (rowSums(W) + S0_inv * m0 - rowSums(mat_add)) # mat_add = sweep(mat_v_mu, 1, mu_theta_vb, `-`)
+      theta_vb <- c * sig2_theta_vb * (rowSums(W) + S0_inv * m0 - rowSums(mat_add)) # mat_add = sweep(mat_v_mu, 1, theta_vb, `-`)
       
     } else {
       
-      mu_theta_vb <- c * sig2_theta_vb * (rowSums(W) + S0_inv * m0 - sum(mat_add)) # mat_add = mu_rho_vb
+      theta_vb <- c * sig2_theta_vb * (rowSums(W) + S0_inv * m0 - sum(mat_add)) # mat_add = zeta_vb
       
     }
     
@@ -154,17 +154,17 @@ update_mu_theta_vb_ <- function(W, m0, S0_inv, sig2_theta_vb, vec_fac_st,
     
     if (is_mat) {
       
-      mu_theta_vb <- unlist(lapply(1:n_bl, function(bl) {
+      theta_vb <- unlist(lapply(1:n_bl, function(bl) {
         sig2_theta_vb[[bl]] %*% (rowSums(W[vec_fac_st == bl_ids[bl], , drop = FALSE]) +
                                    S0_inv[[bl]] %*% m0[vec_fac_st == bl_ids[bl]] -
-                                   rowSums(mat_add[vec_fac_st == bl_ids[bl], , drop = FALSE]))  # mat_add = sweep(mat_v_mu, 1, mu_theta_vb, `-`)
+                                   rowSums(mat_add[vec_fac_st == bl_ids[bl], , drop = FALSE]))  # mat_add = sweep(mat_v_mu, 1, theta_vb, `-`)
       }))
     } else {
       
-      mu_theta_vb <- unlist(lapply(1:n_bl, function(bl) {
+      theta_vb <- unlist(lapply(1:n_bl, function(bl) {
         sig2_theta_vb[[bl]] %*% (rowSums(W[vec_fac_st == bl_ids[bl], , drop = FALSE]) +
                                    S0_inv[[bl]] %*% m0[vec_fac_st == bl_ids[bl]] -
-                                   sum(mat_add)) # mat_add = mu_rho_vb
+                                   sum(mat_add)) # mat_add = zeta_vb
       }))
     }
     

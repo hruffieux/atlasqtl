@@ -5,8 +5,8 @@
 # Internal function implementing sanity checks and needed preprocessing before
 # the application of the different `atlasqtl_*_core` algorithms.
 #
-prepare_data_ <- function(Y, X, user_seed, tol, maxit, verbose, 
-                          checkpoint_path, trace_path) {
+prepare_data_ <- function(Y, X, tol, maxit, user_seed, verbose, checkpoint_path, 
+                          trace_path) {
 
   check_structure_(user_seed, "vector", "numeric", 1, null_ok = TRUE)
   
@@ -21,10 +21,12 @@ prepare_data_ <- function(Y, X, user_seed, tol, maxit, verbose,
   check_structure_(X, "matrix", "numeric")
   
   if (!is.null(checkpoint_path) && !dir.exists(checkpoint_path))
-    stop("The directory specified in checkpoint_path doesn't exist. Please make sure to provide a valid path.")
+    stop(paste0("The directory specified in checkpoint_path does not exist. ", 
+                "Please make sure to provide a valid path."))
   
   if (!is.null(trace_path) && !dir.exists(trace_path)) 
-    stop("The directory specified in trace_path doesn't exist. Please make sure to provide a valid path.")
+    stop(paste0("The directory specified in trace_path does not exist. ", 
+                "Please make sure to provide a valid path."))
   
   n <- nrow(X)
   p <- ncol(X)
@@ -61,7 +63,9 @@ prepare_data_ <- function(Y, X, user_seed, tol, maxit, verbose,
   bool_rmvd_x <- bool_cst_x
   bool_rmvd_x[!bool_cst_x] <- bool_coll_x
 
-  p <- ncol(X)
+  p <- ncol(X) # get the number of variables after removal of constant or
+               # collinear variables 
+  
   if (p < 1) stop(paste0("There must be at least 1 non-constant candidate ", 
                          "predictor stored in X."))
 
@@ -72,6 +76,9 @@ prepare_data_ <- function(Y, X, user_seed, tol, maxit, verbose,
 }
 
 
+# Internal function implementing sanity checks for the annealing schedule 
+# specification.
+#
 check_annealing_ <- function(anneal) {
 
   check_structure_(anneal, "vector", "numeric", 3, null_ok = TRUE)
@@ -81,12 +88,14 @@ check_annealing_ <- function(anneal) {
     check_natural_(anneal[c(1, 3)])
     check_positive_(anneal[2])
 
-    stopifnot(anneal[1] %in% 1:3)
+    if (!(anneal[1] %in% 1:3))
+      stop(paste0("The annealing spacing scheme must be set to 1 for geometric ", 
+                  "2 for harmonic or 3 for linear spacing."))
 
     if (anneal[2] < 1.5)
-      stop(paste0("Initial temperature very small. May not be large enough ",
-                  "for a successful exploration. Please increase it or select ",
-                  "no annealing."))
+      stop(paste0("Initial annealing temperature very small. May not be large ",
+                  "enough for a successful exploration. Please increase it or ", 
+                  "select no annealing."))
 
     if (anneal[3] > 1000)
       stop(paste0("Temperature grid size very large. This may be unnecessarily ",
@@ -115,12 +124,10 @@ prepare_list_hyper_ <- function(list_hyper, Y, p, p0, bool_rmvd_x, names_x,
   } else {
 
     if (!inherits(list_hyper, c("hyper", "out_hyper")))
-      stop(paste("The provided list_hyper must be an object of class ``hyper'' ",
-                 "or ``out_hyper''. \n",
-                 "*** you must either use the function set_hyper to ",
-                 "set your own hyperparameters or use list_hyper from a ``vb'' ",
-                 "object or set the argument list_hyper to NULL for automatic choice. ***",
-                 sep=""))
+      stop(paste0("The provided list_hyper must be an object of class ", 
+                  "``hyper'' or ``out_hyper''. \n *** you must either use the ", 
+                  "function set_hyper to set your own hyperparameters or ", 
+                  "list_hyper to NULL for automatic choice. ***"))
 
     if (inherits(list_hyper, "hyper")) {
 
@@ -134,18 +141,20 @@ prepare_list_hyper_ <- function(list_hyper, Y, p, p0, bool_rmvd_x, names_x,
 
 
     if (list_hyper$q_hyper != q)
-      stop(paste("The dimensions (q) of the provided hyperparameters ",
-                 "(list_hyper) are not consistent with that of Y.\n", sep=""))
+      stop(paste0("The dimensions (q) of the provided hyperparameters ",
+                 "(list_hyper) are not consistent with that of Y.\n"))
 
     if (list_hyper$p_hyper != p_hyper_match)
-      stop(paste("The dimensions (p) of the provided hyperparameters ",
-                 "(list_hyper) are not consistent with that of X.\n", sep=""))
+      stop(paste0("The dimensions (p) of the provided hyperparameters ",
+                 "(list_hyper) are not consistent with that of X.\n"))
     
     if (!is.null(names(list_hyper$eta)) && names(list_hyper$eta) != names_y)
-      stop("Provided names for the entries of eta do not match the colnames of the continuous variables in Y")
+      stop(paste0("Provided names for the entries of eta do not match the ", 
+                  "colnames of the continuous variables in Y"))
 
     if (!is.null(names(list_hyper$kappa)) && names(list_hyper$kappa) != names_y)
-      stop("Provided names for the entries of kappa do not match the colnames of the continuous variables in Y")
+      stop(paste0("Provided names for the entries of kappa do not match the ", 
+           "colnames of the continuous variables in Y"))
 
   }
 
@@ -179,13 +188,10 @@ prepare_list_init_ <- function(list_init, Y, p, p0, bool_rmvd_x, user_seed, verb
       warning("user_seed not used since a non-NULL list_init was provided. \n")
 
     if (!inherits(list_init, c("init", "out_init")))
-      stop(paste("The provided list_init must be an object of class ``init'' or ",
-                 " `` out_init''. \n",
-                 "*** you must either use the function set_init to ",
-                 "set your own initialization or use list_init from a ``vb'' ",
-                 "object or  set the argument list_init to NULL for automatic ",
-                 "initialization. ***",
-                 sep=""))
+      stop(paste0("The provided list_init must be an object of class ``init'' ", 
+                  "or `` out_init''. \n *** you must either use the function ", 
+                  "set_init to set your own initialization or set the argument ", 
+                  "list_init to NULL for automatic initialization. ***"))
 
     if (inherits(list_init, "init")) {
       p_init_match <- length(bool_rmvd_x)

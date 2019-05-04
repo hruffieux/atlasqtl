@@ -7,40 +7,25 @@
 ## E log p(beta, gamma | rest) - E log q(beta, gamma) ##
 ########################################################
 
-e_beta_gamma_dual_ <- function(gam_vb, log_sig2_inv_vb, log_tau_vb,
-                               mu_rho_vb, mu_theta_vb, m2_beta,
-                               sig2_beta_vb, sig2_rho_vb,
+e_beta_gamma_ <- function(gam_vb, log_sig2_inv_vb, log_tau_vb,
+                               zeta_vb, theta_vb, m2_beta,
+                               sig2_beta_vb, sig2_zeta_vb,
                                sig2_theta_vb, sig2_inv_vb, tau_vb) {
   
   eps <- .Machine$double.eps^0.75 # to control the argument of the log when gamma is very small
   
   q <- length(tau_vb)
   
-  mat_struct <- sweep(tcrossprod(mu_theta_vb, rep(1, q)), 2, mu_rho_vb, `+`)
+  mat_struct <- sweep(tcrossprod(theta_vb, rep(1, q)), 2, zeta_vb, `+`)
   
   sum(log_sig2_inv_vb * gam_vb / 2 +
         sweep(gam_vb, 2, log_tau_vb, `*`) / 2 -
         sweep(m2_beta, 2, tau_vb, `*`) * sig2_inv_vb / 2 +
         gam_vb * pnorm(mat_struct, log.p = TRUE) +
         (1 - gam_vb) * pnorm(mat_struct, lower.tail = FALSE, log.p = TRUE) -
-        sig2_rho_vb / 2 + 1 / 2 * sweep(gam_vb, 2, log(sig2_beta_vb) + 1, `*`) -
+        sig2_zeta_vb / 2 + 1 / 2 * sweep(gam_vb, 2, log(sig2_beta_vb) + 1, `*`) -
         gam_vb * log(gam_vb + eps) - (1 - gam_vb) * log(1 - gam_vb + eps) -
         sig2_theta_vb / 2)
-  
-}
-
-
-########################################
-## E log p(rho | rest) - E log q(rho) ##
-########################################
-
-e_rho_ <- function(mu_rho_vb, n0, sig2_rho_vb, T0_inv, vec_sum_log_det_rho) {
-  
-  q <- length(mu_rho_vb)
-  
-  (vec_sum_log_det_rho - # vec_sum_log_det_rho = log(det(T0_inv)) + log(det(sig2_rho_vb))
-    T0_inv * crossprod(mu_rho_vb - n0) -
-    q * T0_inv * sig2_rho_vb + q) / 2 # trace of a product
   
 }
 
@@ -83,23 +68,23 @@ e_tau_ <- function(eta, eta_vb, kappa, kappa_vb, log_tau_vb, tau_vb) {
 ## E log p(theta | rest) - E log q(theta) ##
 ############################################
 
-e_theta_ <- function(m0, mu_theta_vb, S0_inv, sig2_theta_vb, vec_sum_log_det) {
+e_theta_ <- function(m0, theta_vb, S0_inv, sig2_theta_vb, vec_sum_log_det) {
   
-  p <- length(mu_theta_vb)
+  p <- length(theta_vb)
   
-  sum(vec_sum_log_det - S0_inv * crossprod(mu_theta_vb - m0) -
+  sum(vec_sum_log_det - S0_inv * crossprod(theta_vb - m0) -
         p * S0_inv * sig2_theta_vb + p) / 2 
   
 }
 
 
-e_theta_hs_ <- function(b_vb, G_vb, log_S0_inv_vb, m0, mu_theta_vb, Q_app, 
+e_theta_hs_ <- function(b_vb, G_vb, log_S0_inv_vb, m0, theta_vb, Q_app, 
                         S0_inv_vb, sig2_theta_vb, df) {
   
   if (df == 1) {
     
     sum(log_S0_inv_vb / 2 - S0_inv_vb * b_vb *
-          (mu_theta_vb^2 + sig2_theta_vb - 2 * m0 * mu_theta_vb + m0^2) / 2 +
+          (theta_vb^2 + sig2_theta_vb - 2 * m0 * theta_vb + m0^2) / 2 +
           (log(sig2_theta_vb) + 1) / 2 - log(pi) + G_vb * b_vb + log(Q_app))
     
     
@@ -111,7 +96,7 @@ e_theta_hs_ <- function(b_vb, G_vb, log_S0_inv_vb, m0, mu_theta_vb, Q_app,
     
     sum(log(6) + log(3) / 2 - log(pi) - log_B + df * G_vb * b_vb +
           log_S0_inv_vb / 2  - S0_inv_vb * b_vb *
-          (mu_theta_vb^2 + sig2_theta_vb - 2 * m0 * mu_theta_vb + m0^2) / 2 +
+          (theta_vb^2 + sig2_theta_vb - 2 * m0 * theta_vb + m0^2) / 2 +
           (log(sig2_theta_vb) + 1) / 2)
     
   } else {
@@ -130,13 +115,14 @@ e_theta_hs_ <- function(b_vb, G_vb, log_S0_inv_vb, m0, mu_theta_vb, Q_app,
     sum(-log(pi) / 2 - lgamma(df / 2) + df * log(df) / 2 + lfactorial((df - 1)/2) - 
           log_B + df * G_vb * b_vb  +
           log_S0_inv_vb / 2 - S0_inv_vb * b_vb *
-          (mu_theta_vb^2 + sig2_theta_vb - 2 * m0 * mu_theta_vb + m0^2) / 2 +
+          (theta_vb^2 + sig2_theta_vb - 2 * m0 * theta_vb + m0^2) / 2 +
           (log(sig2_theta_vb) + 1) / 2)
     
   }
   
   
 }
+
 
 #######################
 ## E log p(y | rest) ##
@@ -148,3 +134,19 @@ e_y_ <- function(n, kappa, kappa_vb, log_tau_vb, m2_beta, sig2_inv_vb, tau_vb) {
         (kappa_vb - colSums(m2_beta) * sig2_inv_vb / 2 - kappa))
   
 }
+
+
+##########################################
+## E log p(zeta | rest) - E log q(zeta) ##
+##########################################
+
+e_zeta_ <- function(zeta_vb, n0, sig2_zeta_vb, T0_inv, vec_sum_log_det_zeta) {
+  
+  q <- length(zeta_vb)
+  
+  (vec_sum_log_det_zeta - # vec_sum_log_det_zeta = log(det(T0_inv)) + log(det(sig2_zeta_vb))
+    T0_inv * crossprod(zeta_vb - n0) -
+    q * T0_inv * sig2_zeta_vb + q) / 2 # trace of a product
+  
+}
+
