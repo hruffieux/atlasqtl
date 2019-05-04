@@ -128,7 +128,7 @@ seed <- 123; set.seed(seed)
 
 # Example with small problem sizes:
 #
-n <- 200; p <- 100; p_act <- 10; q <- 100; q_act <- 50
+n <- 200; p <- 50; p_act <- 10; q <- 100; q_act <- 50
 
 # Candidate predictors (subject to selection)
 #

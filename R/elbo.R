@@ -42,11 +42,11 @@ e_sig2_inv_ <- function(nu, nu_vb, log_sig2_inv_vb, rho, rho_vb, sig2_inv_vb) {
 }
 
 
-e_sig2_inv_hs_ <- function(a_inv_vb, nu_s0_vb, log_a_inv_vb, log_S0_inv_vb, 
-                           rho_s0_vb, S0_inv_vb) {
+e_sig2_inv_hs_ <- function(xi_inv_vb, nu_s0_vb, log_xi_inv_vb, log_sig02_inv_vb, 
+                           rho_s0_vb, sig02_inv_vb) {
   
-  - 1/2 * log_S0_inv_vb - a_inv_vb * S0_inv_vb + log_a_inv_vb / 2 - lgamma(1 / 2) -
-    (nu_s0_vb - 1) * log_S0_inv_vb + rho_s0_vb * S0_inv_vb - 
+  - 1/2 * log_sig02_inv_vb - xi_inv_vb * sig02_inv_vb + log_xi_inv_vb / 2 - lgamma(1 / 2) -
+    (nu_s0_vb - 1) * log_sig02_inv_vb + rho_s0_vb * sig02_inv_vb - 
     nu_s0_vb * log(rho_s0_vb) + lgamma(nu_s0_vb)
   
 }
@@ -68,34 +68,34 @@ e_tau_ <- function(eta, eta_vb, kappa, kappa_vb, log_tau_vb, tau_vb) {
 ## E log p(theta | rest) - E log q(theta) ##
 ############################################
 
-e_theta_ <- function(m0, theta_vb, S0_inv, sig2_theta_vb, vec_sum_log_det) {
+e_theta_ <- function(m0, theta_vb, sig02_inv, sig2_theta_vb, vec_sum_log_det) {
   
   p <- length(theta_vb)
   
-  sum(vec_sum_log_det - S0_inv * crossprod(theta_vb - m0) -
-        p * S0_inv * sig2_theta_vb + p) / 2 
+  sum(vec_sum_log_det - sig02_inv * crossprod(theta_vb - m0) -
+        p * sig02_inv * sig2_theta_vb + p) / 2 
   
 }
 
 
-e_theta_hs_ <- function(lam2_inv_vb, G_vb, log_S0_inv_vb, m0, theta_vb, Q_app, 
-                        S0_inv_vb, sig2_theta_vb, df) {
+e_theta_hs_ <- function(lam2_inv_vb, L_vb, log_sig02_inv_vb, m0, theta_vb, Q_app, 
+                        sig02_inv_vb, sig2_theta_vb, df) {
   
   if (df == 1) {
     
-    sum(log_S0_inv_vb / 2 - S0_inv_vb * lam2_inv_vb *
+    sum(log_sig02_inv_vb / 2 - sig02_inv_vb * lam2_inv_vb *
           (theta_vb^2 + sig2_theta_vb - 2 * m0 * theta_vb + m0^2) / 2 +
-          (log(sig2_theta_vb) + 1) / 2 - log(pi) + G_vb * lam2_inv_vb + log(Q_app))
+          (log(sig2_theta_vb) + 1) / 2 - log(pi) + L_vb * lam2_inv_vb + log(Q_app))
     
     
   } else if (df == 3) {
     
-    # G_vb is tilde G_vb, i.e., G_vb / df
+    # L_vb is tilde L_vb, i.e., L_vb / df
     
-    log_B <- log(9) - log(Q_app * (1 + G_vb) - 1)
+    log_B <- log(9) - log(Q_app * (1 + L_vb) - 1)
     
-    sum(log(6) + log(3) / 2 - log(pi) - log_B + df * G_vb * lam2_inv_vb +
-          log_S0_inv_vb / 2  - S0_inv_vb * lam2_inv_vb *
+    sum(log(6) + log(3) / 2 - log(pi) - log_B + df * L_vb * lam2_inv_vb +
+          log_sig02_inv_vb / 2  - sig02_inv_vb * lam2_inv_vb *
           (theta_vb^2 + sig2_theta_vb - 2 * m0 * theta_vb + m0^2) / 2 +
           (log(sig2_theta_vb) + 1) / 2)
     
@@ -108,13 +108,13 @@ e_theta_hs_ <- function(lam2_inv_vb, G_vb, log_S0_inv_vb, m0, theta_vb, Q_app,
     
     exponent <- (df + 1) / 2
     
-    # G_vb is tilde G_vb, i.e., G_vb / df 
+    # L_vb is tilde L_vb, i.e., L_vb / df 
     log_B <- - log(sapply(1:p, function(j) {
-      compute_integral_hs_(df, G_vb[j] * df, m = exponent, n = exponent - 1, Q_ab = Q_app[j])}))
+      compute_integral_hs_(df, L_vb[j] * df, m = exponent, n = exponent - 1, Q_ab = Q_app[j])}))
     
     sum(-log(pi) / 2 - lgamma(df / 2) + df * log(df) / 2 + lfactorial((df - 1)/2) - 
-          log_B + df * G_vb * lam2_inv_vb  +
-          log_S0_inv_vb / 2 - S0_inv_vb * lam2_inv_vb *
+          log_B + df * L_vb * lam2_inv_vb  +
+          log_sig02_inv_vb / 2 - sig02_inv_vb * lam2_inv_vb *
           (theta_vb^2 + sig2_theta_vb - 2 * m0 * theta_vb + m0^2) / 2 +
           (log(sig2_theta_vb) + 1) / 2)
     

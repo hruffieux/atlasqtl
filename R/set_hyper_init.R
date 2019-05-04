@@ -348,7 +348,7 @@ auto_set_init_ <- function(Y, p, p0, user_seed) {
   p_init <- p
  
   list_init <- create_named_list_(q_init, p_init, gam_vb, mu_beta_vb,
-                                  sig2_inv_vb, sig2_beta_vb, tau_vb)
+                                  sig2_beta_vb, tau_vb)
 
   class(list_init) <- "out_init"
 

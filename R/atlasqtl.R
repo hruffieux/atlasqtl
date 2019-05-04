@@ -103,7 +103,7 @@
 #'
 #' # Example with small problem sizes:
 #' #
-#' n <- 200; p <- 100; p_act <- 10; q <- 100; q_act <- 50
+#' n <- 200; p <- 50; p_act <- 10; q <- 100; q_act <- 50
 #'
 #' # Candidate predictors (subject to selection)
 #' #
@@ -162,9 +162,14 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
                      list_init = NULL, save_hyper = FALSE, save_init = FALSE, 
                      checkpoint_path = NULL, trace_path = NULL) {
   
-  if (verbose) cat("== Preparing the data ... \n")
+  if (verbose) cat("== Checking the annealing schedule ... \n")
   
   check_annealing_(anneal)
+  
+  if (verbose) cat("... done. == \n\n")
+  
+  
+  if (verbose) cat("== Preparing the data ... \n")
   
   dat <- prepare_data_(Y, X, tol, maxit, user_seed, verbose, checkpoint_path, 
                        trace_path)
@@ -182,7 +187,10 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
   names_y <- colnames(Y)
   
   if (verbose) cat("... done. == \n\n")
-
+  
+  
+  if (verbose) cat("== Preparing the hyperparameters ... \n\n")
+  
   if (is.null(list_hyper) | is.null(list_init)) {
     
     check_structure_(p0, "vector", "numeric", 2)
@@ -196,13 +204,11 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
     
   }
   
-  
-  if (verbose) cat("== Preparing the hyperparameters ... \n\n")
-  
   list_hyper <- prepare_list_hyper_(list_hyper, Y, p, p0, bool_rmvd_x, 
                                     names_x, names_y, verbose)
   
   if (verbose) cat("... done. == \n\n")
+  
   
   if (verbose) cat("== Preparing the parameter initialization ... \n\n")
   
@@ -210,6 +216,7 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
                                   user_seed, verbose)
   
   if (verbose) cat("... done. == \n\n")
+  
   
   if (verbose){
     cat(paste("============================================= \n",
@@ -220,31 +227,34 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
   
   
   hs <- TRUE
-    if (hs) {
+  full_output <- FALSE
+  debug <- FALSE
+  
+  if (hs) {
+    
+    df <- 1
+
+    res_atlas <- atlasqtl_horseshoe_core_(Y, X, anneal, df, tol, maxit, verbose,
+                                          list_hyper, list_init, checkpoint_path,
+                                          trace_path, full_output, debug)
+    
+  } else {
+    
+    if (!is.null(trace_path)) 
+      warning(paste0("Provided argument trace_path not used, when using the ",
+                     "global-scale-only model."))
       
-      df <- 1
-      res_atlas <- atlasqtl_horseshoe_core_(Y, X, list_hyper, list_init$gam_vb,
-                                          list_init$mu_beta_vb, 
-                                          list_init$sig2_beta_vb,
-                                          list_init$tau_vb, df, tol, maxit, 
-                                          anneal, verbose,
-                                          checkpoint_path = checkpoint_path,
-                                          trace_path = trace_path)
-      
-    } else {
-      
-      res_atlas <- atlasqtl_prior_core_(Y, X, list_hyper, list_init$gam_vb,
-                                      list_init$mu_beta_vb, list_init$sig2_beta_vb,
-                                      list_init$tau_vb, tol, maxit, anneal, 
-                                      verbose, checkpoint_path = checkpoint_path)
-      
-    }
-         
+    res_atlas <- atlasqtl_prior_core_(Y, X, anneal, df, tol, maxit, verbose,
+                                      list_hyper, list_init, checkpoint_path,
+                                      full_output, debug)
+    
+  }
+  
   res_atlas$p0 <- p0
   
   res_atlas$rmvd_cst_x <- dat$rmvd_cst_x
   res_atlas$rmvd_coll_x <- dat$rmvd_coll_x
- 
+  
   if (save_hyper) res_atlas$list_hyper <- list_hyper
   if (save_init) res_atlas$list_init <- list_init
   

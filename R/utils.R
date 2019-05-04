@@ -530,14 +530,14 @@ compute_integral_hs_ <- function(alpha, beta, m, n, Q_ab) {
 checkpoint_ <- function(it, checkpoint_path, 
                         gam_vb, converged, lb_new, lb_old, lam2_inv_vb = NULL,
                         zeta_vb = NULL, theta_vb = NULL, om_vb = NULL,
-                        S0_inv_vb = NULL, rate = 100) {
+                        sig02_inv_vb = NULL, rate = 100) {
   
   if (!is.null(checkpoint_path) && it %% rate == 0) {
     
     diff_lb <- abs(lb_new - lb_old)
     
     tmp_vb <- create_named_list_(gam_vb, converged, it, lb_new, diff_lb, 
-                                 lam2_inv_vb, theta_vb, zeta_vb, om_vb, S0_inv_vb)
+                                 lam2_inv_vb, theta_vb, zeta_vb, om_vb, sig02_inv_vb)
     
     file_save <- paste0(checkpoint_path, "tmp_output_it_", it, ".RData")
     
@@ -569,9 +569,9 @@ checkpoint_clean_up_ <- function(checkpoint_path) {
 }
  
 
-plot_trace_var_hs_ <- function(lam2_inv_vb, S0_inv_vb, shr_fac_inv, it, trace_ind_max, trace_var_max, path_trace) {
+plot_trace_var_hs_ <- function(lam2_inv_vb, sig02_inv_vb, shr_fac_inv, it, trace_ind_max, trace_var_max, path_trace) {
   
-  x <- 1 / S0_inv_vb * 1 / lam2_inv_vb / shr_fac_inv
+  x <- 1 / sig02_inv_vb * 1 / lam2_inv_vb / shr_fac_inv
   
   vec_ind_max <- which(x == max(x))
   
