@@ -97,9 +97,9 @@ atlasqtl_horseshoe_core_ <- function(Y, X, list_hyper, gam_vb, mu_beta_vb,
       
       # % #
       lambda_vb <- update_lambda_vb_(lambda, sum(gam_vb), c = c)
-      nu_vb <- update_nu_vb_(nu, m2_beta, tau_vb, c = c)
+      rho_vb <- update_rho_vb_(rho, m2_beta, tau_vb, c = c)
       
-      sig2_inv_vb <- lambda_vb / nu_vb
+      sig2_inv_vb <- lambda_vb / rho_vb
       # % #
       
       # % #
@@ -112,7 +112,7 @@ atlasqtl_horseshoe_core_ <- function(Y, X, list_hyper, gam_vb, mu_beta_vb,
       sig2_beta_vb <- update_sig2_beta_vb_(n, sig2_inv_vb, tau_vb, c = c)
       
       log_tau_vb <- update_log_tau_vb_(eta_vb, kappa_vb)
-      log_sig2_inv_vb <- update_log_sig2_inv_vb_(lambda_vb, nu_vb)
+      log_sig2_inv_vb <- update_log_sig2_inv_vb_(lambda_vb, rho_vb)
       
       
       # different possible batch-coordinate ascent schemes:
@@ -173,7 +173,7 @@ atlasqtl_horseshoe_core_ <- function(Y, X, list_hyper, gam_vb, mu_beta_vb,
       # keep this order!
       #  
       G_vb <- c_s * S0_inv_vb * shr_fac_inv * (theta_vb^2 + sig2_theta_vb - 2 * theta_vb * m0 + m0^2) / 2 / df 
-      nu_a_inv_vb <- c_s * (A2_inv + S0_inv_vb) 
+      rho_a_inv_vb <- c_s * (A2_inv + S0_inv_vb) 
         
       
       if (annealing & anneal_scale) {
@@ -213,7 +213,7 @@ atlasqtl_horseshoe_core_ <- function(Y, X, list_hyper, gam_vb, mu_beta_vb,
       }
       
       
-      a_inv_vb <- lambda_a_inv_vb / nu_a_inv_vb
+      a_inv_vb <- lambda_a_inv_vb / rho_a_inv_vb
         
       sig2_theta_vb <- update_sig2_c0_vb_(q, 1 / (S0_inv_vb * b_vb * shr_fac_inv), c = c)
       
@@ -222,10 +222,10 @@ atlasqtl_horseshoe_core_ <- function(Y, X, list_hyper, gam_vb, mu_beta_vb,
       
       lambda_s0_vb <- update_lambda_vb_(1 / 2, p, c = c_s)
       
-      nu_s0_vb <- c_s * (a_inv_vb + 
+      rho_s0_vb <- c_s * (a_inv_vb + 
                            sum(b_vb * shr_fac_inv * (theta_vb^2 + sig2_theta_vb - 2 * theta_vb * m0 + m0^2)) / 2) 
       
-      S0_inv_vb <- as.numeric(lambda_s0_vb / nu_s0_vb)
+      S0_inv_vb <- as.numeric(lambda_s0_vb / rho_s0_vb)
       
       zeta_vb <- update_zeta_vb_(W, theta_vb, n0, sig2_zeta_vb, T0_inv,
                                      is_mat = FALSE, c = c) 
@@ -233,7 +233,7 @@ atlasqtl_horseshoe_core_ <- function(Y, X, list_hyper, gam_vb, mu_beta_vb,
       
       if (verbose && (it == 1 | it %% 5 == 0)) {
         
-        cat(paste0("Updated global variance: ", format(nu_s0_vb / (lambda_s0_vb - 1) / shr_fac_inv, digits = 4), ".\n"))
+        cat(paste0("Updated global variance: ", format(rho_s0_vb / (lambda_s0_vb - 1) / shr_fac_inv, digits = 4), ".\n"))
         cat("Updated local variational parameter 1 / mu_b_vb for local variances: \n")
         print(summary(1 / b_vb))
         cat("\n")
@@ -274,7 +274,7 @@ atlasqtl_horseshoe_core_ <- function(Y, X, list_hyper, gam_vb, mu_beta_vb,
         
         lb_new <- elbo_horseshoe_(Y, a_inv_vb, A2_inv, b_vb, eta, eta_vb, G_vb, gam_vb, kappa, kappa_vb, lambda,
                                        lambda_vb, lambda_a_inv_vb, lambda_s0_vb, m0, n0, zeta_vb,
-                                       theta_vb, nu, nu_vb, nu_a_inv_vb, nu_s0_vb, Q_app, sig2_beta_vb,
+                                       theta_vb, rho, rho_vb, rho_a_inv_vb, rho_s0_vb, Q_app, sig2_beta_vb,
                                        S0_inv_vb, sig2_theta_vb, sig2_inv_vb, sig2_zeta_vb,
                                        T0_inv, tau_vb, beta_vb, m2_beta, mat_x_m1,
                                        vec_sum_log_det_zeta, df, shr_fac_inv)
@@ -309,13 +309,13 @@ atlasqtl_horseshoe_core_ <- function(Y, X, list_hyper, gam_vb, mu_beta_vb,
     }
     
     lb_opt <- lb_new
-    s02_vb <- nu_s0_vb / (lambda_s0_vb - 1) / shr_fac_inv
+    s02_vb <- rho_s0_vb / (lambda_s0_vb - 1) / shr_fac_inv
     
     if (full_output) { # for internal use only
       
       create_named_list_(a_inv_vb, A2_inv, b_vb, eta, eta_vb, G_vb, gam_vb, kappa, kappa_vb, lambda,
                          lambda_vb, lambda_a_inv_vb, lambda_s0_vb, m0, n0, zeta_vb,
-                         theta_vb, nu, nu_vb, nu_a_inv_vb, nu_s0_vb, Q_app, sig2_beta_vb,
+                         theta_vb, rho, rho_vb, rho_a_inv_vb, rho_s0_vb, Q_app, sig2_beta_vb,
                          S0_inv_vb, s02_vb, sig2_theta_vb, sig2_inv_vb, sig2_zeta_vb,
                          T0_inv, tau_vb, beta_vb, m2_beta, mat_x_m1,
                          vec_sum_log_det_zeta, df, shr_fac_inv)
@@ -349,7 +349,7 @@ atlasqtl_horseshoe_core_ <- function(Y, X, list_hyper, gam_vb, mu_beta_vb,
 elbo_horseshoe_ <- function(Y, a_inv_vb, A2_inv, b_vb, eta, eta_vb, G_vb, 
                                  gam_vb, kappa, kappa_vb, lambda, lambda_vb, 
                                  lambda_a_inv_vb, lambda_s0_vb, m0, n0, zeta_vb,
-                                 theta_vb, nu, nu_vb, nu_a_inv_vb, nu_s0_vb, 
+                                 theta_vb, rho, rho_vb, rho_a_inv_vb, rho_s0_vb, 
                                  Q_app, sig2_beta_vb, S0_inv_vb, sig2_theta_vb, 
                                  sig2_inv_vb, sig2_zeta_vb, T0_inv, tau_vb, 
                                  beta_vb, m2_beta, mat_x_m1, vec_sum_log_det_zeta, 
@@ -364,13 +364,13 @@ elbo_horseshoe_ <- function(Y, a_inv_vb, A2_inv, b_vb, eta, eta_vb, G_vb,
   kappa_vb <- update_kappa_vb_(Y, kappa, mat_x_m1, beta_vb, m2_beta, sig2_inv_vb)
   
   lambda_vb <- update_lambda_vb_(lambda, sum(gam_vb))
-  nu_vb <- update_nu_vb_(nu, m2_beta, tau_vb)
+  rho_vb <- update_rho_vb_(rho, m2_beta, tau_vb)
   
   log_tau_vb <- update_log_tau_vb_(eta_vb, kappa_vb)
-  log_sig2_inv_vb <- update_log_sig2_inv_vb_(lambda_vb, nu_vb)
+  log_sig2_inv_vb <- update_log_sig2_inv_vb_(lambda_vb, rho_vb)
   
-  log_S0_inv_vb <- update_log_sig2_inv_vb_(lambda_s0_vb, nu_s0_vb)
-  log_a_inv_vb <- update_log_sig2_inv_vb_(lambda_a_inv_vb, nu_a_inv_vb)
+  log_S0_inv_vb <- update_log_sig2_inv_vb_(lambda_s0_vb, rho_s0_vb)
+  log_a_inv_vb <- update_log_sig2_inv_vb_(lambda_a_inv_vb, rho_a_inv_vb)
   
   
   elbo_A <- e_y_(n, kappa, kappa_vb, log_tau_vb, m2_beta, sig2_inv_vb, tau_vb)
@@ -388,11 +388,11 @@ elbo_horseshoe_ <- function(Y, a_inv_vb, A2_inv, b_vb, eta, eta_vb, G_vb,
   
   elbo_E <- e_tau_(eta, eta_vb, kappa, kappa_vb, log_tau_vb, tau_vb)
   
-  elbo_F <- sum(e_sig2_inv_hs_(a_inv_vb, lambda_s0_vb, log_a_inv_vb, log_S0_inv_vb, nu_s0_vb, S0_inv_vb)) # S0_inv_vb
+  elbo_F <- sum(e_sig2_inv_hs_(a_inv_vb, lambda_s0_vb, log_a_inv_vb, log_S0_inv_vb, rho_s0_vb, S0_inv_vb)) # S0_inv_vb
   
-  elbo_G <- sum(e_sig2_inv_(1 / 2, lambda_a_inv_vb, log_a_inv_vb, A2_inv, nu_a_inv_vb, a_inv_vb)) # a_inv_vb
+  elbo_G <- sum(e_sig2_inv_(1 / 2, lambda_a_inv_vb, log_a_inv_vb, A2_inv, rho_a_inv_vb, a_inv_vb)) # a_inv_vb
   
-  elbo_H <- e_sig2_inv_(lambda, lambda_vb, log_sig2_inv_vb, nu, nu_vb, sig2_inv_vb)
+  elbo_H <- e_sig2_inv_(lambda, lambda_vb, log_sig2_inv_vb, rho, rho_vb, sig2_inv_vb)
   
   as.numeric(elbo_A + elbo_B + elbo_C + elbo_D + elbo_E + elbo_F + elbo_G + elbo_H)
   

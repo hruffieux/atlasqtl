@@ -37,7 +37,7 @@ atlasqtl_prior_core_ <- function(Y, X, list_hyper, gam_vb, mu_beta_vb,
     
     eps <- .Machine$double.eps^0.5
     
-    lambda_s0 <- nu_s0 <- 1 / 2 # gives rise to a Cauchy prior for theta if = 1/2, otherwise, Student t if nu_s0 = 1 / (2*q)
+    lambda_s0 <- rho_s0 <- 1 / 2 # gives rise to a Cauchy prior for theta if = 1/2, otherwise, Student t if rho_s0 = 1 / (2*q)
     
     S0_inv_vb <- rgamma(1, shape = max(p, q), rate = 1) 
     
@@ -81,9 +81,9 @@ atlasqtl_prior_core_ <- function(Y, X, list_hyper, gam_vb, mu_beta_vb,
       
       # % #
       lambda_vb <- update_lambda_vb_(lambda, sum(gam_vb), c = c)
-      nu_vb <- update_nu_vb_(nu, m2_beta, tau_vb, c = c)
+      rho_vb <- update_rho_vb_(rho, m2_beta, tau_vb, c = c)
       
-      sig2_inv_vb <- lambda_vb / nu_vb
+      sig2_inv_vb <- lambda_vb / rho_vb
       # % #
       
       # % #
@@ -96,7 +96,7 @@ atlasqtl_prior_core_ <- function(Y, X, list_hyper, gam_vb, mu_beta_vb,
       sig2_beta_vb <- update_sig2_beta_vb_(n, sig2_inv_vb, tau_vb, c = c)
       
       log_tau_vb <- update_log_tau_vb_(eta_vb, kappa_vb)
-      log_sig2_inv_vb <- update_log_sig2_inv_vb_(lambda_vb, nu_vb)
+      log_sig2_inv_vb <- update_log_sig2_inv_vb_(lambda_vb, rho_vb)
       
       
       # different possible batch-coordinate ascent schemes:
@@ -165,13 +165,13 @@ atlasqtl_prior_core_ <- function(Y, X, list_hyper, gam_vb, mu_beta_vb,
                                      is_mat = FALSE, c = c) # update_zeta_vb_(W, theta_vb, sig2_zeta_vb)
       
       lambda_s0_vb <- c_s * (lambda_s0 + p / 2) - c_s + 1 # implement annealing
-      nu_s0_vb <- c_s * (nu_s0 + sum(sig2_theta_vb + theta_vb^2 - 2 * theta_vb * m0 + m0^2) / 2)
+      rho_s0_vb <- c_s * (rho_s0 + sum(sig2_theta_vb + theta_vb^2 - 2 * theta_vb * m0 + m0^2) / 2)
     
-      S0_inv_vb <- as.numeric(lambda_s0_vb / nu_s0_vb)
+      S0_inv_vb <- as.numeric(lambda_s0_vb / rho_s0_vb)
       
       if (verbose & (it == 1 | it %% 5 == 0)) {
         
-        cat(paste0("Updated global variance: ", format(nu_s0_vb / (lambda_s0_vb - 1) / shr_fac_inv, digits = 4), ".\n"))
+        cat(paste0("Updated global variance: ", format(rho_s0_vb / (lambda_s0_vb - 1) / shr_fac_inv, digits = 4), ".\n"))
         
       }
       
@@ -200,7 +200,7 @@ atlasqtl_prior_core_ <- function(Y, X, list_hyper, gam_vb, mu_beta_vb,
         
         lb_new <- elbo_prior_(Y, eta, eta_vb, gam_vb, kappa, kappa_vb, lambda,
                               lambda_vb, lambda_s0, lambda_s0_vb, m0, n0, zeta_vb,
-                              theta_vb, nu, nu_vb, nu_s0, nu_s0_vb, sig2_beta_vb,
+                              theta_vb, rho, rho_vb, rho_s0, rho_s0_vb, sig2_beta_vb,
                               S0_inv_vb, sig2_theta_vb, sig2_inv_vb, sig2_zeta_vb,
                               T0_inv, tau_vb, beta_vb, m2_beta, mat_x_m1,
                               vec_sum_log_det_zeta, shr_fac_inv)
@@ -236,13 +236,13 @@ atlasqtl_prior_core_ <- function(Y, X, list_hyper, gam_vb, mu_beta_vb,
     
     lb_opt <- lb_new
     
-    s02_vb <- nu_s0_vb / (lambda_s0_vb - 1) / shr_fac_inv
+    s02_vb <- rho_s0_vb / (lambda_s0_vb - 1) / shr_fac_inv
     
     if (full_output) { # for internal use only
       
       create_named_list_(eta, eta_vb, gam_vb, kappa, kappa_vb, lambda,
                          lambda_vb, lambda_s0, lambda_s0_vb, m0, n0, zeta_vb,
-                         theta_vb, nu, nu_vb, nu_s0, nu_s0_vb, sig2_beta_vb,
+                         theta_vb, rho, rho_vb, rho_s0, rho_s0_vb, sig2_beta_vb,
                          S0_inv_vb, s02_vb, sig2_theta_vb, sig2_inv_vb, sig2_zeta_vb,
                          T0_inv, tau_vb, beta_vb, m2_beta,
                          vec_sum_log_det_zeta, shr_fac_inv)
@@ -274,7 +274,7 @@ atlasqtl_prior_core_ <- function(Y, X, list_hyper, gam_vb, mu_beta_vb,
 #
 elbo_prior_ <- function(Y, eta, eta_vb, gam_vb, kappa, kappa_vb, lambda, 
                         lambda_vb, lambda_s0, lambda_s0_vb, m0, n0, zeta_vb,
-                        theta_vb, nu, nu_vb, nu_s0, nu_s0_vb, sig2_beta_vb,
+                        theta_vb, rho, rho_vb, rho_s0, rho_s0_vb, sig2_beta_vb,
                         S0_inv_vb, sig2_theta_vb, sig2_inv_vb, sig2_zeta_vb,
                         T0_inv, tau_vb, beta_vb, m2_beta, mat_x_m1,
                         vec_sum_log_det_zeta, shr_fac_inv) {
@@ -288,12 +288,12 @@ elbo_prior_ <- function(Y, eta, eta_vb, gam_vb, kappa, kappa_vb, lambda,
   kappa_vb <- update_kappa_vb_(Y, kappa, mat_x_m1, beta_vb, m2_beta, sig2_inv_vb)
   
   lambda_vb <- update_lambda_vb_(lambda, sum(gam_vb))
-  nu_vb <- update_nu_vb_(nu, m2_beta, tau_vb)
+  rho_vb <- update_rho_vb_(rho, m2_beta, tau_vb)
   
   log_tau_vb <- update_log_tau_vb_(eta_vb, kappa_vb)
-  log_sig2_inv_vb <- update_log_sig2_inv_vb_(lambda_vb, nu_vb)
+  log_sig2_inv_vb <- update_log_sig2_inv_vb_(lambda_vb, rho_vb)
   
-  log_S0_inv_vb <- update_log_sig2_inv_vb_(lambda_s0_vb, nu_s0_vb)
+  log_S0_inv_vb <- update_log_sig2_inv_vb_(lambda_s0_vb, rho_s0_vb)
   
   vec_sum_log_det_theta <- p * (log_S0_inv_vb + log(shr_fac_inv) + log(sig2_theta_vb)) # E(log(det(S0_inv))) + log(det(sig2_theta_vb_bl))
 
@@ -310,9 +310,9 @@ elbo_prior_ <- function(Y, eta, eta_vb, gam_vb, kappa, kappa_vb, lambda,
   
   elbo_E <- e_tau_(eta, eta_vb, kappa, kappa_vb, log_tau_vb, tau_vb)
   
-  elbo_F <- e_sig2_inv_(lambda, lambda_vb, log_sig2_inv_vb, nu, nu_vb, sig2_inv_vb)
+  elbo_F <- e_sig2_inv_(lambda, lambda_vb, log_sig2_inv_vb, rho, rho_vb, sig2_inv_vb)
   
-  elbo_G <- e_sig2_inv_(lambda_s0, lambda_s0_vb, log_S0_inv_vb, nu_s0, nu_s0_vb, S0_inv_vb)
+  elbo_G <- e_sig2_inv_(lambda_s0, lambda_s0_vb, log_S0_inv_vb, rho_s0, rho_s0_vb, S0_inv_vb)
   
   
   elbo_A + elbo_B + elbo_C + elbo_D + elbo_E + elbo_F + elbo_G

@@ -70,13 +70,13 @@ An object of class "\code{atlasqtl}" containing the following
                Entry (s, t) corresponds to the variational posterior 
                probability of association between candidate predictor s 
                and response t.}
- \item{rho_vb}{Vector of length q containing the variational posterior 
-               mean of the response importance. Entry t corresponds to the 
-               propensity of response t have associated predictors.}
  \item{theta_vb}{Vector of length p containing the variational posterior 
                  mean of the hotspot propensity. Entry s corresponds to the 
                  propensity of candidate predictor s to be associated with 
                  many responses.}
+ \item{zeta_vb}{Vector of length q containing the variational posterior 
+               mean of the response importance. Entry t corresponds to the 
+               propensity of response t have associated predictors.}
  \item{converged}{A boolean indicating whether the algorithm has converged
                   before reaching \code{maxit} iterations.}
  \item{it}{Final number of iterations.}

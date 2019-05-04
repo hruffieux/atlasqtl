@@ -16,7 +16,7 @@
 #' @param lambda Vector of length 1 providing the values of hyperparameter
 #'   \eqn{\lambda} for the prior distribution of \eqn{\sigma^{-2}}. \eqn{\sigma}
 #'   represents the typical size of nonzero effects.
-#' @param nu Vector of length 1 providing the values of hyperparameter \eqn{\nu}
+#' @param rho Vector of length 1 providing the values of hyperparameter \eqn{\rho}
 #'   for the prior distribution of \eqn{\sigma^{-2}}. \eqn{\sigma} represents
 #'   the typical size of nonzero effects.
 #' @param eta Vector of length 1 or q. Provides the values of
@@ -73,7 +73,7 @@
 #' ## Infer associations ##
 #' ########################
 #' 
-#' list_hyper <- set_hyper(q, p, lambda = 1, nu = 1, eta = 1, kappa = 1, 
+#' list_hyper <- set_hyper(q, p, lambda = 1, rho = 1, eta = 1, kappa = 1, 
 #'                         n0 = -2.5, t02 = 0.1)
 #'
 #' vb <- atlasqtl(Y = Y, X = X, p0 = c(5, 25), list_hyper = list_hyper, 
@@ -83,7 +83,7 @@
 #'
 #' @export
 #'
-set_hyper <- function(q, p, lambda, nu, eta, kappa, n0, t02) {
+set_hyper <- function(q, p, lambda, rho, eta, kappa, n0, t02) {
 
   check_structure_(q, "vector", "numeric", 1)
   check_natural_(q)
@@ -100,8 +100,8 @@ set_hyper <- function(q, p, lambda, nu, eta, kappa, n0, t02) {
   check_structure_(lambda, "vector", "double", 1)
   check_positive_(lambda)
 
-  check_structure_(nu, "vector", "double", 1)
-  check_positive_(nu)
+  check_structure_(rho, "vector", "double", 1)
+  check_positive_(rho)
 
   check_structure_(eta, "vector", "double", c(1, q))
   check_positive_(eta)
@@ -114,7 +114,7 @@ set_hyper <- function(q, p, lambda, nu, eta, kappa, n0, t02) {
   q_hyper <- q
   p_hyper <- p
 
-  list_hyper <- create_named_list_(q_hyper, p_hyper, eta, kappa, lambda, nu, n0, t02)
+  list_hyper <- create_named_list_(q_hyper, p_hyper, eta, kappa, lambda, rho, n0, t02)
 
   class(list_hyper) <- "hyper"
 
@@ -131,7 +131,7 @@ auto_set_hyper_ <- function(Y, p, p0) {
   q <- ncol(Y)
 
   lambda <- 1e-2
-  nu <- 1
+  rho <- 1
 
   # hyperparameter set using the data Y
   eta <- 1 / median(apply(Y, 2, var)) #median to be consistent when doing permutations
@@ -168,7 +168,7 @@ auto_set_hyper_ <- function(Y, p, p0) {
   q_hyper <- q
   p_hyper <- p
   
-  list_hyper <- create_named_list_(q_hyper, p_hyper, eta, kappa, lambda, nu, n0, t02)
+  list_hyper <- create_named_list_(q_hyper, p_hyper, eta, kappa, lambda, rho, n0, t02)
 
   class(list_hyper) <- "out_hyper"
 

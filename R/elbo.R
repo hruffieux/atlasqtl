@@ -34,20 +34,20 @@ e_beta_gamma_ <- function(gam_vb, log_sig2_inv_vb, log_tau_vb,
 ## E log p(sig2_inv | rest) - E log q(sig2_inv) ##
 ##################################################
 
-e_sig2_inv_ <- function(lambda, lambda_vb, log_sig2_inv_vb, nu, nu_vb, sig2_inv_vb) {
+e_sig2_inv_ <- function(lambda, lambda_vb, log_sig2_inv_vb, rho, rho_vb, sig2_inv_vb) {
   
-  (lambda - lambda_vb) * log_sig2_inv_vb - (nu - nu_vb) * sig2_inv_vb +
-    lambda * log(nu) - lambda_vb * log(nu_vb) - lgamma(lambda) + lgamma(lambda_vb)
+  (lambda - lambda_vb) * log_sig2_inv_vb - (rho - rho_vb) * sig2_inv_vb +
+    lambda * log(rho) - lambda_vb * log(rho_vb) - lgamma(lambda) + lgamma(lambda_vb)
   
 }
 
 
 e_sig2_inv_hs_ <- function(a_inv_vb, lambda_s0_vb, log_a_inv_vb, log_S0_inv_vb, 
-                           nu_s0_vb, S0_inv_vb) {
+                           rho_s0_vb, S0_inv_vb) {
   
   - 1/2 * log_S0_inv_vb - a_inv_vb * S0_inv_vb + log_a_inv_vb / 2 - lgamma(1 / 2) -
-    (lambda_s0_vb - 1) * log_S0_inv_vb + nu_s0_vb * S0_inv_vb - 
-    lambda_s0_vb * log(nu_s0_vb) + lgamma(lambda_s0_vb)
+    (lambda_s0_vb - 1) * log_S0_inv_vb + rho_s0_vb * S0_inv_vb - 
+    lambda_s0_vb * log(rho_s0_vb) + lgamma(lambda_s0_vb)
   
 }
 

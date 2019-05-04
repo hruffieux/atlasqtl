@@ -4,7 +4,7 @@
 \alias{set_hyper}
 \title{Gather model hyperparameters provided by the user.}
 \usage{
-set_hyper(q, p, lambda, nu, eta, kappa, n0, t02)
+set_hyper(q, p, lambda, rho, eta, kappa, n0, t02)
 }
 \arguments{
 \item{q}{Number of responses.}
@@ -15,7 +15,7 @@ set_hyper(q, p, lambda, nu, eta, kappa, n0, t02)
 \eqn{\lambda} for the prior distribution of \eqn{\sigma^{-2}}. \eqn{\sigma}
 represents the typical size of nonzero effects.}
 
-\item{nu}{Vector of length 1 providing the values of hyperparameter \eqn{\nu}
+\item{rho}{Vector of length 1 providing the values of hyperparameter \eqn{\rho}
 for the prior distribution of \eqn{\sigma^{-2}}. \eqn{\sigma} represents
 the typical size of nonzero effects.}
 
@@ -86,7 +86,7 @@ Y <- cbind(Y_act, Y_inact)[, shuff_y_ind]
 ## Infer associations ##
 ########################
 
-list_hyper <- set_hyper(q, p, lambda = 1, nu = 1, eta = 1, kappa = 1, 
+list_hyper <- set_hyper(q, p, lambda = 1, rho = 1, eta = 1, kappa = 1, 
                         n0 = -2.5, t02 = 0.1)
 
 vb <- atlasqtl(Y = Y, X = X, p0 = c(5, 25), list_hyper = list_hyper, 

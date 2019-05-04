@@ -98,9 +98,9 @@ update_zeta_vb_ <- function(W, mat_add, n0, sig2_zeta_vb, T0_inv, is_mat = FALSE
 
 update_lambda_vb_ <- function(lambda, sum_gam, c = 1) c * (lambda + sum_gam / 2) - c + 1
 
-update_nu_vb_ <- function(nu, m2_beta, tau_vb, c = 1) c * as.numeric(nu + crossprod(tau_vb, colSums(m2_beta)) / 2)
+update_rho_vb_ <- function(rho, m2_beta, tau_vb, c = 1) c * as.numeric(rho + crossprod(tau_vb, colSums(m2_beta)) / 2)
 
-update_log_sig2_inv_vb_ <- function(lambda_vb, nu_vb) digamma(lambda_vb) - log(nu_vb)
+update_log_sig2_inv_vb_ <- function(lambda_vb, rho_vb) digamma(lambda_vb) - log(rho_vb)
 
 
 ###################
