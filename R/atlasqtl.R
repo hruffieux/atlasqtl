@@ -24,7 +24,9 @@
 #'   (if \code{list_hyper} is \code{NULL}) and initial variational parameters
 #'   (if \code{list_init} is \code{NULL}). Default is \code{NULL}, no
 #'   seed set.
-#' @param verbose If \code{TRUE}, messages are displayed during execution.
+#' @param verbose Integer specifying the level of verbosity during execution: 0, 
+#'   for no message, 1 for standard verbosity (default), 2 for detailed 
+#'   verbosity.
 #' @param list_hyper An object of class "\code{hyper}" containing the model
 #'   hyperparameters. Must be specified using the \code{\link{set_hyper}}
 #'   function or set to \code{NULL} for default hyperparameters.
@@ -32,9 +34,12 @@
 #'   variational parameters. Must be specified using the \code{\link{set_init}} 
 #'   function or set to \code{NULL} for a default initialization.
 #' @param save_hyper If \code{TRUE}, the hyperparameters used for the model are
-#'   saved as output.
+#'   returned.
 #' @param save_init If \code{TRUE}, the initial variational parameters used for
-#'   the inference are saved as output.
+#'   the inference are returned (note that the size of the resulting objects is
+#'   likely to be large). Default is \code{FALSE}.
+#' @param full_output If \code{TRUE}, the inferred variational parameters for 
+#'   all parameters are returned.
 #' @param checkpoint_path Path where to save temporary checkpoint outputs. 
 #'   Default is \code{NULL}, for no checkpointing.
 #' @param trace_path Path where to save trace plot for the variance of hotspot
@@ -160,18 +165,27 @@
 #' @export
 #'
 atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000, 
-                     user_seed = NULL, verbose = TRUE, list_hyper = NULL, 
+                     user_seed = NULL, verbose = 1, list_hyper = NULL, 
                      list_init = NULL, save_hyper = FALSE, save_init = FALSE, 
-                     checkpoint_path = NULL, trace_path = NULL) {
+                     full_output = FALSE, checkpoint_path = NULL, 
+                     trace_path = NULL) {
   
-  if (verbose) cat("== Checking the annealing schedule ... \n")
+  if (verbose != 0){
+    cat(paste0("\n======================= \n",
+               "== PREPROCESSING ... == \n",
+               "======================= \n\n"))
+  }
+  
+  check_verbose_(verbose)
+    
+  if (verbose != 0) cat("== Checking the annealing schedule ... \n\n")
   
   check_annealing_(anneal)
   
-  if (verbose) cat("... done. == \n\n")
+  if (verbose != 0) cat("... done. == \n\n")
   
   
-  if (verbose) cat("== Preparing the data ... \n")
+  if (verbose != 0) cat("== Preparing the data ... \n\n")
   
   dat <- prepare_data_(Y, X, tol, maxit, user_seed, verbose, checkpoint_path, 
                        trace_path)
@@ -190,10 +204,10 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
   
   shr_fac_inv <- q # = 1 / shrinkage_factor for global variance
   
-  if (verbose) cat("... done. == \n\n")
+  if (verbose != 0) cat("... done. == \n\n")
   
   
-  if (verbose) cat("== Preparing the hyperparameters ... \n\n")
+  if (verbose != 0) cat("== Preparing the hyperparameters ... \n\n")
   
   if (is.null(list_hyper) | is.null(list_init)) {
     
@@ -203,35 +217,41 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
   } else {
     
     if (!is.null(p0))
-      warning(paste("Provided argument p0 not used, as both list_hyper ",
-                    "and list_init were provided.", sep = ""))
+      warning(paste0("Provided argument p0 not used, as both list_hyper ",
+                     "and list_init were provided."))
     
   }
   
   list_hyper <- prepare_list_hyper_(list_hyper, Y, p, p0, bool_rmvd_x, 
                                     names_x, names_y, verbose)
   
-  if (verbose) cat("... done. == \n\n")
+  if (verbose != 0) cat("... done. == \n\n")
   
   
-  if (verbose) cat("== Preparing the parameter initialization ... \n\n")
+  if (verbose != 0) cat("== Preparing the parameter initialization ... \n\n")
   
   list_init <- prepare_list_init_(list_init, Y, p, p0, bool_rmvd_x, shr_fac_inv,
                                   user_seed, verbose)
   
-  if (verbose) cat("... done. == \n\n")
+  if (verbose != 0) cat("... done. == \n\n")
   
   
-  if (verbose){
-    cat(paste("============================================= \n",
-              "== fAsT gLobal-locAl hotSpot QTL detection == \n",
-              "============================================= \n\n",
-              sep = ""))
+  if (verbose != 0){
+    
+
+    cat(paste0("**************************************************** \n",
+               "Number of samples: ", n, "\n",
+               "Number of (non-redundant) candidate predictors: ", p, "\n",
+               "Number of responses: ", q, "\n",
+               "**************************************************** \n\n"))
+    
+    cat(paste0("==================================================== \n",
+               "== ATLAS: fAsT gLobal-locAl hotSpot QTL detection == \n",
+               "==================================================== \n\n"))
   }
   
   
   hs <- TRUE
-  full_output <- FALSE
   debug <- TRUE
   
   if (hs) {
@@ -265,7 +285,7 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
   
   class(res_atlas) <- "atlasqtl"
   
-  if (verbose) cat("... done. == \n\n")
+  if (verbose != 0) cat("... done. == \n\n")
   
   res_atlas
   

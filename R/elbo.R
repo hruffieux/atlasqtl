@@ -140,13 +140,13 @@ e_y_ <- function(n, kappa, kappa_vb, log_tau_vb, m2_beta, sig2_inv_vb, tau_vb) {
 ## E log p(zeta | rest) - E log q(zeta) ##
 ##########################################
 
-e_zeta_ <- function(zeta_vb, n0, sig2_zeta_vb, T0_inv, vec_sum_log_det_zeta) {
+e_zeta_ <- function(zeta_vb, n0, sig2_zeta_vb, t02_inv, vec_sum_log_det_zeta) {
   
   q <- length(zeta_vb)
   
-  (vec_sum_log_det_zeta - # vec_sum_log_det_zeta = log(det(T0_inv)) + log(det(sig2_zeta_vb))
-    T0_inv * crossprod(zeta_vb - n0) -
-    q * T0_inv * sig2_zeta_vb + q) / 2 # trace of a product
+  (vec_sum_log_det_zeta - # vec_sum_log_det_zeta = log(det(t02_inv)) + log(det(sig2_zeta_vb))
+    t02_inv * crossprod(zeta_vb - n0) -
+    q * t02_inv * sig2_zeta_vb + q) / 2 # trace of a product
   
 }
 

@@ -6,9 +6,9 @@
 variational inference.}
 \usage{
 atlasqtl(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
-  user_seed = NULL, verbose = TRUE, list_hyper = NULL, list_init = NULL,
-  save_hyper = FALSE, save_init = FALSE, checkpoint_path = NULL,
-  trace_path = NULL)
+  user_seed = NULL, verbose = 1, list_hyper = NULL, list_init = NULL,
+  save_hyper = FALSE, save_init = FALSE, full_output = FALSE,
+  checkpoint_path = NULL, trace_path = NULL)
 }
 \arguments{
 \item{Y}{Response data matrix of dimension n x q, where n is the number of
@@ -37,7 +37,9 @@ size (default is 10). If \code{NULL}, no annealing is performed.}
 (if \code{list_init} is \code{NULL}). Default is \code{NULL}, no
 seed set.}
 
-\item{verbose}{If \code{TRUE}, messages are displayed during execution.}
+\item{verbose}{Integer specifying the level of verbosity during execution: 0, 
+for no message, 1 for standard verbosity (default), 2 for detailed 
+verbosity.}
 
 \item{list_hyper}{An object of class "\code{hyper}" containing the model
 hyperparameters. Must be specified using the \code{\link{set_hyper}}
@@ -48,10 +50,14 @@ variational parameters. Must be specified using the \code{\link{set_init}}
 function or set to \code{NULL} for a default initialization.}
 
 \item{save_hyper}{If \code{TRUE}, the hyperparameters used for the model are
-saved as output.}
+returned.}
 
 \item{save_init}{If \code{TRUE}, the initial variational parameters used for
-the inference are saved as output.}
+the inference are returned (note that the size of the resulting objects is
+likely to be large). Default is \code{FALSE}.}
+
+\item{full_output}{If \code{TRUE}, the inferred variational parameters for 
+all parameters are returned.}
 
 \item{checkpoint_path}{Path where to save temporary checkpoint outputs. 
 Default is \code{NULL}, for no checkpointing.}

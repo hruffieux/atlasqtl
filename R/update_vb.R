@@ -79,15 +79,15 @@ update_sig2_c0_vb_ <- function(d, s02, c = 1) 1 / (c * (d + (1/s02)))
 ## zeta's updates ##
 #####################
 
-update_zeta_vb_ <- function(Z, mat_add, n0, sig2_zeta_vb, T0_inv, is_mat = FALSE, c = 1) {
+update_zeta_vb_ <- function(Z, mat_add, n0, sig2_zeta_vb, t02_inv, is_mat = FALSE, c = 1) {
   
   
   if (is_mat) {
-    as.vector(c * sig2_zeta_vb * (colSums(Z) + T0_inv * n0 - colSums(mat_add))) # mat_add <- sweep(mat_v_mu, 1, zeta_vb, `-`)
+    as.vector(c * sig2_zeta_vb * (colSums(Z) + t02_inv * n0 - colSums(mat_add))) # mat_add <- sweep(mat_v_mu, 1, zeta_vb, `-`)
   } else {
-    # as.vector(sig2_zeta_vb %*% (colSums(Z) + T0_inv %*% n0 - sum(theta_vb)))
-    # sig2_zeta_vb and T0_inv is stored as a scalar which represents the value on the diagonal of the corresponding diagonal matrix
-    as.vector(c * sig2_zeta_vb * (colSums(Z) + T0_inv * n0 - sum(mat_add))) # mat_add = theta_vb
+    # as.vector(sig2_zeta_vb %*% (colSums(Z) + t02_inv %*% n0 - sum(theta_vb)))
+    # sig2_zeta_vb and t02_inv is stored as a scalar which represents the value on the diagonal of the corresponding diagonal matrix
+    as.vector(c * sig2_zeta_vb * (colSums(Z) + t02_inv * n0 - sum(mat_add))) # mat_add = theta_vb
   }
   
 }

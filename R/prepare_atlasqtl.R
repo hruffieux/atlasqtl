@@ -16,8 +16,6 @@ prepare_data_ <- function(Y, X, tol, maxit, user_seed, verbose, checkpoint_path,
   check_structure_(maxit, "vector", "numeric", 1)
   check_natural_(maxit)
 
-  check_structure_(verbose, "vector", "logical", 1)
-
   check_structure_(X, "matrix", "numeric")
   
   if (!is.null(checkpoint_path) && !dir.exists(checkpoint_path))
@@ -38,14 +36,14 @@ prepare_data_ <- function(Y, X, tol, maxit, user_seed, verbose, checkpoint_path,
     stop("X and Y must have the same number of samples.")
 
   if (is.null(rownames(X)) & is.null(rownames(Y)))
-    rownames(X) <- rownames(Y) <- paste("Ind_", 1:n, sep="")
+    rownames(X) <- rownames(Y) <- paste0("Ind_", 1:n)
   else if (is.null(rownames(X))) rownames(X) <- rownames(Y)
   else if (is.null(rownames(Y))) rownames(Y) <- rownames(X)
   else if (any(rownames(X) != rownames(Y)))
     stop("The provided rownames of X and Y must be the same.")
 
-  if (is.null(colnames(X))) colnames(X) <- paste("Cov_x_", 1:p, sep="")
-  if (is.null(colnames(Y))) colnames(Y) <- paste("Resp_", 1:q, sep="")
+  if (is.null(colnames(X))) colnames(X) <- paste0("Cov_x_", 1:p)
+  if (is.null(colnames(Y))) colnames(Y) <- paste0("Resp_", 1:q)
 
   X <- scale(X)
 
@@ -75,6 +73,13 @@ prepare_data_ <- function(Y, X, tol, maxit, user_seed, verbose, checkpoint_path,
 
 }
 
+
+check_verbose_ <- function(verbose) {
+  
+  if (!(verbose %in% 0:2))
+    stop(paste0("The verbose argument must be set to 0, 1 or 2."))
+  
+}    
 
 # Internal function implementing sanity checks for the annealing schedule 
 # specification.
@@ -117,7 +122,7 @@ prepare_list_hyper_ <- function(list_hyper, Y, p, p0, bool_rmvd_x, names_x,
   
   if (is.null(list_hyper)) {
 
-    if (verbose) cat("list_hyper set automatically. \n")
+    if (verbose != 0) cat("list_hyper set automatically. \n")
 
     list_hyper <- auto_set_hyper_(Y, p, p0)
 
@@ -176,10 +181,10 @@ prepare_list_init_ <- function(list_init, Y, p, p0, bool_rmvd_x, shr_fac_inv,
 
   if (is.null(list_init)) {
 
-    if (!is.null(user_seed) & verbose) cat(paste("Seed set to user_seed ",
-                                                 user_seed,". \n", sep=""))
+    if (!is.null(user_seed) & verbose != 0) cat(paste0("Seed set to user_seed ",
+                                                 user_seed,". \n"))
 
-    if (verbose) cat(paste("list_init set automatically. \n", sep=""))
+    if (verbose != 0) cat(paste0("list_init set automatically. \n"))
 
     list_init <- auto_set_init_(Y, p, p0, shr_fac_inv, user_seed)
 
@@ -207,12 +212,12 @@ prepare_list_init_ <- function(list_init, Y, p, p0, bool_rmvd_x, shr_fac_inv,
     }
 
     if (list_init$q_init != q)
-      stop(paste("The dimensions (q) of the provided initial parameters ",
-                 "(list_init) are not consistent with that of Y.\n", sep=""))
+      stop(paste0("The dimensions (q) of the provided initial parameters ",
+                 "(list_init) are not consistent with that of Y.\n"))
 
     if (list_init$p_init != p_init_match)
-      stop(paste("The dimensions (p) of the provided initial parameters ",
-                 "(list_init) are not consistent with that of X.\n", sep=""))
+      stop(paste0("The dimensions (p) of the provided initial parameters ",
+                  "(list_init) are not consistent with that of X.\n"))
 
     if (inherits(list_init, "init")) {
 
