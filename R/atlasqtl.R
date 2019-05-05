@@ -61,9 +61,9 @@
 #' @return An object of class "\code{atlasqtl}" containing the following 
 #'   variational estimates and settings:
 #'  \item{beta_vb}{Estimated effect size matrix of dimension p x q. Entry (s, t) 
-#'                 corresponds to the variational posterior mean of the 
-#'                 regression effect between candidate predictor s and response
-#'                 t.}
+#'                 corresponds to the variational posterior mean 
+#'                 (mu_beta_vb_st x gam_vb_st) of the regression effect between 
+#'                 candidate predictor s and response t.}
 #'  \item{gam_vb}{Posterior inclusion probability matrix of dimension p x q.
 #'                Entry (s, t) corresponds to the variational posterior 
 #'                probability of association between candidate predictor s 
@@ -93,6 +93,8 @@
 #'                               are \code{TRUE}, the hyperparameters, resp. 
 #'                               initial variational parameters, used for 
 #'                               inference are saved as output.}
+#'  \item{...}{If \code{full_output} is \code{TRUE} all inferred variational 
+#'             parameters are returned.}
 #'                               
 #' @examples
 #' seed <- 123; set.seed(seed)

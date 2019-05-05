@@ -7,26 +7,30 @@ hotspot predictors in multiple-response regression, i.e., predictors which are
 associated with several responses simultaneously. The *hotspot propensity* of 
 each candidate predictor is modelled using a horseshoe distribution (Carvalho 
 et al. 2009), whose local scales flexibly capture the large hotspot effects 
-and whose  global scale adapts to the overall sparsity level. Inference is 
+and whose global scale adapts to the overall sparsity level. Inference is 
 performed using highly-scalable variational inference updates which are coupled 
 with simulated annealing schemes to improve the exploration of multimodal 
-parameter spaces. The method can be employed in any sparse multiple-response 
-regression settings, and is particularly suited to large molecular quantitative 
-trait locus (QTL) problems,in which hotspot genetic variants, controlling many 
-molecular levels at once, may be responsible for decisive regulatory mechanisms 
-and shape the functional architecture of the genome; our approach is a tool to 
-describe the *hotspot atlas* of the human genome. 
+parameter spaces. 
+
+The method can be employed in any sparse multiple-response regression settings, 
+and is particularly suited to large molecular quantitative trait locus (QTL) 
+problems, in which hotspot genetic variants, controlling many molecular levels 
+at once, may be responsible for decisive regulatory mechanisms and shape the 
+functional architecture underlying complex traits; our approach is a tool to 
+better understand this architecture and will hopefully serve towards outlining a 
+*hotspot atlas* of the human genome. 
 
 Reference: Hélène Ruffieux, Anthony C. Davison, Jörg Hager, Jamie Inshaw, 
-Benjamin P. Fairfax, Sylvia Richardson, Leonardo Bottolo, A global-local approach 
-for detecting hotspots in multiple-response regression, arXiv:1811.03334, 2018.
+Benjamin P. Fairfax, Sylvia Richardson, Leonardo Bottolo, A global-local 
+approach for detecting hotspots in multiple-response regression, 
+arXiv:1811.03334, 2018.
 
 ## Installation
 
 To install, run the following commands in R:
 
 ``` r
-install.packages("devtools")
+require(devtools) # after having installed devtools (install.packages("devtools"))
 devtools::install_github("hruffieux/atlasqtl")
 ```
 
