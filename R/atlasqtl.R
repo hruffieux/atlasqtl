@@ -186,6 +186,8 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
   names_x <- colnames(X)
   names_y <- colnames(Y)
   
+  shr_fac_inv <- q # = 1 / shrinkage_factor for global variance
+  
   if (verbose) cat("... done. == \n\n")
   
   
@@ -212,7 +214,7 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
   
   if (verbose) cat("== Preparing the parameter initialization ... \n\n")
   
-  list_init <- prepare_list_init_(list_init, Y, p, p0, bool_rmvd_x, 
+  list_init <- prepare_list_init_(list_init, Y, p, p0, bool_rmvd_x, shr_fac_inv,
                                   user_seed, verbose)
   
   if (verbose) cat("... done. == \n\n")
@@ -228,13 +230,13 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
   
   hs <- TRUE
   full_output <- FALSE
-  debug <- FALSE
+  debug <- TRUE
   
   if (hs) {
     
     df <- 1
 
-    res_atlas <- atlasqtl_horseshoe_core_(Y, X, anneal, df, tol, maxit, verbose,
+    res_atlas <- atlasqtl_horseshoe_core_(Y, X, shr_fac_inv, anneal, df, tol, maxit, verbose,
                                           list_hyper, list_init, checkpoint_path,
                                           trace_path, full_output, debug)
     
@@ -244,7 +246,7 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
       warning(paste0("Provided argument trace_path not used, when using the ",
                      "global-scale-only model."))
       
-    res_atlas <- atlasqtl_prior_core_(Y, X, anneal, df, tol, maxit, verbose,
+    res_atlas <- atlasqtl_prior_core_(Y, X, shr_fac_inv, anneal, df, tol, maxit, verbose,
                                       list_hyper, list_init, checkpoint_path,
                                       full_output, debug)
     

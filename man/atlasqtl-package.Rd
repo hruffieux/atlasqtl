@@ -3,20 +3,18 @@
 \docType{package}
 \name{atlasqtl-package}
 \alias{atlasqtl-package}
-\title{atlasqtl: a package for combined predictor and outcome selection in
-high-dimensional set-ups using variational inference}
+\title{atlasqtl: a package for fAsT gLobal-locAl hotSpot QTL detection}
 \description{
-The atlasqtl package provides an efficient variational algorithm for
-simultaneous variable selection of predictors and associated outcomes based
-on a sparse multivariate regression model (H. Ruffieux, A. C. Davison,
-J. Hager, I. Irincheeva, Efficient inference for genetic association studies
-with multiple outcomes, Biostatistics, 2017). The methods from this package
-have been used on large genetic datasets from molecular quantitative trait
-atlasqtl (QTL) problems with over 200K single nucleotide polymorphisms (SNPs),
-hundreds of molecular expression levels and hundreds of samples.
+Global-local hierachical approach for joint detection of hotspot predictors 
+in multiple-response regression. Inference uses closed-form variational 
+updates coupled with a simulated annealing algorithm to enhance exploration 
+of highly multimodal spaces. This software allows joint inference at 
+large-scale, e.g., for molecular quantitative trait locus (QTL) studies where 
+the hotspots are genetic variants regulating several molecular traits 
+simultaneously. See H. Ruffieux, et al., A global-local approach for 
+detecting hotspots in multiple-response regression, 2018, arxiv:1811.03334).
 }
 \section{atlasqtl functions}{
- set_hyper, set_init, generate_null, atlasqtl,
-  set_blocks, set_cv, set_groups, set_struct.
+ set_hyper, set_init, atlasqtl.
 }
 

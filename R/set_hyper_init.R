@@ -4,30 +4,30 @@
 
 #' Gather model hyperparameters provided by the user.
 #'
-#' This function must be used to provide hyperparameter values for the model
-#' used in \code{\link{atlasqtl}}.
+#' This function is used to provide hyperparameter values for 
+#' \code{\link{atlasqtl}}.
 #'
-#' The \code{\link{atlasqtl}} function can also be used with default hyperparameter
-#' choices (without using \code{\link{set_hyper}}) by setting its argument
-#' \code{list_hyper} to \code{NULL}.
+#' The \code{\link{atlasqtl}} function can also be used with default 
+#' hyperparameter values (i.e., without using \code{\link{set_hyper}}) by 
+#' setting its argument \code{list_hyper} to \code{NULL}.
 #'
 #' @param q Number of responses.
 #' @param p Number of candidate predictors.
-#' @param nu Vector of length 1 providing the values of hyperparameter
-#'   \eqn{\nu} for the prior distribution of \eqn{\sigma^{-2}}. \eqn{\sigma}
-#'   represents the typical size of nonzero effects.
-#' @param rho Vector of length 1 providing the values of hyperparameter \eqn{\rho}
-#'   for the prior distribution of \eqn{\sigma^{-2}}. \eqn{\sigma} represents
-#'   the typical size of nonzero effects.
-#' @param eta Vector of length 1 or q. Provides the values of
-#'   hyperparameter \eqn{\eta} for the prior distributions of the response 
-#'   residual precisions, \eqn{\tau}. If of length 1, the provided
-#'   value is repeated q times. 
-#' @param kappa Vector of length 1 or q. Provides the values of hyperparameter
-#'   \eqn{\kappa} for the prior distributions of the response residual
-#'   precisions, \eqn{\tau}. If of length 1, the provided value is repeated q 
+#' @param eta Vector of length 1 or q. Provides the shape hyperparameter 
+#'   \eqn{\eta} for the gamma prior distribution of the response residual 
+#'   precision, \eqn{\tau}. If of length 1, the provided value is repeated q 
+#'   times. 
+#' @param kappa Vector of length 1 or q. Provides the rate hyperparameter
+#'   \eqn{\kappa} for the gamma prior distribution of the response residual
+#'   precision, \eqn{\tau}. If of length 1, the provided value is repeated q 
 #'   times. 
 #' @param n0 Vector of length 1 or q, prior mean for the response effects.
+#' @param nu Vector of length 1 providing the shape hyperparameter \eqn{\nu} for 
+#'   the gamma prior distribution of \eqn{\sigma^{-2}}. \eqn{\sigma} represents 
+#'   the typical size of nonzero effects.
+#' @param rho Vector of length 1 providing the rate hyperparameter \eqn{\rho}
+#'   for the prior distribution of \eqn{\sigma^{-2}}. \eqn{\sigma} represents
+#'   the typical size of nonzero effects.
 #' @param t02 Prior variance for the response effects.
 #'
 #' @return An object of class "\code{hyper}" preparing user hyperparameter in a
@@ -42,48 +42,60 @@
 #'
 #' ## Examples using small problem sizes:
 #' ##
-#' n <- 200; p <- 200; p_act <- 20; q <- 20; q_act <- 15
-#'
-#' ## Candidate predictors (subject to selection)
-#' ##
-#' # Here we simulate common genetic variants (but any type of candidate
-#' # predictors can be supplied).
-#' # 0 = homozygous, major allele, 1 = heterozygous, 2 = homozygous, minor allele
-#'
+#' n <- 200; p <- 50; p_act <- 10; q <- 100; q_act <- 50
+#' 
+#' # Candidate predictors (subject to selection)
+#' #
+#' # Here example with common genetic variants under Hardy-Weinberg equilibrium
+#' #
 #' X_act <- matrix(rbinom(n * p_act, size = 2, p = 0.25), nrow = n)
 #' X_inact <- matrix(rbinom(n * (p - p_act), size = 2, p = 0.25), nrow = n)
 #'
+#' # shuffle indices 
 #' shuff_x_ind <- sample(p)
+#' shuff_y_ind <- sample(q)
+#' 
 #' X <- cbind(X_act, X_inact)[, shuff_x_ind]
 #'
-#' bool_x_act <- shuff_x_ind <= p_act
+#' # Association pattern and effect sizes
+#' #
+#' pat <- matrix(FALSE, ncol = q, nrow = p)
+#' bool_x <- shuff_x_ind <= p_act
+#' bool_y <- shuff_y_ind <= q_act
+#' 
+#' pat_act <- beta_act <- matrix(0, nrow = p_act, ncol = q_act)
+#' pat_act[sample(p_act * q_act, floor(p_act * q_act / 5))] <- 1
+#' beta_act[as.logical(pat_act)] <-  rnorm(sum(pat_act))
+#' 
+#' pat[bool_x, bool_y] <- pat_act
 #'
-#' pat_act <- beta <- matrix(0, nrow = p_act, ncol = q_act)
-#' pat_act[sample(p_act*q_act, floor(p_act*q_act/5))] <- 1
-#' beta[as.logical(pat_act)] <-  rnorm(sum(pat_act))
+#' # Gaussian responses
+#' #
+#' Y_act <- matrix(rnorm(n * q_act, mean = X_act %*% beta_act), nrow = n)
+#' Y_inact <- matrix(rnorm(n * (q - q_act)), nrow = n)
 #'
-#' ## Gaussian responses
-#' ##
-#' Y_act <- matrix(rnorm(n * q_act, mean = X_act %*% beta, sd = 0.5), nrow = n)
-#' Y_inact <- matrix(rnorm(n * (q - q_act), sd = 0.5), nrow = n)
-#' shuff_y_ind <- sample(q)
 #' Y <- cbind(Y_act, Y_inact)[, shuff_y_ind]
-#'
+#' 
+#' #############################
+#' ## Specify hyperparameters ##
+#' #############################
+#' 
+#' list_hyper <- set_hyper(q, p, eta = 1, kappa = 1, n0 = -2, nu = 1, rho = 1, 
+#'                         t02 = 0.1)
+#'                         
 #' ########################
 #' ## Infer associations ##
 #' ########################
 #' 
-#' list_hyper <- set_hyper(q, p, nu = 1, rho = 1, eta = 1, kappa = 1, 
-#'                         n0 = -2.5, t02 = 0.1)
+#' p0 <- c(mean(colSums(pat)), 10)
 #'
-#' vb <- atlasqtl(Y = Y, X = X, p0 = c(5, 25), list_hyper = list_hyper, 
-#'                user_seed = seed)
+#' res_atlas <- atlasqtl(Y, X, p0, list_hyper = list_hyper, user_seed = seed)
 #'
 #' @seealso  \code{\link{set_init}}, \code{\link{atlasqtl}}
 #'
 #' @export
 #'
-set_hyper <- function(q, p, nu, rho, eta, kappa, n0, t02) {
+set_hyper <- function(q, p, eta, kappa, n0, nu, rho, t02) {
 
   check_structure_(q, "vector", "numeric", 1)
   check_natural_(q)
@@ -111,10 +123,15 @@ set_hyper <- function(q, p, nu, rho, eta, kappa, n0, t02) {
   check_positive_(kappa)
   if (length(kappa) == 1) kappa <- rep(kappa, q)
 
+  m0 <- 0 # prior mean of horseshoe distribution is 0
+  
+  A2_inv <- 1 # horseshoe global scale hyperprior 
+  
   q_hyper <- q
   p_hyper <- p
 
-  list_hyper <- create_named_list_(q_hyper, p_hyper, eta, kappa, nu, rho, n0, t02)
+  list_hyper <- create_named_list_(q_hyper, p_hyper, A2_inv, eta, kappa, m0, n0, 
+                                   nu, rho, t02)
 
   class(list_hyper) <- "hyper"
 
@@ -133,8 +150,7 @@ auto_set_hyper_ <- function(Y, p, p0) {
   nu <- 1e-2
   rho <- 1
 
-  # hyperparameter set using the data Y
-  eta <- 1 / median(apply(Y, 2, var)) #median to be consistent when doing permutations
+  eta <- 1 / median(apply(Y, 2, var)) 
   if (!is.finite(eta)) eta <- 1e3
   eta <- rep(eta, q)
   kappa <- rep(1, q)
@@ -145,10 +161,8 @@ auto_set_hyper_ <- function(Y, p, p0) {
   dn <- 1e-6
   up <- 1e5
 
-  # Get n0 and t02 similarly as for a_omega_t and b_omega_t in HESS
-  # (specify expectation and variance of number of active predictors per response)
-  #
-  # Look at : gam_st | theta_s = 0
+  # Get n0 and t02 by specifying a prior expectation and variance for number of 
+  # predictors associated with each response
   #
   tryCatch(t02 <- uniroot(function(x)
     get_V_p_t(get_mu(E_p_t, x, p), x, p) - V_p_t,
@@ -158,17 +172,23 @@ auto_set_hyper_ <- function(Y, p, p0) {
                   "of the number of active predictors per responses supplied in p0.",
                   "Please change p0."))
     })
-
+  
   # n0 sets the level of sparsity.
+  #
   n0 <- - get_mu(E_p_t, t02, p)
   n0 <- rep(n0, q)
 
   check_positive_(t02)
+  
+  m0 <- 0     # prior mean of horseshoe distribution is 0
+  A2_inv <- 1 # horseshoe global scale hyperprior 
+  
 
   q_hyper <- q
   p_hyper <- p
   
-  list_hyper <- create_named_list_(q_hyper, p_hyper, eta, kappa, nu, rho, n0, t02)
+  list_hyper <- create_named_list_(q_hyper, p_hyper, A2_inv, eta, kappa, m0, n0, 
+                                   nu, rho, t02)
 
   class(list_hyper) <- "out_hyper"
 
@@ -179,7 +199,7 @@ auto_set_hyper_ <- function(Y, p, p0) {
 #' Gather initial variational parameters provided by the user.
 #'
 #' This function must be used to provide initial values for the variational
-#' parameters used in \code{\link{atlasqtl}}.
+#' parameters by \code{\link{atlasqtl}}.
 #'
 #' The \code{\link{atlasqtl}} function can also be used with default initial
 #' parameter choices (without using \code{\link{set_init}}) by setting
@@ -190,14 +210,21 @@ auto_set_hyper_ <- function(Y, p, p0) {
 #' @param gam_vb Matrix of size p x q with initial values for the variational
 #'   parameter yielding posterior probabilities of inclusion.
 #' @param mu_beta_vb Matrix of size p x q with initial values for the
-#'   variational parameter yielding regression coefficient estimates for
+#'   variational parameter yielding the posterior mean of regression estimates 
+#'   for predictor-response pairs included in the model.
+#' @param sig02_inv_vb Initial parameter for the hotspot propensity global 
+#'   precision.
+#' @param sig2_beta_vb Vector of length q. Initial values for the variational 
+#' parameter yielding the posterior variance of regression estimates for
 #'   predictor-response pairs included in the model.
-#' @param sig2_beta_vb Vector of length q. For these values are the same
-#'   for all the predictors (as a result of the predictor variables being
-#'   standardized before running the variational algorithm). 
+#' @param sig2_theta_vb Vector of length p. Initial values for the variational 
+#'   parameter yielding the posterior variance of the hotspot propensities.
 #' @param tau_vb Vector of length q with initial values for the variational 
-#'   parameter yielding estimates for the continuous response residual 
-#'   precisions. 
+#'   parameter yielding estimates for the response residual precisions. 
+#' @param theta_vb Vector of length p. Initial values for the variational 
+#'   parameter yielding the posterior mean of the hotspot propensities.
+#' @param zeta_vb Vector of length q. Initial values for the variational 
+#'   parameter yielding the posterior mean of the response propensities.
 #'
 #' @return An object of class "\code{init}" preparing user initial values for
 #'   the variational parameters in a form that can be passed to the
@@ -210,59 +237,79 @@ auto_set_hyper_ <- function(Y, p, p0) {
 #' ## Simulate data ##
 #' ###################
 #'
-#' ## Examples using small problem sizes:
-#' ##
-#' n <- 200; p <- 200; p_act <- 20; q <- 20; q_act <- 15
+#' # Example with small problem sizes:
+#' #
+#' n <- 200; p <- 50; p_act <- 10; q <- 100; q_act <- 50
 #'
-#' ## Candidate predictors (subject to selection)
-#' ##
-#' # Here we simulate common genetic variants (but any type of candidate
-#' # predictors can be supplied).
-#' # 0 = homozygous, major allele, 1 = heterozygous, 2 = homozygous, minor allele
-#'
+#' # Candidate predictors (subject to selection)
+#' #
+#' # Here example with common genetic variants under Hardy-Weinberg equilibrium
+#' #
 #' X_act <- matrix(rbinom(n * p_act, size = 2, p = 0.25), nrow = n)
 #' X_inact <- matrix(rbinom(n * (p - p_act), size = 2, p = 0.25), nrow = n)
 #'
+#' # shuffle indices 
 #' shuff_x_ind <- sample(p)
+#' shuff_y_ind <- sample(q)
+#' 
 #' X <- cbind(X_act, X_inact)[, shuff_x_ind]
 #'
-#' bool_x_act <- shuff_x_ind <= p_act
+#' # Association pattern and effect sizes
+#' #
+#' pat <- matrix(FALSE, ncol = q, nrow = p)
+#' bool_x <- shuff_x_ind <= p_act
+#' bool_y <- shuff_y_ind <= q_act
+#' 
+#' pat_act <- beta_act <- matrix(0, nrow = p_act, ncol = q_act)
+#' pat_act[sample(p_act * q_act, floor(p_act * q_act / 5))] <- 1
+#' beta_act[as.logical(pat_act)] <-  rnorm(sum(pat_act))
+#' 
+#' pat[bool_x, bool_y] <- pat_act
 #'
-#' pat_act <- beta <- matrix(0, nrow = p_act, ncol = q_act)
-#' pat_act[sample(p_act*q_act, floor(p_act*q_act/5))] <- 1
-#' beta[as.logical(pat_act)] <-  rnorm(sum(pat_act))
+#' # Gaussian responses
+#' #
+#' Y_act <- matrix(rnorm(n * q_act, mean = X_act %*% beta_act), nrow = n)
+#' Y_inact <- matrix(rnorm(n * (q - q_act)), nrow = n)
 #'
-#' ## Gaussian responses
-#' ##
-#' Y_act <- matrix(rnorm(n * q_act, mean = X_act %*% beta, sd = 0.5), nrow = n)
-#' Y_inact <- matrix(rnorm(n * (q - q_act), sd = 0.5), nrow = n)
-#' shuff_y_ind <- sample(q)
-#' Y <- cbind(Y_act, Y_inact)[, shuff_y_ind] 
+#' Y <- cbind(Y_act, Y_inact)[, shuff_y_ind]
 #'
 #'
+#' ################################
+#' ## Specify initial parameters ##
+#' ################################
+#' 
+#' tau_vb <- rep(1, q)
+#' 
+#' gam_vb <- matrix(rbeta(p * q, shape1 = 1, shape2 = 4 * q - 1), nrow = p)
+#' 
+#' mu_beta_vb <- matrix(rnorm(p * q), nrow = p)
+#' sig2_beta_vb <- 1 / rgamma(q, shape = 2, rate = 1)
+#' 
+#' sig02_inv_vb <- rgamma(1, shape = max(p, q), rate = 1)
+#' 
+#' theta_vb <- rnorm(p, sd = 1 / sqrt(sig02_inv_vb * q))
+#' sig2_theta_vb <- 1 / (q + rgamma(p, shape = sig02_inv_vb * q, rate = 1))
+#' 
+#' zeta_vb <- rnorm(q, mean = -2, sd = 0.1)
+#' 
+#' list_init <- set_init(q, p, gam_vb, mu_beta_vb, sig02_inv_vb, sig2_beta_vb, 
+#'                       sig2_theta_vb, tau_vb, theta_vb, zeta_vb)
+#'                       
+#'                       
 #' ########################
 #' ## Infer associations ##
 #' ########################
-#'
-#' ## Continuous responses
-#' ##
-#'
-#' # gam_vb chosen so that the prior mean number of responses associated with
-#' # each candidate predictor is 1/4.
-#' gam_vb <- matrix(rbeta(p * q, shape1 = 1, shape2 = 4*q-1), nrow = p)
-#' mu_beta_vb <- matrix(rnorm(p * q), nrow = p)
-#' tau_vb <- 1 / apply(Y, 2, var)
-#' sig2_beta_vb <- 1 / rgamma(q, shape = 2, rate = 1 / tau_vb)
-#'
-#' list_init <- set_init(q, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb)
 #' 
-#' vb_g <- atlasqtl(Y = Y, X = X, p0 = c(5, 25), list_init = list_init)
+#' p0 <- c(mean(colSums(pat)), 10)
+#' 
+#' res_atlas <- atlasqtl(Y, X, p0, list_init = list_init)
 #'
 #' @seealso  \code{\link{set_hyper}}, \code{\link{atlasqtl}}
 #'
 #' @export
 #'
-set_init <- function(q, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb) {
+set_init <- function(q, p, gam_vb, mu_beta_vb, sig02_inv_vb, sig2_beta_vb, 
+                     sig2_theta_vb, tau_vb, theta_vb, zeta_vb) {
 
   check_structure_(q, "vector", "numeric", 1)
   check_natural_(q)
@@ -275,19 +322,29 @@ set_init <- function(q, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb) {
 
   check_structure_(mu_beta_vb, "matrix", "double", c(p, q))
 
+  check_structure_(sig02_inv_vb, "vector", "numeric", 1)
+  check_positive_(sig02_inv_vb)
+  
   check_structure_(sig2_beta_vb, "vector", "double", q)
- 
+  check_positive_(sig2_beta_vb)
+  
+  check_structure_(sig2_theta_vb, "vector", "double", p)
+  check_positive_(sig2_theta_vb)
+  
   check_structure_(tau_vb, "vector", "double", q)
   check_positive_(tau_vb)
-
-  check_positive_(sig2_beta_vb)
-
+  
+  check_structure_(theta_vb, "vector", "double", p)
+  
+  check_structure_(zeta_vb, "vector", "double", q)
+  
   q_init <- q
   p_init <- p
   
   list_init <- create_named_list_(q_init, p_init, gam_vb, mu_beta_vb,
-                                  sig2_beta_vb, tau_vb)
-
+                                  sig02_inv_vb, sig2_beta_vb, sig2_theta_vb, 
+                                  tau_vb, theta_vb, zeta_vb)
+  
   class(list_init) <- "init"
 
   list_init
@@ -296,7 +353,7 @@ set_init <- function(q, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb) {
 
 # Internal function setting default starting values when not provided by the user.
 #
-auto_set_init_ <- function(Y, p, p0, user_seed) {
+auto_set_init_ <- function(Y, p, p0, shr_fac_inv, user_seed) {
 
   q <- ncol(Y)
 
@@ -308,10 +365,8 @@ auto_set_init_ <- function(Y, p, p0, user_seed) {
   dn <- 1e-6
   up <- 1e5
 
-  # Get n0 and t02 similarly as for a_omega_t and b_omega_t in HESS
-  # (specify expectation and variance of number of active predictors per response)
-  #
-  # Look at : gam_st | theta_s = 0
+  # Get n0 and t02 by specifying a prior expectation and variance for number of 
+  # predictors associated with each response
   #
   tryCatch(t02 <- uniroot(function(x)
     get_V_p_t(get_mu(E_p_t, x, p), x, p) - V_p_t,
@@ -329,7 +384,6 @@ auto_set_init_ <- function(Y, p, p0, user_seed) {
   # Look at : gam_st
   #
   s02 <- 1e-4
-
   check_positive_(t02)
 
   gam_vb <- matrix(pnorm(rnorm(p * q, mean = n0, sd = s02 + t02)), nrow = p)                                            
@@ -343,12 +397,20 @@ auto_set_init_ <- function(Y, p, p0, user_seed) {
   tau_vb <- rep(tau_vb, q)
 
   sig2_beta_vb <- 1 / rgamma(q, shape = 2, rate = 1 / (sig2_inv_vb * tau_vb))
+  
+  sig02_inv_vb <- rgamma(1, shape = max(p, q), rate = 1)
 
+  theta_vb <- rnorm(p, sd = 1 / sqrt(sig02_inv_vb * shr_fac_inv))
+  sig2_theta_vb <- 1 / (q + rgamma(p, shape = sig02_inv_vb * shr_fac_inv, rate = 1)) # initial guess assuming lam2_inv_vb = 1
+  
+  zeta_vb <- rnorm(q, mean = n0, sd = sqrt(t02))
+  
   q_init <- q
   p_init <- p
  
   list_init <- create_named_list_(q_init, p_init, gam_vb, mu_beta_vb,
-                                  sig2_beta_vb, tau_vb)
+                                  sig02_inv_vb, sig2_beta_vb, sig2_theta_vb, 
+                                  tau_vb, theta_vb, zeta_vb)
 
   class(list_init) <- "out_init"
 

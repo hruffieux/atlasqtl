@@ -168,7 +168,8 @@ prepare_list_hyper_ <- function(list_hyper, Y, p, p0, bool_rmvd_x, names_x,
 # starting values before the application of the different `atlasqtl_*_core`
 # algorithms.
 #
-prepare_list_init_ <- function(list_init, Y, p, p0, bool_rmvd_x, user_seed, verbose) {
+prepare_list_init_ <- function(list_init, Y, p, p0, bool_rmvd_x, shr_fac_inv, 
+                               user_seed, verbose) {
 
   q <- ncol(Y)
   n <- nrow(Y)
@@ -180,7 +181,7 @@ prepare_list_init_ <- function(list_init, Y, p, p0, bool_rmvd_x, user_seed, verb
 
     if (verbose) cat(paste("list_init set automatically. \n", sep=""))
 
-    list_init <- auto_set_init_(Y, p, p0, user_seed)
+    list_init <- auto_set_init_(Y, p, p0, shr_fac_inv, user_seed)
 
   } else {
     

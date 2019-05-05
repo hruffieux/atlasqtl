@@ -5,8 +5,8 @@
 # propensity control. Sparse regression with identity link, no fixed covariates.
 # See help of `atlasqtl` function for details.
 #
-atlasqtl_prior_core_ <- function(Y, X, anneal, df, tol, maxit, verbose, 
-                                 list_hyper, list_init, 
+atlasqtl_prior_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit, 
+                                 verbose, list_hyper, list_init, 
                                  checkpoint_path = NULL, full_output = FALSE, 
                                  debug = FALSE, batch = "y") {
   
@@ -20,46 +20,37 @@ atlasqtl_prior_core_ <- function(Y, X, anneal, df, tol, maxit, verbose,
   #
   gam_vb <- list_init$gam_vb
   mu_beta_vb <- list_init$mu_beta_vb
+  sig02_inv_vb <- list_init$sig02_inv_vb
   sig2_beta_vb <- list_init$sig2_beta_vb
   tau_vb <-list_init$tau_vb
+  
+  theta_vb <- list_init$theta_vb
+  zeta_vb <- list_init$zeta_vb
   
   rm(list_init)
   
   
+  # Preparing annealing if any
+  #
+  anneal_scale <- TRUE # if TRUE, scale parameters s02 and lam2_inv_vb also annealed.
+  
+  if (is.null(anneal)) {
+    annealing <- FALSE
+    c <- c_s <- 1 # c_s for scale parameters
+  } else {
+    annealing <- TRUE
+    ladder <- get_annealing_ladder_(anneal, verbose)
+    c <- ladder[1]
+    c_s <- ifelse(anneal_scale, c, 1)
+  }
+  
+  eps <- .Machine$double.eps^0.5
+  
+  nu_s0 <- rho_s0 <- 1 / 2 # gives rise to a Cauchy prior for theta if = 1/2, otherwise, Student t if rho_s0 = 1 / (2*q)
+  
+  
   with(list_hyper, { # list_init not used with the with() function to avoid
                      # copy-on-write for large objects
-    
-    
-    shr_fac_inv <- q # = 1 / shrinkage_factor for global variance
-    
-    # Preparing annealing if any
-    #
-    anneal_scale <- TRUE # if TRUE, scale parameters s02 and lam2_inv_vb also annealed.
-    
-    if (is.null(anneal)) {
-      annealing <- FALSE
-      c <- c_s <- 1 # c_s for scale parameters
-    } else {
-      annealing <- TRUE
-      ladder <- get_annealing_ladder_(anneal, verbose)
-      c <- ladder[1]
-      c_s <- ifelse(anneal_scale, c, 1)
-    }
-    
-    eps <- .Machine$double.eps^0.5
-    
-    nu_s0 <- rho_s0 <- 1 / 2 # gives rise to a Cauchy prior for theta if = 1/2, otherwise, Student t if rho_s0 = 1 / (2*q)
-    
-    sig02_inv_vb <- rgamma(1, shape = max(p, q), rate = 1) 
-    
-    # Choose m0 so that, `a priori' (i.e. before optimization), E_p_gam is as specified by the user. 
-    # In fact, we assume that the variance of theta (s0^2 in the hyperparameter doc) 
-    # is very small so that the shift is negligeable: we set m0 to 0.
-    #
-    m0 <- rep(0, p)
-    
-    theta_vb <- rnorm(p, sd = 1 / sqrt(sig02_inv_vb * shr_fac_inv)) 
-    zeta_vb <- rnorm(q, mean = n0, sd = sqrt(t02))
     
     # Response-specific parameters: objects derived from t02
     #
@@ -163,21 +154,21 @@ atlasqtl_prior_core_ <- function(Y, X, anneal, df, tol, maxit, verbose,
       m2_beta <- update_m2_beta_(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = TRUE)
       
       Z <- update_Z_(gam_vb, sweep(tcrossprod(theta_vb, rep(1, q)), 2,
-                                        zeta_vb, `+`), c = c) # we use info_ so that the second argument is a matrix
+                                   zeta_vb, `+`), c = c) # we use info_ so that the second argument is a matrix
       
       # keep this order!
       #
       sig2_theta_vb <- update_sig2_c0_vb_(q, 1 / sig02_inv_vb / shr_fac_inv, c = c)
       
       theta_vb <- update_theta_vb_(Z, m0, sig02_inv_vb * shr_fac_inv, sig2_theta_vb,
-                            vec_fac_st = NULL, zeta_vb, is_mat = FALSE, c = c)
-    
+                                   vec_fac_st = NULL, zeta_vb, is_mat = FALSE, c = c)
+      
       zeta_vb <- update_zeta_vb_(Z, theta_vb, n0, sig2_zeta_vb, T0_inv,
-                                     is_mat = FALSE, c = c) # update_zeta_vb_(Z, theta_vb, sig2_zeta_vb)
+                                 is_mat = FALSE, c = c) # update_zeta_vb_(Z, theta_vb, sig2_zeta_vb)
       
       nu_s0_vb <- c_s * (nu_s0 + p / 2) - c_s + 1 # implement annealing
       rho_s0_vb <- c_s * (rho_s0 + sum(sig2_theta_vb + theta_vb^2 - 2 * theta_vb * m0 + m0^2) / 2)
-    
+      
       sig02_inv_vb <- as.numeric(nu_s0_vb / rho_s0_vb)
       
       if (verbose & (it == 1 | it %% 5 == 0)) {
@@ -291,7 +282,7 @@ elbo_prior_ <- function(Y, eta, eta_vb, gam_vb, kappa, kappa_vb, nu,
                         vec_sum_log_det_zeta, shr_fac_inv) {
   
   n <- nrow(Y)
-  p <- length(m0)
+  p <- length(theta_vb)
   
   # needed for monotonically increasing elbo.
   #
@@ -307,16 +298,16 @@ elbo_prior_ <- function(Y, eta, eta_vb, gam_vb, kappa, kappa_vb, nu,
   log_sig02_inv_vb <- update_log_sig2_inv_vb_(nu_s0_vb, rho_s0_vb)
   
   vec_sum_log_det_theta <- p * (log_sig02_inv_vb + log(shr_fac_inv) + log(sig2_theta_vb)) # E(log(det(sig02_inv))) + log(det(sig2_theta_vb_bl))
-
+  
   elbo_A <- e_y_(n, kappa, kappa_vb, log_tau_vb, m2_beta, sig2_inv_vb, tau_vb)
   
   elbo_B <- e_beta_gamma_(gam_vb, log_sig2_inv_vb, log_tau_vb,
-                               zeta_vb, theta_vb, m2_beta,
-                               sig2_beta_vb, sig2_zeta_vb,
-                               sig2_theta_vb, sig2_inv_vb, tau_vb)
+                          zeta_vb, theta_vb, m2_beta,
+                          sig2_beta_vb, sig2_zeta_vb,
+                          sig2_theta_vb, sig2_inv_vb, tau_vb)
   elbo_C <- e_theta_(m0, theta_vb, shr_fac_inv * sig02_inv_vb, sig2_theta_vb, 
                      vec_sum_log_det_theta)
-
+  
   elbo_D <- e_zeta_(zeta_vb, n0, sig2_zeta_vb, T0_inv, vec_sum_log_det_zeta)
   
   elbo_E <- e_tau_(eta, eta_vb, kappa, kappa_vb, log_tau_vb, tau_vb)

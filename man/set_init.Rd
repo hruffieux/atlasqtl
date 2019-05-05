@@ -4,7 +4,8 @@
 \alias{set_init}
 \title{Gather initial variational parameters provided by the user.}
 \usage{
-set_init(q, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb)
+set_init(q, p, gam_vb, mu_beta_vb, sig02_inv_vb, sig2_beta_vb, sig2_theta_vb,
+  tau_vb, theta_vb, zeta_vb)
 }
 \arguments{
 \item{q}{Number of responses.}
@@ -15,16 +16,27 @@ set_init(q, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb)
 parameter yielding posterior probabilities of inclusion.}
 
 \item{mu_beta_vb}{Matrix of size p x q with initial values for the
-variational parameter yielding regression coefficient estimates for
-predictor-response pairs included in the model.}
+variational parameter yielding the posterior mean of regression estimates 
+for predictor-response pairs included in the model.}
 
-\item{sig2_beta_vb}{Vector of length q. For these values are the same
-for all the predictors (as a result of the predictor variables being
-standardized before running the variational algorithm).}
+\item{sig02_inv_vb}{Initial parameter for the hotspot propensity global 
+precision.}
+
+\item{sig2_beta_vb}{Vector of length q. Initial values for the variational 
+parameter yielding the posterior variance of regression estimates for
+  predictor-response pairs included in the model.}
+
+\item{sig2_theta_vb}{Vector of length p. Initial values for the variational 
+parameter yielding the posterior variance of the hotspot propensities.}
 
 \item{tau_vb}{Vector of length q with initial values for the variational 
-parameter yielding estimates for the continuous response residual 
-precisions.}
+parameter yielding estimates for the response residual precisions.}
+
+\item{theta_vb}{Vector of length p. Initial values for the variational 
+parameter yielding the posterior mean of the hotspot propensities.}
+
+\item{zeta_vb}{Vector of length q. Initial values for the variational 
+parameter yielding the posterior mean of the response propensities.}
 }
 \value{
 An object of class "\code{init}" preparing user initial values for
@@ -33,7 +45,7 @@ An object of class "\code{init}" preparing user initial values for
 }
 \description{
 This function must be used to provide initial values for the variational
-parameters used in \code{\link{atlasqtl}}.
+parameters by \code{\link{atlasqtl}}.
 }
 \details{
 The \code{\link{atlasqtl}} function can also be used with default initial
@@ -47,53 +59,72 @@ seed <- 123; set.seed(seed)
 ## Simulate data ##
 ###################
 
-## Examples using small problem sizes:
-##
-n <- 200; p <- 200; p_act <- 20; q <- 20; q_act <- 15
+# Example with small problem sizes:
+#
+n <- 200; p <- 50; p_act <- 10; q <- 100; q_act <- 50
 
-## Candidate predictors (subject to selection)
-##
-# Here we simulate common genetic variants (but any type of candidate
-# predictors can be supplied).
-# 0 = homozygous, major allele, 1 = heterozygous, 2 = homozygous, minor allele
-
+# Candidate predictors (subject to selection)
+#
+# Here example with common genetic variants under Hardy-Weinberg equilibrium
+#
 X_act <- matrix(rbinom(n * p_act, size = 2, p = 0.25), nrow = n)
 X_inact <- matrix(rbinom(n * (p - p_act), size = 2, p = 0.25), nrow = n)
 
+# shuffle indices 
 shuff_x_ind <- sample(p)
+shuff_y_ind <- sample(q)
+
 X <- cbind(X_act, X_inact)[, shuff_x_ind]
 
-bool_x_act <- shuff_x_ind <= p_act
+# Association pattern and effect sizes
+#
+pat <- matrix(FALSE, ncol = q, nrow = p)
+bool_x <- shuff_x_ind <= p_act
+bool_y <- shuff_y_ind <= q_act
 
-pat_act <- beta <- matrix(0, nrow = p_act, ncol = q_act)
-pat_act[sample(p_act*q_act, floor(p_act*q_act/5))] <- 1
-beta[as.logical(pat_act)] <-  rnorm(sum(pat_act))
+pat_act <- beta_act <- matrix(0, nrow = p_act, ncol = q_act)
+pat_act[sample(p_act * q_act, floor(p_act * q_act / 5))] <- 1
+beta_act[as.logical(pat_act)] <-  rnorm(sum(pat_act))
 
-## Gaussian responses
-##
-Y_act <- matrix(rnorm(n * q_act, mean = X_act \%*\% beta, sd = 0.5), nrow = n)
-Y_inact <- matrix(rnorm(n * (q - q_act), sd = 0.5), nrow = n)
-shuff_y_ind <- sample(q)
-Y <- cbind(Y_act, Y_inact)[, shuff_y_ind] 
+pat[bool_x, bool_y] <- pat_act
+
+# Gaussian responses
+#
+Y_act <- matrix(rnorm(n * q_act, mean = X_act \%*\% beta_act), nrow = n)
+Y_inact <- matrix(rnorm(n * (q - q_act)), nrow = n)
+
+Y <- cbind(Y_act, Y_inact)[, shuff_y_ind]
 
 
+################################
+## Specify initial parameters ##
+################################
+
+tau_vb <- rep(1, q)
+
+gam_vb <- matrix(rbeta(p * q, shape1 = 1, shape2 = 4 * q - 1), nrow = p)
+
+mu_beta_vb <- matrix(rnorm(p * q), nrow = p)
+sig2_beta_vb <- 1 / rgamma(q, shape = 2, rate = 1)
+
+sig02_inv_vb <- rgamma(1, shape = max(p, q), rate = 1)
+
+theta_vb <- rnorm(p, sd = 1 / sqrt(sig02_inv_vb * q))
+sig2_theta_vb <- 1 / (q + rgamma(p, shape = sig02_inv_vb * q, rate = 1))
+
+zeta_vb <- rnorm(q, mean = -2, sd = 0.1)
+
+list_init <- set_init(q, p, gam_vb, mu_beta_vb, sig02_inv_vb, sig2_beta_vb, 
+                      sig2_theta_vb, tau_vb, theta_vb, zeta_vb)
+                      
+                      
 ########################
 ## Infer associations ##
 ########################
 
-## Continuous responses
-##
+p0 <- c(mean(colSums(pat)), 10)
 
-# gam_vb chosen so that the prior mean number of responses associated with
-# each candidate predictor is 1/4.
-gam_vb <- matrix(rbeta(p * q, shape1 = 1, shape2 = 4*q-1), nrow = p)
-mu_beta_vb <- matrix(rnorm(p * q), nrow = p)
-tau_vb <- 1 / apply(Y, 2, var)
-sig2_beta_vb <- 1 / rgamma(q, shape = 2, rate = 1 / tau_vb)
-
-list_init <- set_init(q, p, gam_vb, mu_beta_vb, sig2_beta_vb, tau_vb)
-
-vb_g <- atlasqtl(Y = Y, X = X, p0 = c(5, 25), list_init = list_init)
+res_atlas <- atlasqtl(Y, X, p0, list_init = list_init)
 
 }
 \seealso{

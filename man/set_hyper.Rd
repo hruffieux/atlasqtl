@@ -4,32 +4,32 @@
 \alias{set_hyper}
 \title{Gather model hyperparameters provided by the user.}
 \usage{
-set_hyper(q, p, nu, rho, eta, kappa, n0, t02)
+set_hyper(q, p, eta, kappa, n0, nu, rho, t02)
 }
 \arguments{
 \item{q}{Number of responses.}
 
 \item{p}{Number of candidate predictors.}
 
-\item{nu}{Vector of length 1 providing the values of hyperparameter
-\eqn{\nu} for the prior distribution of \eqn{\sigma^{-2}}. \eqn{\sigma}
-represents the typical size of nonzero effects.}
+\item{eta}{Vector of length 1 or q. Provides the shape hyperparameter 
+\eqn{\eta} for the gamma prior distribution of the response residual 
+precision, \eqn{\tau}. If of length 1, the provided value is repeated q 
+times.}
 
-\item{rho}{Vector of length 1 providing the values of hyperparameter \eqn{\rho}
-for the prior distribution of \eqn{\sigma^{-2}}. \eqn{\sigma} represents
-the typical size of nonzero effects.}
-
-\item{eta}{Vector of length 1 or q. Provides the values of
-hyperparameter \eqn{\eta} for the prior distributions of the response 
-residual precisions, \eqn{\tau}. If of length 1, the provided
-value is repeated q times.}
-
-\item{kappa}{Vector of length 1 or q. Provides the values of hyperparameter
-\eqn{\kappa} for the prior distributions of the response residual
-precisions, \eqn{\tau}. If of length 1, the provided value is repeated q 
+\item{kappa}{Vector of length 1 or q. Provides the rate hyperparameter
+\eqn{\kappa} for the gamma prior distribution of the response residual
+precision, \eqn{\tau}. If of length 1, the provided value is repeated q 
 times.}
 
 \item{n0}{Vector of length 1 or q, prior mean for the response effects.}
+
+\item{nu}{Vector of length 1 providing the shape hyperparameter \eqn{\nu} for 
+the gamma prior distribution of \eqn{\sigma^{-2}}. \eqn{\sigma} represents 
+the typical size of nonzero effects.}
+
+\item{rho}{Vector of length 1 providing the rate hyperparameter \eqn{\rho}
+for the prior distribution of \eqn{\sigma^{-2}}. \eqn{\sigma} represents
+the typical size of nonzero effects.}
 
 \item{t02}{Prior variance for the response effects.}
 }
@@ -38,13 +38,13 @@ An object of class "\code{hyper}" preparing user hyperparameter in a
   form that can be passed to the \code{\link{atlasqtl}} function.
 }
 \description{
-This function must be used to provide hyperparameter values for the model
-used in \code{\link{atlasqtl}}.
+This function is used to provide hyperparameter values for 
+\code{\link{atlasqtl}}.
 }
 \details{
-The \code{\link{atlasqtl}} function can also be used with default hyperparameter
-choices (without using \code{\link{set_hyper}}) by setting its argument
-\code{list_hyper} to \code{NULL}.
+The \code{\link{atlasqtl}} function can also be used with default 
+hyperparameter values (i.e., without using \code{\link{set_hyper}}) by 
+setting its argument \code{list_hyper} to \code{NULL}.
 }
 \examples{
 seed <- 123; set.seed(seed)
@@ -55,42 +55,54 @@ seed <- 123; set.seed(seed)
 
 ## Examples using small problem sizes:
 ##
-n <- 200; p <- 200; p_act <- 20; q <- 20; q_act <- 15
+n <- 200; p <- 50; p_act <- 10; q <- 100; q_act <- 50
 
-## Candidate predictors (subject to selection)
-##
-# Here we simulate common genetic variants (but any type of candidate
-# predictors can be supplied).
-# 0 = homozygous, major allele, 1 = heterozygous, 2 = homozygous, minor allele
-
+# Candidate predictors (subject to selection)
+#
+# Here example with common genetic variants under Hardy-Weinberg equilibrium
+#
 X_act <- matrix(rbinom(n * p_act, size = 2, p = 0.25), nrow = n)
 X_inact <- matrix(rbinom(n * (p - p_act), size = 2, p = 0.25), nrow = n)
 
+# shuffle indices 
 shuff_x_ind <- sample(p)
+shuff_y_ind <- sample(q)
+
 X <- cbind(X_act, X_inact)[, shuff_x_ind]
 
-bool_x_act <- shuff_x_ind <= p_act
+# Association pattern and effect sizes
+#
+pat <- matrix(FALSE, ncol = q, nrow = p)
+bool_x <- shuff_x_ind <= p_act
+bool_y <- shuff_y_ind <= q_act
 
-pat_act <- beta <- matrix(0, nrow = p_act, ncol = q_act)
-pat_act[sample(p_act*q_act, floor(p_act*q_act/5))] <- 1
-beta[as.logical(pat_act)] <-  rnorm(sum(pat_act))
+pat_act <- beta_act <- matrix(0, nrow = p_act, ncol = q_act)
+pat_act[sample(p_act * q_act, floor(p_act * q_act / 5))] <- 1
+beta_act[as.logical(pat_act)] <-  rnorm(sum(pat_act))
 
-## Gaussian responses
-##
-Y_act <- matrix(rnorm(n * q_act, mean = X_act \%*\% beta, sd = 0.5), nrow = n)
-Y_inact <- matrix(rnorm(n * (q - q_act), sd = 0.5), nrow = n)
-shuff_y_ind <- sample(q)
+pat[bool_x, bool_y] <- pat_act
+
+# Gaussian responses
+#
+Y_act <- matrix(rnorm(n * q_act, mean = X_act \%*\% beta_act), nrow = n)
+Y_inact <- matrix(rnorm(n * (q - q_act)), nrow = n)
+
 Y <- cbind(Y_act, Y_inact)[, shuff_y_ind]
 
+#############################
+## Specify hyperparameters ##
+#############################
+
+list_hyper <- set_hyper(q, p, eta = 1, kappa = 1, n0 = -2, nu = 1, rho = 1, 
+                        t02 = 0.1)
+                        
 ########################
 ## Infer associations ##
 ########################
 
-list_hyper <- set_hyper(q, p, nu = 1, rho = 1, eta = 1, kappa = 1, 
-                        n0 = -2.5, t02 = 0.1)
+p0 <- c(mean(colSums(pat)), 10)
 
-vb <- atlasqtl(Y = Y, X = X, p0 = c(5, 25), list_hyper = list_hyper, 
-               user_seed = seed)
+res_atlas <- atlasqtl(Y, X, p0, list_hyper = list_hyper, user_seed = seed)
 
 }
 \seealso{
