@@ -5,41 +5,34 @@
 # propensity control. Sparse regression with identity link, no fixed covariates.
 # See help of `atlasqtl` function for details.
 #
-atlasqtl_horseshoe_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit, verbose, 
-                                     list_hyper, list_init, 
-                                     checkpoint_path = NULL, trace_path = NULL,
-                                     full_output = FALSE, debug = FALSE, 
-                                     batch = "y") {
+atlasqtl_global_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit, 
+                                  verbose, list_hyper, list_init, 
+                                  checkpoint_path = NULL, full_output = FALSE, 
+                                  debug = FALSE, batch = "y") {
   
+  
+  q <- ncol(Y)
   n <- nrow(Y)
   p <- ncol(X)
-  q <- ncol(Y)
   
   
-  # Gathering initial variational parameters. Do it explicitly.
-  # with() function not used here as the objects will be modified later.
+  # Gathering initial variational parameters
   #
   gam_vb <- list_init$gam_vb
-  mu_beta_vb <- list_init$mu_beta_vb # mu_beta_vb[s, t] = variational posterior mean of beta_st | gamma_st = 1 
-                                     # (beta_vb[s, t] = varational posterior mean of beta_st)
-  sig02_inv_vb <- list_init$sig02_inv_vb  # horseshoe global precision parameter
-  sig2_beta_vb <- list_init$sig2_beta_vb  # sig2_beta_vb[t]  = variational variance of beta_st | gamma_st = 1 
-                                          # (same for all s as X is standardized)
+  mu_beta_vb <- list_init$mu_beta_vb
+  sig02_inv_vb <- list_init$sig02_inv_vb
+  sig2_beta_vb <- list_init$sig2_beta_vb
   tau_vb <-list_init$tau_vb
+  
   theta_vb <- list_init$theta_vb
-  sig2_theta_vb <- list_init$sig2_theta_vb 
   zeta_vb <- list_init$zeta_vb
   
   rm(list_init)
   
   
-  # Preparing trace saving if any
-  #
-  trace_ind_max <- trace_var_max <- NULL
-  
   # Preparing annealing if any
   #
-  anneal_scale <- TRUE
+  anneal_scale <- TRUE # if TRUE, scale parameters s02 and lam2_inv_vb also annealed.
   
   if (is.null(anneal)) {
     annealing <- FALSE
@@ -52,6 +45,8 @@ atlasqtl_horseshoe_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit, 
   }
   
   eps <- .Machine$double.eps^0.5
+  
+  nu_s0 <- rho_s0 <- 1 / 2 # gives rise to a Cauchy prior for theta if = 1/2, otherwise, Student t if rho_s0 = 1 / (2*q)
   
   
   with(list_hyper, { # list_init not used with the with() function to avoid
@@ -72,13 +67,11 @@ atlasqtl_horseshoe_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit, 
     
     mat_x_m1 <- update_mat_x_m1_(X, beta_vb)
     
-    # Fixed VB parameter
-    #
-    nu_xi_inv_vb <- 1 # no change with annealing 
     
     converged <- FALSE
     lb_new <- -Inf
     it <- 0
+    
     
     while ((!converged) & (it < maxit)) {
       
@@ -164,83 +157,25 @@ atlasqtl_horseshoe_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit, 
                                    zeta_vb, `+`), c = c) # we use info_ so that the second argument is a matrix
       
       # keep this order!
-      #  
-      L_vb <- c_s * sig02_inv_vb * shr_fac_inv * (theta_vb^2 + sig2_theta_vb - 2 * theta_vb * m0 + m0^2) / 2 / df 
-      rho_xi_inv_vb <- c_s * (A2_inv + sig02_inv_vb) 
+      #
+      sig2_theta_vb <- update_sig2_c0_vb_(q, 1 / sig02_inv_vb / shr_fac_inv, c = c)
       
-      
-      if (annealing & anneal_scale) {
-        
-        lam2_inv_vb <- update_annealed_lam2_inv_vb_(L_vb, c_s, df)
-        
-      } else {
-        
-        if (df == 1) {
-          
-          Q_app <- sapply(L_vb, function(L_vb_s) Q_approx(L_vb_s))  # TODO implement a Q_approx for vectors
-          
-          lam2_inv_vb <- 1 / (Q_app * L_vb) - 1
-          
-        } else if (df == 3) {
-          
-          Q_app <- sapply(L_vb, function(L_vb_s) Q_approx(L_vb_s))
-          
-          lam2_inv_vb <- exp(-log(3) - log(L_vb) + log(1 - L_vb * Q_app) - log(Q_app * (1 + L_vb) - 1)) - 1 / 3
-          
-        } else {
-          # also works for df = 3 but might be slightly less efficient than the above
-          
-          Q_app <- sapply(L_vb, function(L_vb_s) Q_approx(L_vb_s))
-          
-          exponent <- (df + 1) / 2
-          
-          lam2_inv_vb <- sapply(1:p, function(j) {
-            
-            exp(log(compute_integral_hs_(df, L_vb[j] * df, m = exponent, n = exponent, Q_ab = Q_app[j])) -
-                  log(compute_integral_hs_(df, L_vb[j] * df, m = exponent, n = exponent - 1, Q_ab = Q_app[j])))
-            
-          })
-          
-        }
-        
-      }
-      
-      
-      xi_inv_vb <- nu_xi_inv_vb / rho_xi_inv_vb
-      
-      sig2_theta_vb <- update_sig2_c0_vb_(q, 1 / (sig02_inv_vb * lam2_inv_vb * shr_fac_inv), c = c)
-      
-      theta_vb <- update_theta_vb_(Z, m0, sig02_inv_vb * lam2_inv_vb * shr_fac_inv, sig2_theta_vb,
+      theta_vb <- update_theta_vb_(Z, m0, sig02_inv_vb * shr_fac_inv, sig2_theta_vb,
                                    vec_fac_st = NULL, zeta_vb, is_mat = FALSE, c = c)
       
-      nu_s0_vb <- update_nu_vb_(1 / 2, p, c = c_s)
+      zeta_vb <- update_zeta_vb_(Z, theta_vb, n0, sig2_zeta_vb, T0_inv,
+                                 is_mat = FALSE, c = c) # update_zeta_vb_(Z, theta_vb, sig2_zeta_vb)
       
-      rho_s0_vb <- c_s * (xi_inv_vb + 
-                            sum(lam2_inv_vb * shr_fac_inv * (theta_vb^2 + sig2_theta_vb - 2 * theta_vb * m0 + m0^2)) / 2) 
+      nu_s0_vb <- c_s * (nu_s0 + p / 2) - c_s + 1 # implement annealing
+      rho_s0_vb <- c_s * (rho_s0 + sum(sig2_theta_vb + theta_vb^2 - 2 * theta_vb * m0 + m0^2) / 2)
       
       sig02_inv_vb <- as.numeric(nu_s0_vb / rho_s0_vb)
       
-      zeta_vb <- update_zeta_vb_(Z, theta_vb, n0, sig2_zeta_vb, T0_inv,
-                                 is_mat = FALSE, c = c) 
-      
-      
-      if (verbose && (it == 1 | it %% 5 == 0)) {
+      if (verbose & (it == 1 | it %% 5 == 0)) {
         
         cat(paste0("Updated global variance: ", format(rho_s0_vb / (nu_s0_vb - 1) / shr_fac_inv, digits = 4), ".\n"))
-        cat("Updated local variational parameter 1 / lam2_inv_vb for local variances: \n")
-        print(summary(1 / lam2_inv_vb))
-        cat("\n")
         
       }
-      
-      if (!is.null(trace_path) && (it == 1 | it %% 25 == 0)) {
-        
-        list_traces <- plot_trace_var_hs_(lam2_inv_vb, sig02_inv_vb, q, it, trace_ind_max, trace_var_max, trace_path)
-        trace_ind_max <- list_traces$trace_ind_max
-        trace_var_max <- list_traces$trace_var_max
-        
-      }
-      
       
       if (annealing) {
         
@@ -265,31 +200,31 @@ atlasqtl_horseshoe_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit, 
         
       } else {
         
-        lb_new <- elbo_horseshoe_(Y, xi_inv_vb, A2_inv, lam2_inv_vb, eta, eta_vb, L_vb, gam_vb, kappa, kappa_vb, nu,
-                                  nu_vb, nu_xi_inv_vb, nu_s0_vb, m0, n0, zeta_vb,
-                                  theta_vb, rho, rho_vb, rho_xi_inv_vb, rho_s0_vb, Q_app, sig2_beta_vb,
-                                  sig02_inv_vb, sig2_theta_vb, sig2_inv_vb, sig2_zeta_vb,
-                                  T0_inv, tau_vb, beta_vb, m2_beta, mat_x_m1,
-                                  vec_sum_log_det_zeta, df, shr_fac_inv)
+        lb_new <- elbo_global_(Y, eta, eta_vb, gam_vb, kappa, kappa_vb, nu,
+                              nu_vb, nu_s0, nu_s0_vb, m0, n0, zeta_vb,
+                              theta_vb, rho, rho_vb, rho_s0, rho_s0_vb, sig2_beta_vb,
+                              sig02_inv_vb, sig2_theta_vb, sig2_inv_vb, sig2_zeta_vb,
+                              T0_inv, tau_vb, beta_vb, m2_beta, mat_x_m1,
+                              vec_sum_log_det_zeta, shr_fac_inv)
         
-        if (verbose & (it == 1 | it %% 5 == 0))
+        if (verbose & (it == 1 | it %% 5 == 0)) 
           cat(paste("ELBO = ", format(lb_new), "\n\n", sep = ""))
+        
         
         if (debug && lb_new + eps < lb_old)
           stop("ELBO not increasing monotonically. Exit. ")
         
         converged <- (abs(lb_new - lb_old) < tol)
         
-        
         checkpoint_(it, checkpoint_path, gam_vb, converged, lb_new, lb_old, 
-                    lam2_inv_vb = lam2_inv_vb, zeta_vb = zeta_vb, theta_vb = theta_vb, 
+                    zeta_vb = zeta_vb, theta_vb = theta_vb, 
                     sig02_inv_vb = sig02_inv_vb)
       }
+      
       
     }
     
     checkpoint_clean_up_(checkpoint_path)
-    
     
     if (verbose) {
       if (converged) {
@@ -302,16 +237,17 @@ atlasqtl_horseshoe_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit, 
     }
     
     lb_opt <- lb_new
+    
     s02_vb <- rho_s0_vb / (nu_s0_vb - 1) / shr_fac_inv # inverse gamma mean, with embedded shrinkage
     
     if (full_output) { # for internal use only
       
-      create_named_list_(xi_inv_vb, A2_inv, lam2_inv_vb, eta, eta_vb, L_vb, gam_vb, kappa, kappa_vb, nu,
-                         nu_vb, nu_xi_inv_vb, nu_s0_vb, m0, n0, zeta_vb,
-                         theta_vb, rho, rho_vb, rho_xi_inv_vb, rho_s0_vb, Q_app, sig2_beta_vb,
+      create_named_list_(eta, eta_vb, gam_vb, kappa, kappa_vb, nu,
+                         nu_vb, nu_s0, nu_s0_vb, m0, n0, zeta_vb,
+                         theta_vb, rho, rho_vb, rho_s0, rho_s0_vb, sig2_beta_vb,
                          sig02_inv_vb, s02_vb, sig2_theta_vb, sig2_inv_vb, sig2_zeta_vb,
-                         T0_inv, tau_vb, beta_vb, m2_beta, mat_x_m1,
-                         vec_sum_log_det_zeta, df, shr_fac_inv)
+                         T0_inv, tau_vb, beta_vb, m2_beta,
+                         vec_sum_log_det_zeta, shr_fac_inv)
       
     } else {
       
@@ -322,7 +258,6 @@ atlasqtl_horseshoe_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit, 
       colnames(gam_vb) <- names_y
       names(theta_vb) <- names_x
       names(zeta_vb) <- names_y
-      names(lam2_inv_vb) <- names_x
       
       diff_lb <- abs(lb_opt - lb_old)
       
@@ -339,17 +274,15 @@ atlasqtl_horseshoe_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit, 
 # Internal function which implements the marginal log-likelihood variational
 # lower bound (ELBO) corresponding to the `atlasqtl_struct_core` algorithm.
 #
-elbo_horseshoe_ <- function(Y, xi_inv_vb, A2_inv, lam2_inv_vb, eta, eta_vb, L_vb, 
-                            gam_vb, kappa, kappa_vb, nu, nu_vb, 
-                            nu_xi_inv_vb, nu_s0_vb, m0, n0, zeta_vb,
-                            theta_vb, rho, rho_vb, rho_xi_inv_vb, rho_s0_vb, 
-                            Q_app, sig2_beta_vb, sig02_inv_vb, sig2_theta_vb, 
-                            sig2_inv_vb, sig2_zeta_vb, T0_inv, tau_vb, 
-                            beta_vb, m2_beta, mat_x_m1, vec_sum_log_det_zeta, 
-                            df, shr_fac_inv) {
+elbo_global_ <- function(Y, eta, eta_vb, gam_vb, kappa, kappa_vb, nu, 
+                         nu_vb, nu_s0, nu_s0_vb, m0, n0, zeta_vb,
+                         theta_vb, rho, rho_vb, rho_s0, rho_s0_vb, sig2_beta_vb,
+                         sig02_inv_vb, sig2_theta_vb, sig2_inv_vb, sig2_zeta_vb,
+                         T0_inv, tau_vb, beta_vb, m2_beta, mat_x_m1,
+                         vec_sum_log_det_zeta, shr_fac_inv) {
   
   n <- nrow(Y)
-  p <- length(L_vb)
+  p <- length(theta_vb)
   
   # needed for monotonically increasing elbo.
   #
@@ -363,31 +296,28 @@ elbo_horseshoe_ <- function(Y, xi_inv_vb, A2_inv, lam2_inv_vb, eta, eta_vb, L_vb
   log_sig2_inv_vb <- update_log_sig2_inv_vb_(nu_vb, rho_vb)
   
   log_sig02_inv_vb <- update_log_sig2_inv_vb_(nu_s0_vb, rho_s0_vb)
-  log_xi_inv_vb <- update_log_sig2_inv_vb_(nu_xi_inv_vb, rho_xi_inv_vb)
   
+  vec_sum_log_det_theta <- p * (log_sig02_inv_vb + log(shr_fac_inv) + log(sig2_theta_vb)) # E(log(det(sig02_inv))) + log(det(sig2_theta_vb_bl))
   
   elbo_A <- e_y_(n, kappa, kappa_vb, log_tau_vb, m2_beta, sig2_inv_vb, tau_vb)
-  
   
   elbo_B <- e_beta_gamma_(gam_vb, log_sig2_inv_vb, log_tau_vb,
                           zeta_vb, theta_vb, m2_beta,
                           sig2_beta_vb, sig2_zeta_vb,
                           sig2_theta_vb, sig2_inv_vb, tau_vb)
-  
-  elbo_C <- e_theta_hs_(lam2_inv_vb, L_vb, log_sig02_inv_vb + log(shr_fac_inv), m0, theta_vb, 
-                        Q_app, sig02_inv_vb * shr_fac_inv, sig2_theta_vb, df)
+  elbo_C <- e_theta_(m0, theta_vb, shr_fac_inv * sig02_inv_vb, sig2_theta_vb, 
+                     vec_sum_log_det_theta)
   
   elbo_D <- e_zeta_(zeta_vb, n0, sig2_zeta_vb, T0_inv, vec_sum_log_det_zeta)
   
   elbo_E <- e_tau_(eta, eta_vb, kappa, kappa_vb, log_tau_vb, tau_vb)
   
-  elbo_F <- sum(e_sig2_inv_hs_(xi_inv_vb, nu_s0_vb, log_xi_inv_vb, log_sig02_inv_vb, rho_s0_vb, sig02_inv_vb)) # sig02_inv_vb
+  elbo_F <- e_sig2_inv_(nu, nu_vb, log_sig2_inv_vb, rho, rho_vb, sig2_inv_vb)
   
-  elbo_G <- sum(e_sig2_inv_(1 / 2, nu_xi_inv_vb, log_xi_inv_vb, A2_inv, rho_xi_inv_vb, xi_inv_vb)) # xi_inv_vb
+  elbo_G <- e_sig2_inv_(nu_s0, nu_s0_vb, log_sig02_inv_vb, rho_s0, rho_s0_vb, sig02_inv_vb)
   
-  elbo_H <- e_sig2_inv_(nu, nu_vb, log_sig2_inv_vb, rho, rho_vb, sig2_inv_vb)
   
-  as.numeric(elbo_A + elbo_B + elbo_C + elbo_D + elbo_E + elbo_F + elbo_G + elbo_H)
+  elbo_A + elbo_B + elbo_C + elbo_D + elbo_E + elbo_F + elbo_G
   
 }
 

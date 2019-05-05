@@ -236,9 +236,10 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
     
     df <- 1
 
-    res_atlas <- atlasqtl_horseshoe_core_(Y, X, shr_fac_inv, anneal, df, tol, maxit, verbose,
-                                          list_hyper, list_init, checkpoint_path,
-                                          trace_path, full_output, debug)
+    res_atlas <- atlasqtl_global_local_core_(Y, X, shr_fac_inv, anneal, df, tol, 
+                                             maxit, verbose, list_hyper, 
+                                             list_init, checkpoint_path,
+                                             trace_path, full_output, debug)
     
   } else {
     
@@ -246,9 +247,9 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
       warning(paste0("Provided argument trace_path not used, when using the ",
                      "global-scale-only model."))
       
-    res_atlas <- atlasqtl_prior_core_(Y, X, shr_fac_inv, anneal, df, tol, maxit, verbose,
-                                      list_hyper, list_init, checkpoint_path,
-                                      full_output, debug)
+    res_atlas <- atlasqtl_global_core_(Y, X, shr_fac_inv, anneal, df, tol, 
+                                       maxit, verbose, list_hyper, list_init, 
+                                       checkpoint_path, full_output, debug)
     
   }
   
