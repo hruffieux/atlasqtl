@@ -20,7 +20,7 @@ functional architecture underlying complex traits; our approach is a tool to
 better understand this architecture and will hopefully serve towards outlining a 
 *hotspot atlas* of the human genome. 
 
-Reference: Hele Ruffieux, Anthony C. Davison, JöroHager, Jamie Inshaw, 
+Reference: Helene Ruffieux, Anthony C. Davison, Jorg Hager, Jamie Inshaw, 
 Benjamin P. Fairfax, Sylvia Richardson, Leonardo Bottolo, A global-local 
 approach for detecting hotspots in multiple-response regression, 
 arXiv:1811.03334, 2018.
