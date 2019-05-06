@@ -20,18 +20,31 @@ functional architecture underlying complex traits; our approach is a tool to
 better understand this architecture and will hopefully serve towards outlining a 
 *hotspot atlas* of the human genome. 
 
-Reference: Hélène Ruffieux, Anthony C. Davison, Jörg Hager, Jamie Inshaw, 
+Reference: Hele Ruffieux, Anthony C. Davison, JöroHager, Jamie Inshaw, 
 Benjamin P. Fairfax, Sylvia Richardson, Leonardo Bottolo, A global-local 
 approach for detecting hotspots in multiple-response regression, 
 arXiv:1811.03334, 2018.
 
+## Warning
+
+**This is a development branch**, it is not guaranteed to be stable at any given time
+and features are subject to change. Please use the [stable version](https://github.com/hruffieux/atlasqtl),
+unless you want to test and report issues.
+
 ## Installation
 
-To install, run the following commands in R:
+**Important note:** the R package depends on `libgsl` which needs to be manually 
+installed. For example on Ubuntu,
+
+``` bash
+$ sudo apt-get install libgsl-dev
+```
+
+To install the package in R, run the following command:
 
 ``` r
-require(devtools) # after having installed devtools (install.packages("devtools"))
-devtools::install_github("hruffieux/atlasqtl")
+# after having installed devtools (install.packages("devtools"))
+devtools::install_github("hruffieux/atlasqtl", ref = "devel")
 ```
 
 ## License and authors
