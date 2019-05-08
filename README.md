@@ -1,4 +1,6 @@
-## atlasqtl – fAsT gLobal-locAl hotSpot QTL detection
+## atlasqtl - Fast global-local hotspot QTL detection
+
+[![Travis-CI Build Status](https://travis-ci.org/hruffieux/atlasqtl.svg?branch=master)](https://travis-ci.org/hruffieux/atlasqtl)
 
 ## Overview
 
