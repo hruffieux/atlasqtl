@@ -377,6 +377,51 @@ Q_approx <- function(x, eps1 = 1e-30, eps2 = 1e-7) {
 }
 
 
+Q_approx_vec <- function(x, eps1 = 1e-30, eps2 = 1e-7) {
+  
+  qapprox <- rep(NA, length(x))
+  
+  x_lower <- x[x <= 1]
+  
+  if (length(x_lower) > 0) {
+    qapprox[x <= 1] <- gsl::expint_E1(x_lower) * exp(x_lower)
+  }
+  
+  
+  x_upper <- x[x > 1]
+  
+  if (length(x_upper) > 0) {
+    
+    f_p <- eps1
+    C_p <- eps1
+    D_p <- 0
+    Delta <- 2 + eps2
+    j <- 1
+    
+    
+    while( max(abs(Delta-1)) >= eps2 ) {
+      
+      j <- j+1
+      
+      D_c <- x_upper + 2*j - 1 - ((j-1)^{2}) * D_p
+      C_c <- x_upper + 2*j - 1 - ((j-1)^{2}) / C_p
+      D_c <- 1 / D_c
+      
+      Delta <- C_c * D_c
+      f_c <- f_p * Delta
+      f_p <- f_c
+      C_p <- C_c
+      D_p <- D_c
+    }
+    
+    qapprox[x > 1] <- 1/(x_upper + 1 + f_c)
+    
+  }
+  
+  qapprox
+  
+}
+
 compute_integral_hs_ <- function(alpha, beta, m, n, Q_ab) {
   
   # computes int_0^infty x^n (1 + alpha * x)^(-m) * exp(- beta * x) dx

@@ -175,22 +175,18 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
         
       } else {
         
+        Q_app <- Q_approx_vec(L_vb)
+        
         if (df == 1) {
-          
-          Q_app <- sapply(L_vb, function(L_vb_s) Q_approx(L_vb_s))  # TODO implement a Q_approx for vectors
           
           lam2_inv_vb <- 1 / (Q_app * L_vb) - 1
           
         } else if (df == 3) {
-          
-          Q_app <- sapply(L_vb, function(L_vb_s) Q_approx(L_vb_s))
-          
+  
           lam2_inv_vb <- exp(-log(3) - log(L_vb) + log(1 - L_vb * Q_app) - log(Q_app * (1 + L_vb) - 1)) - 1 / 3
           
         } else {
           # also works for df = 3 but might be slightly less efficient than the above
-          
-          Q_app <- sapply(L_vb, function(L_vb_s) Q_approx(L_vb_s))
           
           exponent <- (df + 1) / 2
           
