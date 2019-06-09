@@ -302,8 +302,8 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
     if (verbose != 0) {
       if (converged) {
         cat(paste0("Convergence obtained after ", format(it), " iterations. \n",
-                  "Optimal marginal log-likelihood variational lower bound ",
-                  "(ELBO) = ", format(lb_new), ". \n\n"))
+                   "Optimal marginal log-likelihood variational lower bound ",
+                   "(ELBO) = ", format(lb_new), ". \n\n"))
       } else {
         warning("Maximal number of iterations reached before convergence. Exit.")
       }

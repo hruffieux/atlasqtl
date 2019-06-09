@@ -180,8 +180,11 @@ update_theta_vb_ <- function(Z, m0, sig02_inv, sig2_theta_vb, vec_fac_st,
 update_Z_ <- function(gam_vb, mat_v_mu, c = 1) {
   
   sqrt_c <- sqrt(c)
-  
-  (gam_vb * (inv_mills_ratio_(1, sqrt_c * mat_v_mu) - inv_mills_ratio_(0, sqrt_c * mat_v_mu)) +
-    inv_mills_ratio_(0, sqrt_c * mat_v_mu)) / sqrt_c + mat_v_mu
-  
+
+  log_pnorm <- pnorm(sqrt_c * mat_v_mu, log.p = TRUE)
+  log_1_pnorm <- pnorm(sqrt_c * mat_v_mu, log.p = TRUE, lower.tail = FALSE)
+
+  imr0 <- inv_mills_ratio_(0, sqrt_c * mat_v_mu, log_1_pnorm, log_pnorm)
+  (gam_vb * (inv_mills_ratio_(1, sqrt_c * mat_v_mu, log_1_pnorm, log_pnorm) - imr0) + imr0) / sqrt_c + mat_v_mu
+
 }

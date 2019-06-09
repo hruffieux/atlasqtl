@@ -246,7 +246,7 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
                "**************************************************** \n\n"))
     
     cat(paste0("==================================================== \n",
-               "== ATLAS: fAsT gLobal-locAl hotSpot QTL detection == \n",
+               "== ATLAS: fast global-local hotspot QTL detection == \n",
                "==================================================== \n\n"))
   }
   

@@ -168,26 +168,26 @@ log_det <- function(list_mat) {
 
 }
 
-inv_mills_ratio_ <- function(Y, U) {
 
-  if (is.matrix(U)) m <- matrix(NA, nrow = nrow(U), ncol = ncol(U))
-  else m <- rep(NA, length(U))
-
-  U_1 <- U[Y==1]
-  m_1 <- exp(dnorm(U_1, log = TRUE) - pnorm(U_1, log.p = TRUE))
-  m_1[m_1 < -U_1] <- -U_1
-
-  m[Y==1] <- m_1
-
-
-  U_0 <- U[Y==0]
-  m_0 <- - exp(dnorm(U[Y==0], log = TRUE) - pnorm(U[Y==0], lower.tail = FALSE, log.p = TRUE))
-  m_0[m_0 > -U_0] <- -U_0
-
-  m[Y==0] <- m_0
-
+inv_mills_ratio_ <- function(y, U, log_1_pnorm_U, log_pnorm_U) {
+  
+  stopifnot(y %in% c(0, 1))
+  
+  # writing explicitely the formula for pnorm(, log = TRUE) is faster...
+  if (y == 1) {
+    
+    m <- exp(-U^2/2 - log(sqrt(2*pi)) - log_pnorm_U)
+    m[m < -U] <- -U
+    
+  } else {
+    
+    m <- - exp(-U^2/2 - log(sqrt(2*pi)) - log_1_pnorm_U)
+    m[m > -U] <- -U
+    
+  }
+  
   m
-
+  
 }
 
 
