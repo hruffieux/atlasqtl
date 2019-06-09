@@ -8,6 +8,7 @@
 atlasqtl_global_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit, 
                                   verbose, list_hyper, list_init, 
                                   checkpoint_path = NULL, full_output = FALSE, 
+                                  thinned_elbo_eval = TRUE,
                                   debug = FALSE, batch = "y") {
   
   
@@ -40,14 +41,27 @@ atlasqtl_global_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit,
   if (is.null(anneal)) {
     annealing <- FALSE
     c <- c_s <- 1 # c_s for scale parameters
+    it_init <- 1 # first non-annealed iteration
   } else {
     annealing <- TRUE
     ladder <- get_annealing_ladder_(anneal, verbose)
     c <- ladder[1]
     c_s <- ifelse(anneal_scale, c, 1)
+    it_init <- anneal[3] # first non-annealed iteration 
   }
   
   eps <- .Machine$double.eps^0.5
+  
+  if (thinned_elbo_eval) {
+    times_conv_sched <- c(1, 5, 10, 50) 
+    batch_conv_sched <- c(1, 10, 25, 50) 
+  } else {
+    times_conv_sched <- 1
+    batch_conv_sched <- 1
+  }
+  
+  ind_batch_conv <- length(batch_conv_sched) + 1 # so that, the first time, it enters in the loop be
+  batch_conv <- 1 
   
   nu_s0 <- rho_s0 <- 1 / 2 # gives rise to a Cauchy prior for theta if = 1/2, otherwise, Student t if rho_s0 = 1 / (2*q)
   
@@ -81,7 +95,7 @@ atlasqtl_global_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit,
       lb_old <- lb_new
       it <- it + 1
       
-      if (verbose != 0 & (it == 1 | it %% 5 == 0))
+      if (verbose != 0 &  (it == 1 | it %% max(5, batch_conv) == 0)) 
         cat(paste0("Iteration ", format(it), "... \n"))
       
       # % #
@@ -171,7 +185,7 @@ atlasqtl_global_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit,
       
       sig02_inv_vb <- as.numeric(nu_s0_vb / rho_s0_vb)
       
-      if (verbose == 2 & (it == 1 | it %% 5 == 0)) {
+      if (verbose == 2 && (it == 1 | it %% max(5, batch_conv) == 0)) {
         
         cat(paste0("Variational hotspot propensity global scale: ", 
                    format(sqrt(rho_s0_vb / (nu_s0_vb - 1) / shr_fac_inv), digits = 3), ".\n"))
@@ -201,23 +215,43 @@ atlasqtl_global_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit,
         
       } else {
         
-        lb_new <- elbo_global_(Y, beta_vb, eta, eta_vb, gam_vb, kappa, kappa_vb, 
-                               log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, 
-                               m0, m2_beta, mat_x_m1, n0, nu, nu_s0, nu_s0_vb, 
-                               nu_vb, rho, rho_s0, rho_s0_vb, rho_vb, 
-                               shr_fac_inv, sig02_inv_vb, sig2_beta_vb, 
-                               sig2_inv_vb, sig2_theta_vb, sig2_zeta_vb, 
-                               t02_inv, tau_vb, theta_vb, vec_sum_log_det_zeta, 
-                               zeta_vb)
         
-        if (verbose != 0 & (it == 1 | it %% 5 == 0)) 
-          cat(paste0("ELBO = ", format(lb_new), "\n\n"))
-        
-        
-        if (debug && lb_new + eps < lb_old)
-          stop("ELBO not increasing monotonically. Exit. ")
-        
-        converged <- (abs(lb_new - lb_old) < tol)
+        if (it <= it_init + 1 | it %% batch_conv == 0 | it %% batch_conv == 1) { 
+          # it <= it_init + 1 evaluate the ELBO for the first two non-annealed iterations
+          # to (also) evaluate convergence between two consecutive iterations
+          
+          
+          lb_new <- elbo_global_(Y, beta_vb, eta, eta_vb, gam_vb, kappa, kappa_vb, 
+                                 log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, 
+                                 m0, m2_beta, mat_x_m1, n0, nu, nu_s0, nu_s0_vb, 
+                                 nu_vb, rho, rho_s0, rho_s0_vb, rho_vb, 
+                                 shr_fac_inv, sig02_inv_vb, sig2_beta_vb, 
+                                 sig2_inv_vb, sig2_theta_vb, sig2_zeta_vb, 
+                                 t02_inv, tau_vb, theta_vb, vec_sum_log_det_zeta, 
+                                 zeta_vb)
+          
+          if (verbose != 0 & (it == it_init | it %% max(5, batch_conv) == 0))
+            cat(paste0("ELBO = ", format(lb_new), "\n\n"))
+          
+          if (debug && lb_new + eps < lb_old)
+            stop("ELBO not increasing monotonically. Exit. ")
+          
+          diff_lb <- abs(lb_new - lb_old)
+          
+          sum_exceed <- sum(diff_lb > (times_conv_sched * tol))
+          
+          if (sum_exceed == 0) {
+            
+            converged <- TRUE
+            
+          } else if (ind_batch_conv > sum_exceed) {
+            
+            ind_batch_conv <- sum_exceed
+            batch_conv <- batch_conv_sched[ind_batch_conv]
+            
+          }
+          
+        }
         
         checkpoint_(it, checkpoint_path, gam_vb, converged, lb_new, lb_old, 
                     zeta_vb = zeta_vb, theta_vb = theta_vb, 

@@ -8,7 +8,7 @@ variational inference.}
 atlasqtl(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
   user_seed = NULL, verbose = 1, list_hyper = NULL, list_init = NULL,
   save_hyper = FALSE, save_init = FALSE, full_output = FALSE,
-  checkpoint_path = NULL, trace_path = NULL)
+  thinned_elbo_eval = TRUE, checkpoint_path = NULL, trace_path = NULL)
 }
 \arguments{
 \item{Y}{Response data matrix of dimension n x q, where n is the number of
@@ -58,6 +58,13 @@ likely to be large). Default is \code{FALSE}.}
 
 \item{full_output}{If \code{TRUE}, the inferred variational parameters for 
 all parameters are returned.}
+
+\item{thinned_elbo_eval}{If \code{TRUE}, the convergence criterion 
+(variational lower bound on the marginal log-likelihood, or ELBO) is not 
+evaluated at each iteration, in order to save computational resources, but 
+after a given batch of iterations where the batch size is set in an 
+adaptive fashion accounting for the number of iterations roughly expected 
+until convergence.}
 
 \item{checkpoint_path}{Path where to save temporary checkpoint outputs. 
 Default is \code{NULL}, for no checkpointing.}
