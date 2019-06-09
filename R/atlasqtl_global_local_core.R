@@ -32,6 +32,9 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
   
   rm(list_init)
   
+  theta_plus_zeta_vb <- sweep(tcrossprod(theta_vb, rep(1, q)), 2, zeta_vb, `+`)
+  log_Phi_theta_plus_zeta <- pnorm(theta_plus_zeta_vb, log.p = TRUE)
+  log_1_min_Phi_theta_plus_zeta <- pnorm(theta_plus_zeta_vb, log.p = TRUE, lower.tail = FALSE) 
   
   # Preparing trace saving if any
   #
@@ -113,12 +116,6 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
       #
       if (batch == "y") { # optimal scheme
         
-        log_Phi_theta_plus_zeta <- sapply(zeta_vb, function(zeta_k) {
-          pnorm(theta_vb + zeta_k, log.p = TRUE)})
-        
-        log_1_min_Phi_theta_plus_zeta <- sapply(zeta_vb, function(zeta_k) {
-          pnorm(theta_vb + zeta_k, lower.tail = FALSE, log.p = TRUE)})
-        
         # C++ Eigen call for expensive updates 
         #
         # Shuffle updates order at each iteration
@@ -164,8 +161,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
       
       m2_beta <- update_m2_beta_(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = TRUE)
       
-      Z <- update_Z_(gam_vb, sweep(tcrossprod(theta_vb, rep(1, q)), 2,
-                                   zeta_vb, `+`), c = c) 
+      Z <- update_Z_(gam_vb, theta_plus_zeta_vb, c = c) 
       
       # keep this order!
       #  
@@ -226,6 +222,9 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
       zeta_vb <- update_zeta_vb_(Z, theta_vb, n0, sig2_zeta_vb, t02_inv,
                                  is_mat = FALSE, c = c) 
       
+      theta_plus_zeta_vb <- sweep(tcrossprod(theta_vb, rep(1, q)), 2, zeta_vb, `+`)
+      log_Phi_theta_plus_zeta <- pnorm(theta_plus_zeta_vb, log.p = TRUE)
+      log_1_min_Phi_theta_plus_zeta <- pnorm(theta_plus_zeta_vb, log.p = TRUE, lower.tail = FALSE)  
       
       if (verbose == 2 && (it == 1 | it %% 5 == 0)) {
         
@@ -272,7 +271,9 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
       } else {
         
         lb_new <- elbo_global_local_(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb, 
-                                     kappa, kappa_vb, L_vb, lam2_inv_vb, m0, m2_beta, 
+                                     kappa, kappa_vb, L_vb, lam2_inv_vb, 
+                                     log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, 
+                                     m0, m2_beta, 
                                      mat_x_m1, n0, nu, nu_s0_vb, nu_vb, nu_xi_inv_vb, 
                                      Q_app, rho, rho_s0_vb, rho_vb, rho_xi_inv_vb, 
                                      shr_fac_inv, sig02_inv_vb, sig2_beta_vb, 
@@ -347,7 +348,9 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
 # lower bound (ELBO) corresponding to the `atlasqtl_struct_core` algorithm.
 #
 elbo_global_local_ <- function(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb, 
-                               kappa, kappa_vb, L_vb, lam2_inv_vb, m0, m2_beta, 
+                               kappa, kappa_vb, L_vb, lam2_inv_vb, 
+                               log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, 
+                               m0, m2_beta, 
                                mat_x_m1, n0, nu, nu_s0_vb, nu_vb, nu_xi_inv_vb, 
                                Q_app, rho, rho_s0_vb, rho_vb, rho_xi_inv_vb, 
                                shr_fac_inv, sig02_inv_vb, sig2_beta_vb, 
@@ -375,7 +378,12 @@ elbo_global_local_ <- function(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
   
   elbo_A <- e_y_(n, kappa, kappa_vb, log_tau_vb, m2_beta, sig2_inv_vb, tau_vb)
   
-  elbo_B <- e_beta_gamma_(gam_vb, log_sig2_inv_vb, log_tau_vb, zeta_vb, 
+  # elbo_B <- e_beta_gamma_(gam_vb, log_sig2_inv_vb, log_tau_vb, zeta_vb, 
+  #                         theta_vb, m2_beta, sig2_beta_vb, sig2_zeta_vb,
+  #                         sig2_theta_vb, sig2_inv_vb, tau_vb)
+  
+  elbo_B <- e_beta_gamma_(gam_vb, log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, log_sig2_inv_vb, 
+                          log_tau_vb, zeta_vb, 
                           theta_vb, m2_beta, sig2_beta_vb, sig2_zeta_vb,
                           sig2_theta_vb, sig2_inv_vb, tau_vb)
   
