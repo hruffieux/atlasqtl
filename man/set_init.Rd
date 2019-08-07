@@ -4,8 +4,8 @@
 \alias{set_init}
 \title{Gather initial variational parameters provided by the user.}
 \usage{
-set_init(q, p, gam_vb, mu_beta_vb, sig02_inv_vb, sig2_beta_vb, sig2_theta_vb,
-  tau_vb, theta_vb, zeta_vb)
+set_init(q, p, gam_vb, mu_beta_vb, sig02_inv_vb, sig2_beta_vb,
+  sig2_theta_vb, tau_vb, theta_vb, zeta_vb)
 }
 \arguments{
 \item{q}{Number of responses.}

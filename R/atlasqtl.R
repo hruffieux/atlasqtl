@@ -83,6 +83,9 @@
 #'                  mean of the hotspot propensity. Entry s corresponds to the 
 #'                  propensity of candidate predictor s to be associated with 
 #'                  many responses.}
+#'  \item{X_beta_vb}{Matrix of dimension n x q equal to the matrix product 
+#'                   X beta_vb, where X is the rescaled predictor matrix with 
+#'                   possible collinear predictor(s) excluded.}
 #'  \item{zeta_vb}{Vector of length q containing the variational posterior 
 #'                mean of the response importance. Entry t corresponds to the 
 #'                propensity of response t have associated predictors.}

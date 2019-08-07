@@ -32,6 +32,7 @@ Imports:
     PowerTOST (>= 1.4-6),
     Rcpp (>= 0.12.9),
     RcppEigen (>= 0.3.2.9.0)
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.1
 Suggests: testthat
 LinkingTo: Rcpp, RcppEigen
+Encoding: UTF-8

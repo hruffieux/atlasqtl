@@ -6,9 +6,10 @@
 variational inference.}
 \usage{
 atlasqtl(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
-  user_seed = NULL, verbose = 1, list_hyper = NULL, list_init = NULL,
-  save_hyper = FALSE, save_init = FALSE, full_output = FALSE,
-  thinned_elbo_eval = TRUE, checkpoint_path = NULL, trace_path = NULL)
+  user_seed = NULL, verbose = 1, list_hyper = NULL,
+  list_init = NULL, save_hyper = FALSE, save_init = FALSE,
+  full_output = FALSE, thinned_elbo_eval = TRUE,
+  checkpoint_path = NULL, trace_path = NULL)
 }
 \arguments{
 \item{Y}{Response data matrix of dimension n x q, where n is the number of
@@ -87,6 +88,9 @@ An object of class "\code{atlasqtl}" containing the following
                  mean of the hotspot propensity. Entry s corresponds to the 
                  propensity of candidate predictor s to be associated with 
                  many responses.}
+ \item{X_beta_vb}{Matrix of dimension n x q equal to the matrix product 
+                  X beta_vb, where X is the rescaled predictor matrix with 
+                  possible collinear predictor(s) excluded.}
  \item{zeta_vb}{Vector of length q containing the variational posterior 
                mean of the response importance. Entry t corresponds to the 
                propensity of response t have associated predictors.}
