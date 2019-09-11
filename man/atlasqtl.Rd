@@ -6,9 +6,10 @@
 variational inference.}
 \usage{
 atlasqtl(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
-  user_seed = NULL, verbose = 1, list_hyper = NULL, list_init = NULL,
-  save_hyper = FALSE, save_init = FALSE, full_output = FALSE,
-  thinned_elbo_eval = TRUE, checkpoint_path = NULL, trace_path = NULL)
+  user_seed = NULL, verbose = 1, list_hyper = NULL,
+  list_init = NULL, save_hyper = FALSE, save_init = FALSE,
+  full_output = FALSE, thinned_elbo_eval = TRUE,
+  checkpoint_path = NULL, trace_path = NULL)
 }
 \arguments{
 \item{Y}{Response data matrix of dimension n x q, where n is the number of
