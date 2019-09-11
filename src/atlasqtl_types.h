@@ -1,5 +1,5 @@
-#ifndef LOCUS_TYPES_H_
-#define LOCUS_TYPES_H_
+#ifndef ATLASQTL_TYPES_H_
+#define ATLASQTL_TYPES_H_
 
 #include <RcppEigen.h>
 
@@ -13,4 +13,4 @@ typedef Eigen::Map<Eigen::VectorXd> MapVec;
 typedef Eigen::Map<Eigen::MatrixXd> MapMat;
 
 
-#endif // LOCUS_TYPES_H_
+#endif // ATLASQTL_TYPES_H_

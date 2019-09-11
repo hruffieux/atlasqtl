@@ -7,22 +7,21 @@
 ## E log p(beta, gamma | rest) - E log q(beta, gamma) ##
 ########################################################
 
-e_beta_gamma_ <- function(gam_vb, log_sig2_inv_vb, log_tau_vb,
-                               zeta_vb, theta_vb, m2_beta,
-                               sig2_beta_vb, sig2_zeta_vb,
-                               sig2_theta_vb, sig2_inv_vb, tau_vb) {
+e_beta_gamma_ <- function(gam_vb, log_1_pnorm, log_pnorm, log_sig2_inv_vb, log_tau_vb,
+                          zeta_vb, theta_vb, m2_beta,
+                          sig2_beta_vb, sig2_zeta_vb,
+                          sig2_theta_vb, sig2_inv_vb, tau_vb) {
   
   eps <- .Machine$double.eps^0.75 # to control the argument of the log when gamma is very small
   
   q <- length(tau_vb)
   
-  mat_struct <- sweep(tcrossprod(theta_vb, rep(1, q)), 2, zeta_vb, `+`)
   
   sum(log_sig2_inv_vb * gam_vb / 2 +
         sweep(gam_vb, 2, log_tau_vb, `*`) / 2 -
         sweep(m2_beta, 2, tau_vb, `*`) * sig2_inv_vb / 2 +
-        gam_vb * pnorm(mat_struct, log.p = TRUE) +
-        (1 - gam_vb) * pnorm(mat_struct, lower.tail = FALSE, log.p = TRUE) -
+        gam_vb * log_pnorm +
+        (1 - gam_vb) * log_1_pnorm - #log(1 - exp(log_pnorm)) is unstable
         sig2_zeta_vb / 2 + 1 / 2 * sweep(gam_vb, 2, log(sig2_beta_vb) + 1, `*`) -
         gam_vb * log(gam_vb + eps) - (1 - gam_vb) * log(1 - gam_vb + eps) -
         sig2_theta_vb / 2)

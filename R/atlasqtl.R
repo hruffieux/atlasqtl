@@ -40,6 +40,12 @@
 #'   likely to be large). Default is \code{FALSE}.
 #' @param full_output If \code{TRUE}, the inferred variational parameters for 
 #'   all parameters are returned.
+#' @param thinned_elbo_eval If \code{TRUE}, the convergence criterion 
+#'   (variational lower bound on the marginal log-likelihood, or ELBO) is not 
+#'   evaluated at each iteration, in order to save computational resources, but 
+#'   after a given batch of iterations where the batch size is set in an 
+#'   adaptive fashion accounting for the number of iterations roughly expected 
+#'   until convergence. 
 #' @param checkpoint_path Path where to save temporary checkpoint outputs. 
 #'   Default is \code{NULL}, for no checkpointing.
 #' @param trace_path Path where to save trace plot for the variance of hotspot
@@ -77,6 +83,9 @@
 #'                  mean of the hotspot propensity. Entry s corresponds to the 
 #'                  propensity of candidate predictor s to be associated with 
 #'                  many responses.}
+#'  \item{X_beta_vb}{Matrix of dimension n x q equal to the matrix product 
+#'                   X beta_vb, where X is the rescaled predictor matrix with 
+#'                   possible collinear predictor(s) excluded.}
 #'  \item{zeta_vb}{Vector of length q containing the variational posterior 
 #'                mean of the response importance. Entry t corresponds to the 
 #'                propensity of response t have associated predictors.}
@@ -167,8 +176,8 @@
 atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000, 
                      user_seed = NULL, verbose = 1, list_hyper = NULL, 
                      list_init = NULL, save_hyper = FALSE, save_init = FALSE, 
-                     full_output = FALSE, checkpoint_path = NULL, 
-                     trace_path = NULL) {
+                     full_output = FALSE, thinned_elbo_eval = TRUE, 
+                     checkpoint_path = NULL, trace_path = NULL) {
   
   if (verbose != 0){
     cat(paste0("\n======================= \n",
@@ -245,9 +254,9 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
                "Number of responses: ", q, "\n",
                "**************************************************** \n\n"))
     
-    cat(paste0("==================================================== \n",
-               "== ATLAS: fAsT gLobal-locAl hotSpot QTL detection == \n",
-               "==================================================== \n\n"))
+    cat(paste0("======================================================= \n",
+               "== ATLASQTL: fast global-local hotspot QTL detection == \n",
+               "======================================================= \n\n"))
   }
   
   
@@ -261,7 +270,8 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
     res_atlas <- atlasqtl_global_local_core_(Y, X, shr_fac_inv, anneal, df, tol, 
                                              maxit, verbose, list_hyper, 
                                              list_init, checkpoint_path,
-                                             trace_path, full_output, debug)
+                                             trace_path, full_output, 
+                                             thinned_elbo_eval, debug)
     
   } else {
     
@@ -271,7 +281,8 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
       
     res_atlas <- atlasqtl_global_core_(Y, X, shr_fac_inv, anneal, df, tol, 
                                        maxit, verbose, list_hyper, list_init, 
-                                       checkpoint_path, full_output, debug)
+                                       checkpoint_path, full_output, 
+                                       thinned_elbo_eval, debug)
     
   }
   

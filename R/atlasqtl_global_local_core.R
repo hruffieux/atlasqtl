@@ -9,6 +9,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
                                         maxit, verbose, list_hyper, list_init, 
                                         checkpoint_path = NULL, 
                                         trace_path = NULL, full_output = FALSE, 
+                                        thinned_elbo_eval = TRUE,
                                         debug = FALSE, batch = "y") {
   
   n <- nrow(Y)
@@ -32,6 +33,9 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
   
   rm(list_init)
   
+  theta_plus_zeta_vb <- sweep(tcrossprod(theta_vb, rep(1, q)), 2, zeta_vb, `+`)
+  log_Phi_theta_plus_zeta <- pnorm(theta_plus_zeta_vb, log.p = TRUE)
+  log_1_min_Phi_theta_plus_zeta <- pnorm(theta_plus_zeta_vb, log.p = TRUE, lower.tail = FALSE)
   
   # Preparing trace saving if any
   #
@@ -44,18 +48,31 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
   if (is.null(anneal)) {
     annealing <- FALSE
     c <- c_s <- 1 # c_s for scale parameters
+    it_init <- 1 # first non-annealed iteration 
   } else {
     annealing <- TRUE
     ladder <- get_annealing_ladder_(anneal, verbose)
     c <- ladder[1]
     c_s <- ifelse(anneal_scale, c, 1)
+    it_init <- anneal[3] # first non-annealed iteration 
   }
   
   eps <- .Machine$double.eps^0.5
   
+  if (thinned_elbo_eval) {
+    times_conv_sched <- c(1, 5, 10, 50) 
+    batch_conv_sched <- c(1, 10, 25, 50) 
+  } else {
+    times_conv_sched <- 1
+    batch_conv_sched <- 1
+  }
+
+  
+  ind_batch_conv <- length(batch_conv_sched) + 1 # so that, the first time, it enters in the loop below 
+  batch_conv <- 1 
   
   with(list_hyper, { # list_init not used with the with() function to avoid
-    # copy-on-write for large objects
+                     # copy-on-write for large objects
     
     # Response-specific parameters: objects derived from t02
     #
@@ -70,7 +87,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
     beta_vb <- update_beta_vb_(gam_vb, mu_beta_vb)
     m2_beta <- update_m2_beta_(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = TRUE)
     
-    mat_x_m1 <- update_mat_x_m1_(X, beta_vb)
+    X_beta_vb <- update_X_beta_vb_(X, beta_vb)
     
     # Fixed VB parameter
     #
@@ -85,7 +102,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
       lb_old <- lb_new
       it <- it + 1
       
-      if (verbose != 0 & (it == 1 | it %% 5 == 0))
+      if (verbose != 0 &  (it == 1 | it %% max(5, batch_conv) == 0)) 
         cat(paste0("Iteration ", format(it), "... \n"))
       
       # % #
@@ -97,27 +114,19 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
       
       # % #
       eta_vb <- update_eta_vb_(n, eta, gam_vb, c = c)
-      kappa_vb <- update_kappa_vb_(Y, kappa, mat_x_m1, beta_vb, m2_beta, 
+      kappa_vb <- update_kappa_vb_(Y, kappa, X_beta_vb, beta_vb, m2_beta, 
                                    sig2_inv_vb, c = c)
       
       tau_vb <- eta_vb / kappa_vb
-      # % #
       
       sig2_beta_vb <- update_sig2_beta_vb_(n, sig2_inv_vb, tau_vb, c = c)
       
       log_tau_vb <- update_log_tau_vb_(eta_vb, kappa_vb)
       log_sig2_inv_vb <- update_log_sig2_inv_vb_(nu_vb, rho_vb)
       
-      
       # different possible batch-coordinate ascent schemes:
       #
       if (batch == "y") { # optimal scheme
-        
-        log_Phi_theta_plus_zeta <- sapply(zeta_vb, function(zeta_k) {
-          pnorm(theta_vb + zeta_k, log.p = TRUE)})
-        
-        log_1_min_Phi_theta_plus_zeta <- sapply(zeta_vb, function(zeta_k) {
-          pnorm(theta_vb + zeta_k, lower.tail = FALSE, log.p = TRUE)})
         
         # C++ Eigen call for expensive updates 
         #
@@ -125,9 +134,10 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
         #
         shuffled_ind <- as.numeric(sample(0:(p-1))) # Zero-based index in C++
         
+        
         coreDualLoop(X, Y, gam_vb, log_Phi_theta_plus_zeta, 
                      log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb, 
-                     beta_vb, mat_x_m1, mu_beta_vb, sig2_beta_vb, tau_vb, 
+                     beta_vb, X_beta_vb, mu_beta_vb, sig2_beta_vb, tau_vb, 
                      shuffled_ind, c = c)
         
       } else if (batch == "0"){ # no batch, used only internally (slower)
@@ -138,9 +148,9 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
           
           for (j in sample(1:p)) {
             
-            mat_x_m1[, k] <- mat_x_m1[, k] - X[, j] * beta_vb[j, k]
+            X_beta_vb[, k] <- X_beta_vb[, k] - X[, j] * beta_vb[j, k]
             
-            mu_beta_vb[j, k] <- c * sig2_beta_vb[k] * tau_vb[k] * crossprod(Y[, k] - mat_x_m1[, k], X[, j])
+            mu_beta_vb[j, k] <- c * sig2_beta_vb[k] * tau_vb[k] * crossprod(Y[, k] - X_beta_vb[, k], X[, j])
             
             gam_vb[j, k] <- exp(-log_one_plus_exp_(c * (pnorm(theta_vb[j] + zeta_vb[k], lower.tail = FALSE, log.p = TRUE) -
                                                           pnorm(theta_vb[j] + zeta_vb[k], log.p = TRUE) -
@@ -150,7 +160,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
             
             beta_vb[j, k] <- gam_vb[j, k] * mu_beta_vb[j, k]
             
-            mat_x_m1[, k] <- mat_x_m1[, k] + X[, j] * beta_vb[j, k]
+            X_beta_vb[, k] <- X_beta_vb[, k] + X[, j] * beta_vb[j, k]
             
           }
         }
@@ -161,17 +171,14 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
         
       }
       
-      
       m2_beta <- update_m2_beta_(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = TRUE)
       
-      Z <- update_Z_(gam_vb, sweep(tcrossprod(theta_vb, rep(1, q)), 2,
-                                   zeta_vb, `+`), c = c) 
+      Z <- update_Z_(gam_vb, theta_plus_zeta_vb, log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, c = c) 
       
       # keep this order!
       #  
       L_vb <- c_s * sig02_inv_vb * shr_fac_inv * (theta_vb^2 + sig2_theta_vb - 2 * theta_vb * m0 + m0^2) / 2 / df 
       rho_xi_inv_vb <- c_s * (A2_inv + sig02_inv_vb) 
-      
       
       if (annealing & anneal_scale) {
         
@@ -179,22 +186,18 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
         
       } else {
         
+        Q_app <- Q_approx_vec(L_vb)
+        
         if (df == 1) {
-          
-          Q_app <- sapply(L_vb, function(L_vb_s) Q_approx(L_vb_s))  # TODO implement a Q_approx for vectors
           
           lam2_inv_vb <- 1 / (Q_app * L_vb) - 1
           
         } else if (df == 3) {
           
-          Q_app <- sapply(L_vb, function(L_vb_s) Q_approx(L_vb_s))
-          
           lam2_inv_vb <- exp(-log(3) - log(L_vb) + log(1 - L_vb * Q_app) - log(Q_app * (1 + L_vb) - 1)) - 1 / 3
           
         } else {
           # also works for df = 3 but might be slightly less efficient than the above
-          
-          Q_app <- sapply(L_vb, function(L_vb_s) Q_approx(L_vb_s))
           
           exponent <- (df + 1) / 2
           
@@ -226,8 +229,11 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
       zeta_vb <- update_zeta_vb_(Z, theta_vb, n0, sig2_zeta_vb, t02_inv,
                                  is_mat = FALSE, c = c) 
       
+      theta_plus_zeta_vb <- sweep(tcrossprod(theta_vb, rep(1, q)), 2, zeta_vb, `+`)
+      log_Phi_theta_plus_zeta <- pnorm(theta_plus_zeta_vb, log.p = TRUE)
+      log_1_min_Phi_theta_plus_zeta <- pnorm(theta_plus_zeta_vb, log.p = TRUE, lower.tail = FALSE)  
       
-      if (verbose == 2 && (it == 1 | it %% 5 == 0)) {
+      if (verbose == 2 && (it == 1 | it %% max(5, batch_conv) == 0)) {
         
         cat(paste0("Variational hotspot propensity global scale: ", 
                    format(sqrt(rho_s0_vb / (nu_s0_vb - 1) / shr_fac_inv), digits = 3), ".\n"))
@@ -271,27 +277,49 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
         
       } else {
         
-        lb_new <- elbo_global_local_(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb, 
-                                     kappa, kappa_vb, L_vb, lam2_inv_vb, m0, m2_beta, 
-                                     mat_x_m1, n0, nu, nu_s0_vb, nu_vb, nu_xi_inv_vb, 
-                                     Q_app, rho, rho_s0_vb, rho_vb, rho_xi_inv_vb, 
-                                     shr_fac_inv, sig02_inv_vb, sig2_beta_vb, 
-                                     sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb, 
-                                     t02_inv, tau_vb, theta_vb, vec_sum_log_det_zeta, 
-                                     xi_inv_vb, zeta_vb)
         
-        if (verbose != 0 & (it == 1 | it %% 5 == 0))
-          cat(paste0("ELBO = ", format(lb_new), "\n\n"))
+        if (it <= it_init + 1 | it %% batch_conv == 0 | it %% batch_conv == 1) { 
+          # it <= it_init + 1 evaluate the ELBO for the first two non-annealed iterations
+          # to (also) evaluate convergence between two consecutive iterations
+          
+          lb_new <- elbo_global_local_(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
+                                       kappa, kappa_vb, L_vb, lam2_inv_vb, 
+                                       log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, 
+                                       m0, m2_beta,
+                                       X_beta_vb, n0, nu, nu_s0_vb, nu_vb, nu_xi_inv_vb,
+                                       Q_app, rho, rho_s0_vb, rho_vb, rho_xi_inv_vb,
+                                       shr_fac_inv, sig02_inv_vb, sig2_beta_vb,
+                                       sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb,
+                                       t02_inv, tau_vb, theta_vb, vec_sum_log_det_zeta,
+                                       xi_inv_vb, zeta_vb)
+          
+          if (verbose != 0 & (it == it_init | it %% max(5, batch_conv) == 0))
+            cat(paste0("ELBO = ", format(lb_new), "\n\n"))
+          
+          if (debug && lb_new + eps < lb_old)
+            stop("ELBO not increasing monotonically. Exit. ")
+          
+          diff_lb <- abs(lb_new - lb_old)
+          
+          sum_exceed <- sum(diff_lb > (times_conv_sched * tol))
+          
+          if (sum_exceed == 0) {
+            
+            converged <- TRUE
+            
+          } else if (ind_batch_conv > sum_exceed) {
+            
+            ind_batch_conv <- sum_exceed
+            batch_conv <- batch_conv_sched[ind_batch_conv]
+            
+          }
+          
+        }
         
-        if (debug && lb_new + eps < lb_old)
-          stop("ELBO not increasing monotonically. Exit. ")
-        
-        converged <- (abs(lb_new - lb_old) < tol)
-        
-        
-        checkpoint_(it, checkpoint_path, gam_vb, converged, lb_new, lb_old, 
-                    lam2_inv_vb = lam2_inv_vb, zeta_vb = zeta_vb, theta_vb = theta_vb, 
+        checkpoint_(it, checkpoint_path, gam_vb, converged, lb_new, lb_old,
+                    lam2_inv_vb = lam2_inv_vb, zeta_vb = zeta_vb, theta_vb = theta_vb,
                     sig02_inv_vb = sig02_inv_vb)
+        
       }
       
     }
@@ -302,8 +330,8 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
     if (verbose != 0) {
       if (converged) {
         cat(paste0("Convergence obtained after ", format(it), " iterations. \n",
-                  "Optimal marginal log-likelihood variational lower bound ",
-                  "(ELBO) = ", format(lb_new), ". \n\n"))
+                   "Optimal marginal log-likelihood variational lower bound ",
+                   "(ELBO) = ", format(lb_new), ". \n\n"))
       } else {
         warning("Maximal number of iterations reached before convergence. Exit.")
       }
@@ -318,22 +346,25 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
                          nu_s0_vb, nu_vb, nu_xi_inv_vb, rho_s0_vb, rho_vb, 
                          rho_xi_inv_vb, shr_fac_inv, sig02_inv_vb, sig2_beta_vb, 
                          sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb, tau_vb, 
-                         theta_vb, xi_inv_vb, zeta_vb)
+                         theta_vb, X_beta_vb, xi_inv_vb, zeta_vb)
       
     } else {
       
       names_x <- colnames(X)
       names_y <- colnames(Y)
+      names_n <- rownames(Y)
       
       rownames(gam_vb) <- names_x
       colnames(gam_vb) <- names_y
+      rownames(X_beta_vb) <- names_n
+      colnames(X_beta_vb) <- names_y
       names(theta_vb) <- names_x
       names(zeta_vb) <- names_y
       names(lam2_inv_vb) <- names_x
       
       diff_lb <- abs(lb_opt - lb_old)
       
-      create_named_list_(beta_vb, gam_vb, theta_vb, zeta_vb, 
+      create_named_list_(beta_vb, gam_vb, theta_vb, X_beta_vb, zeta_vb, 
                          converged, it, lb_opt, diff_lb)
       
     }
@@ -347,8 +378,9 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
 # lower bound (ELBO) corresponding to the `atlasqtl_struct_core` algorithm.
 #
 elbo_global_local_ <- function(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb, 
-                               kappa, kappa_vb, L_vb, lam2_inv_vb, m0, m2_beta, 
-                               mat_x_m1, n0, nu, nu_s0_vb, nu_vb, nu_xi_inv_vb, 
+                               kappa, kappa_vb, L_vb, lam2_inv_vb, 
+                               log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, m0, m2_beta, 
+                               X_beta_vb, n0, nu, nu_s0_vb, nu_vb, nu_xi_inv_vb, 
                                Q_app, rho, rho_s0_vb, rho_vb, rho_xi_inv_vb, 
                                shr_fac_inv, sig02_inv_vb, sig2_beta_vb, 
                                sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb, 
@@ -361,7 +393,7 @@ elbo_global_local_ <- function(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
   # needed for monotonically increasing elbo.
   #
   eta_vb <- update_eta_vb_(n, eta, gam_vb)
-  kappa_vb <- update_kappa_vb_(Y, kappa, mat_x_m1, beta_vb, m2_beta, sig2_inv_vb)
+  kappa_vb <- update_kappa_vb_(Y, kappa, X_beta_vb, beta_vb, m2_beta, sig2_inv_vb)
   
   nu_vb <- update_nu_vb_(nu, sum(gam_vb))
   rho_vb <- update_rho_vb_(rho, m2_beta, tau_vb)
@@ -375,7 +407,8 @@ elbo_global_local_ <- function(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
   
   elbo_A <- e_y_(n, kappa, kappa_vb, log_tau_vb, m2_beta, sig2_inv_vb, tau_vb)
   
-  elbo_B <- e_beta_gamma_(gam_vb, log_sig2_inv_vb, log_tau_vb, zeta_vb, 
+  elbo_B <- e_beta_gamma_(gam_vb, log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, log_sig2_inv_vb, 
+                          log_tau_vb, zeta_vb, 
                           theta_vb, m2_beta, sig2_beta_vb, sig2_zeta_vb,
                           sig2_theta_vb, sig2_inv_vb, tau_vb)
   

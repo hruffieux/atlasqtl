@@ -168,26 +168,26 @@ log_det <- function(list_mat) {
 
 }
 
-inv_mills_ratio_ <- function(Y, U) {
 
-  if (is.matrix(U)) m <- matrix(NA, nrow = nrow(U), ncol = ncol(U))
-  else m <- rep(NA, length(U))
-
-  U_1 <- U[Y==1]
-  m_1 <- exp(dnorm(U_1, log = TRUE) - pnorm(U_1, log.p = TRUE))
-  m_1[m_1 < -U_1] <- -U_1
-
-  m[Y==1] <- m_1
-
-
-  U_0 <- U[Y==0]
-  m_0 <- - exp(dnorm(U[Y==0], log = TRUE) - pnorm(U[Y==0], lower.tail = FALSE, log.p = TRUE))
-  m_0[m_0 > -U_0] <- -U_0
-
-  m[Y==0] <- m_0
-
+inv_mills_ratio_ <- function(y, U, log_1_pnorm_U, log_pnorm_U) {
+  
+  stopifnot(y %in% c(0, 1))
+  
+  # writing explicitely the formula for pnorm(, log = TRUE) is faster...
+  if (y == 1) {
+    
+    m <- exp(-U^2/2 - log(sqrt(2*pi)) - log_pnorm_U)
+    m[m < -U] <- -U
+    
+  } else {
+    
+    m <- - exp(-U^2/2 - log(sqrt(2*pi)) - log_1_pnorm_U)
+    m[m > -U] <- -U
+    
+  }
+  
   m
-
+  
 }
 
 
@@ -376,6 +376,51 @@ Q_approx <- function(x, eps1 = 1e-30, eps2 = 1e-7) {
   }
 }
 
+
+Q_approx_vec <- function(x, eps1 = 1e-30, eps2 = 1e-7) {
+  
+  qapprox <- rep(NA, length(x))
+  
+  x_lower <- x[x <= 1]
+  
+  if (length(x_lower) > 0) {
+    qapprox[x <= 1] <- gsl::expint_E1(x_lower) * exp(x_lower)
+  }
+  
+  
+  x_upper <- x[x > 1]
+  
+  if (length(x_upper) > 0) {
+    
+    f_p <- eps1
+    C_p <- eps1
+    D_p <- 0
+    Delta <- 2 + eps2
+    j <- 1
+    
+    
+    while( max(abs(Delta-1)) >= eps2 ) {
+      
+      j <- j+1
+      
+      D_c <- x_upper + 2*j - 1 - ((j-1)^{2}) * D_p
+      C_c <- x_upper + 2*j - 1 - ((j-1)^{2}) / C_p
+      D_c <- 1 / D_c
+      
+      Delta <- C_c * D_c
+      f_c <- f_p * Delta
+      f_p <- f_c
+      C_p <- C_c
+      D_p <- D_c
+    }
+    
+    qapprox[x > 1] <- 1/(x_upper + 1 + f_c)
+    
+  }
+  
+  qapprox
+  
+}
 
 compute_integral_hs_ <- function(alpha, beta, m, n, Q_ab) {
   

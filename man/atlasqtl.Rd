@@ -6,8 +6,9 @@
 variational inference.}
 \usage{
 atlasqtl(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
-  user_seed = NULL, verbose = 1, list_hyper = NULL, list_init = NULL,
-  save_hyper = FALSE, save_init = FALSE, full_output = FALSE,
+  user_seed = NULL, verbose = 1, list_hyper = NULL,
+  list_init = NULL, save_hyper = FALSE, save_init = FALSE,
+  full_output = FALSE, thinned_elbo_eval = TRUE,
   checkpoint_path = NULL, trace_path = NULL)
 }
 \arguments{
@@ -59,6 +60,13 @@ likely to be large). Default is \code{FALSE}.}
 \item{full_output}{If \code{TRUE}, the inferred variational parameters for 
 all parameters are returned.}
 
+\item{thinned_elbo_eval}{If \code{TRUE}, the convergence criterion 
+(variational lower bound on the marginal log-likelihood, or ELBO) is not 
+evaluated at each iteration, in order to save computational resources, but 
+after a given batch of iterations where the batch size is set in an 
+adaptive fashion accounting for the number of iterations roughly expected 
+until convergence.}
+
 \item{checkpoint_path}{Path where to save temporary checkpoint outputs. 
 Default is \code{NULL}, for no checkpointing.}
 
@@ -80,6 +88,9 @@ An object of class "\code{atlasqtl}" containing the following
                  mean of the hotspot propensity. Entry s corresponds to the 
                  propensity of candidate predictor s to be associated with 
                  many responses.}
+ \item{X_beta_vb}{Matrix of dimension n x q equal to the matrix product 
+                  X beta_vb, where X is the rescaled predictor matrix with 
+                  possible collinear predictor(s) excluded.}
  \item{zeta_vb}{Vector of length q containing the variational posterior 
                mean of the response importance. Entry t corresponds to the 
                propensity of response t have associated predictors.}
