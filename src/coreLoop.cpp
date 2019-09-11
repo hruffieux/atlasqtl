@@ -25,7 +25,7 @@ void coreDualLoop(const MapMat X,
                   const double log_sig2_inv_vb,
                   const MapArr1D log_tau_vb,
                   MapMat m1_beta,
-                  MapMat mat_x_m1,
+                  MapMat X_beta_vb,
                   MapArr2D mu_beta_vb,
                   const MapArr1D sig2_beta_vb,
                   const MapArr1D tau_vb,
@@ -38,10 +38,10 @@ void coreDualLoop(const MapMat X,
     
     int j = shuffled_ind[i];
     
-    mat_x_m1.noalias() -= X.col(j) * m1_beta.row(j);
+    X_beta_vb.noalias() -= X.col(j) * m1_beta.row(j);
     
     mu_beta_vb.row(j) = c * sig2_beta_vb * tau_vb *
-      ((Y - mat_x_m1).transpose() * X.col(j)).array();
+      ((Y - X_beta_vb).transpose() * X.col(j)).array();
     
     gam_vb.row(j) = exp(-logOnePlusExp(c * (log_1_min_Phi_theta_plus_zeta.row(j) -
       log_Phi_theta_plus_zeta.row(j) - mu_beta_vb.row(j).square() / (2 * sig2_beta_vb.transpose()) +
@@ -49,7 +49,7 @@ void coreDualLoop(const MapMat X,
     
     m1_beta.row(j) = mu_beta_vb.row(j) * gam_vb.row(j);
     
-    mat_x_m1.noalias() += X.col(j) * m1_beta.row(j);
+    X_beta_vb.noalias() += X.col(j) * m1_beta.row(j);
     
   }
   

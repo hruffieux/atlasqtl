@@ -43,7 +43,7 @@ update_sig2_beta_vb_ <- function(n, sig2_inv_vb, tau_vb = NULL, c = 1) {
   }
 }
 
-update_mat_x_m1_ <- function(X, beta_vb) X %*% beta_vb
+update_X_beta_vb_ <- function(X, beta_vb) X %*% beta_vb
 
 
 ####################
@@ -109,13 +109,13 @@ update_log_sig2_inv_vb_ <- function(nu_vb, rho_vb) digamma(nu_vb) - log(rho_vb)
 
 update_eta_vb_ <- function(n, eta, gam_vb, c = 1) c * (eta + n / 2 + colSums(gam_vb) / 2) - c + 1
 
-update_kappa_vb_ <- function(Y, kappa, mat_x_m1, beta_vb, m2_beta, sig2_inv_vb, c = 1) {
+update_kappa_vb_ <- function(Y, kappa, X_beta_vb, beta_vb, m2_beta, sig2_inv_vb, c = 1) {
   
   n <- nrow(Y)
   
-  c * (kappa + (colSums(Y^2) - 2 * colSums(Y * mat_x_m1)  +
+  c * (kappa + (colSums(Y^2) - 2 * colSums(Y * X_beta_vb)  +
                   (n - 1 + sig2_inv_vb) * colSums(m2_beta) +
-                  colSums(mat_x_m1^2) - (n - 1) * colSums(beta_vb^2))/ 2)
+                  colSums(X_beta_vb^2) - (n - 1) * colSums(beta_vb^2))/ 2)
   
 }
 
