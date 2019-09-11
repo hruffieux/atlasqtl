@@ -1,7 +1,7 @@
 Package: atlasqtl
 Type: Package
 Title: fAsT gLobal-locAl hotSpot QTL detection
-Version: 0.1.0
+Version: 0.1.1
 Date: 2019-09-11
 Authors@R: c(
     person("Helene", "Ruffieux", email = "helene.ruffieux@mrc-bsu.cam.ac.uk",
