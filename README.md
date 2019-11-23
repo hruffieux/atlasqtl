@@ -35,12 +35,21 @@ report issues.
 
 ## Installation
 
-**Important note:** the R package depends on `libgsl` which needs to be manually 
+**Important note:** the R package depends on the GSL library which needs to be manually 
 installed. For example on Ubuntu,
 
 ``` bash
 $ sudo apt-get install libgsl-dev
 ```
+
+or on mac, 
+
+``` bash
+$ brew install gsl
+```
+
+after having installed Homebrew.
+
 
 Then, to install the package in R, run the following command:
 
