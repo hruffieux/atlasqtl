@@ -571,11 +571,28 @@ compute_integral_hs_ <- function(alpha, beta, m, n, Q_ab) {
 checkpoint_ <- function(it, checkpoint_path, 
                         beta_vb, gam_vb, theta_vb, zeta_vb, 
                         converged, lb_new, lb_old, 
-                        lam2_inv_vb = NULL, sig02_inv_vb = NULL, rate = 100) {
+                        lam2_inv_vb = NULL, sig02_inv_vb = NULL, rate = 100,
+                        names_x = NULL, names_y = NULL){
   
   if (!is.null(checkpoint_path) && it %% rate == 0) {
     
     diff_lb <- abs(lb_new - lb_old)
+    
+    if (!is.null(names_x)) {
+      
+      rownames(gam_vb) <- rownames(beta_vb) <- names(theta_vb) <- names_x
+
+      if (!is.null(lam2_inv_vb)) {
+        names(lam2_inv_vb) <- names_x
+      }
+
+    }
+    
+    if (!is.null(names_y)) {
+      
+      colnames(gam_vb) <- colnames(beta_vb) <- names(zeta_vb) <- names_y
+      
+    }
     
     tmp_vb <- create_named_list_(beta_vb, gam_vb, theta_vb, zeta_vb, converged, it, lb_new, diff_lb, 
                                  lam2_inv_vb, sig02_inv_vb)

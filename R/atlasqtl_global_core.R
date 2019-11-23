@@ -254,7 +254,8 @@ atlasqtl_global_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit,
         }
         
         checkpoint_(it, checkpoint_path, beta_vb, gam_vb, theta_vb, zeta_vb, 
-                    converged, lb_new, lb_old, sig02_inv_vb = sig02_inv_vb)
+                    converged, lb_new, lb_old, sig02_inv_vb = sig02_inv_vb,
+                    names_x = colnames(X), names_y = colnames(Y))
       }
       
       
