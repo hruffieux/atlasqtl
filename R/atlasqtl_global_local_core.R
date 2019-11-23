@@ -316,9 +316,10 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
           
         }
         
-        checkpoint_(it, checkpoint_path, gam_vb, converged, lb_new, lb_old,
-                    lam2_inv_vb = lam2_inv_vb, zeta_vb = zeta_vb, theta_vb = theta_vb,
-                    sig02_inv_vb = sig02_inv_vb)
+        checkpoint_(it, checkpoint_path, beta_vb, gam_vb, theta_vb, zeta_vb, 
+                    converged, lb_new, lb_old,
+                    lam2_inv_vb = lam2_inv_vb, sig02_inv_vb = sig02_inv_vb,
+                    names_x = colnames(X), names_y = colnames(Y))
         
       }
       
@@ -354,8 +355,8 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
       names_y <- colnames(Y)
       names_n <- rownames(Y)
       
-      rownames(gam_vb) <- names_x
-      colnames(gam_vb) <- names_y
+      rownames(gam_vb) <- rownames(beta_vb) <- names_x
+      colnames(gam_vb) <- colnames(beta_vb) <- names_y
       rownames(X_beta_vb) <- names_n
       colnames(X_beta_vb) <- names_y
       names(theta_vb) <- names_x
