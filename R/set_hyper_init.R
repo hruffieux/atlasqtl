@@ -175,7 +175,7 @@ auto_set_hyper_ <- function(Y, p, p0) {
   
   # n0 sets the level of sparsity.
   #
-  n0 <- - get_mu(E_p_t, t02, p)
+  n0 <- get_mu(E_p_t, t02, p)
   n0 <- rep(n0, q)
 
   check_positive_(t02)
@@ -379,7 +379,7 @@ auto_set_init_ <- function(Y, p, p0, shr_fac_inv, user_seed) {
 
 
   # n0 sets the level of sparsity.
-  n0 <- - get_mu(E_p_t, t02, p)
+  n0 <- get_mu(E_p_t, t02, p)
 
   # Look at : gam_st
   #
