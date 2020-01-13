@@ -417,3 +417,85 @@ auto_set_init_ <- function(Y, p, p0, shr_fac_inv, user_seed) {
   list_init
   
 }
+
+
+
+#' Estimate the approximation made in the hyperprior elicitation for the number 
+#' of predictors associated with each response by Monte-Carlo simulation.
+#'
+#' This function is used to provide guide hyperprior elicitation before running
+#' \code{\link{atlasqtl}}.
+#'
+#' @param p0 Vector of size 2 whose entries are the prior expectation and 
+#'   variance of the number of predictors associated with each response.
+#' @param p Number of candidate predictors.
+#' @param q Number of responses.
+#' @param n_draws Number of draws used for Monte-Carlo simulation (default 1e5).
+#' @param n_cpus Number of cores used (default serial).
+#'
+#' @return A list of errors for the prior mean and prior standard deviation of 
+#'   the number of predictors associated with each response. 
+#'   
+#' @examples
+#' seed <- 123; set.seed(seed)
+#
+#' n <- 200; p <- 100; q <- 20000
+#' p0 <- c(1, 10)
+#' n_draws <- 1e5 # must be large for accurate estimation
+#' 
+#' map_hyperprior_elicitation(p0, p, q, n_draws, n_cpus = 1)
+#'
+#' @seealso \code{\link{atlasqtl}}
+#'
+#' @export
+#'
+map_hyperprior_elicitation <- function(p0, p, q, n_draws = 1e5, n_cpus = 1) {
+  
+  check_structure_(p0, "vector", "numeric", 2)
+  E_p <- p0[1]
+  V_p <- p0[2]
+  check_positive_(E_p)
+  check_positive_(V_p)
+  
+  check_natural_(p)
+  check_natural_(q)
+  
+  check_natural_(n_draws)
+  
+  if (n_draws < 1e3) {
+    warning("The number of draws may be too small for accurate Monte Carlo estimation.")
+  }
+  
+  if (E_p > p) {
+    stop(paste0("The prior mean number of predictors associated with each response, ", 
+                "E_p, must be smaller than the total number of candidate predictors, p."))
+  }
+  
+  # Only used for throwing a message if E_p and V_p are incompatible
+  #
+  list_n0_t02 <- get_n0_t02(1, p, c(E_p, V_p))
+  n0 <- list_n0_t02$n0
+  t02 <- list_n0_t02$t02
+  
+  if (n_cpus > parallel::detectCores()) {
+    stop("The number of CPUs must be smaller than the number of CPUs on the machine.")
+  }
+  
+  lambda <- LaplacesDemon::rhalfcauchy(n_draws, scale = 1)
+  sigma0 <- LaplacesDemon::rhalfcauchy(n_draws, scale = 1 / sqrt(q))
+  
+  E_Phi_X_hs <- pnorm(n0 / sqrt(1 + t02 + lambda^2 * sigma0^2))
+  E_Phi_X_2_hs <- E_Phi_X_hs - 2 * 
+    unlist(parallel::mclapply(1:n_draws, function(ii) { 
+      PowerTOST::OwensT(n0 / sqrt(1 + t02 + lambda[ii]^2 * sigma0[ii]^2), 1 / sqrt(1 + 2 * t02 + 2 * lambda[ii]^2 * sigma0[ii]^2))
+    }, mc.cores = n_cpus))
+  
+  E_p_hs <- mean(p * pnorm(n0 / sqrt(1 + t02 + lambda^2 * sigma0^2)))
+  V_p_hs <- mean(p * (p - 1) * E_Phi_X_2_hs - p^2 * E_Phi_X_hs^2 + p * E_Phi_X_hs)
+  
+  error_E_p <- abs(E_p_hs - E_p)
+  error_sd_p <- abs(sqrt(V_p_hs) - sqrt(V_p))
+  
+  create_named_list_(error_E_p, error_sd_p)
+  
+}
