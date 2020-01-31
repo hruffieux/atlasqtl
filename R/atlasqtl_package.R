@@ -11,7 +11,7 @@
 #' global-local approach for detecting hotspots in multiple-response regression, 
 #' arXiv:1811.03334, 2018. 
 #'
-#' @section atlasqtl functions: set_hyper, set_init, atlasqtl.
+#' @section atlasqtl functions: atlasqtl, map_hyperprior_elicitation, set_hyper, set_init.
 #'
 #' @docType package
 #' @name atlasqtl-package

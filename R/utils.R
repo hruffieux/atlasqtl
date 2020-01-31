@@ -104,7 +104,6 @@ create_named_list_ <- function(...) {
 }
 
 
-
 get_annealing_ladder_ <- function(anneal, verbose) {
 
   # ladder set following:
@@ -237,12 +236,12 @@ get_V_p_t <- function(mu, s2, p) {
 
 get_mu <- function(E_p_t, s2, p) {
 
-  sqrt(1 + s2) * qnorm(1- E_p_t / p)
+  sqrt(1 + s2) * qnorm(E_p_t / p)
 
 }
 
 
-get_n0_t02 <- function(d, p, p_star) {
+get_n0_t02 <- function(q, p, p_star) {
   
   E_p_t <- p_star[1]
   V_p_t <- min(p_star[2], floor(2 * p / 3))
@@ -250,7 +249,7 @@ get_n0_t02 <- function(d, p, p_star) {
   dn <- 1e-6
   up <- 1e5
   
-  # Get n0 and t02 similarly as for a_omega_t and b_omega_t in HESS
+  # Get n0 and t02 similarly as for a_omega_t and b_omega_t in HESS 
   # (specify expectation and variance of number of active predictors per response)
   #
   # Look at : gam_st | theta_s = 0
@@ -260,13 +259,13 @@ get_n0_t02 <- function(d, p, p_star) {
     interval = c(dn, up))$root,
     error = function(e) {
       stop(paste0("No hyperparameter values matching the expectation and variance ",
-                  "of the number of active predictors per responses supplied in p0.",
+                  "of the number of active predictors per responses supplied in p0. ",
                   "Please change p0."))
     })
   
   # n0 sets the level of sparsity.
   n0 <- get_mu(E_p_t, t02, p)
-  n0 <- rep(-n0, d)
+  n0 <- rep(n0, q)
   
   create_named_list_(n0, t02)
 }

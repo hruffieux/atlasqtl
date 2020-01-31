@@ -29,7 +29,7 @@ arXiv:1811.03334, 2018.
 
 ## Installation
 
-**Important note:** the R package depends on the GSL library which needs to be manually
+**Important note:** the R package depends on the GSL library which needs to be manually 
 installed. For example on Ubuntu,
 
 ``` bash
