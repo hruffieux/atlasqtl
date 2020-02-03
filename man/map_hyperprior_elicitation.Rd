@@ -2,8 +2,8 @@
 % Please edit documentation in R/set_hyper_init.R
 \name{map_hyperprior_elicitation}
 \alias{map_hyperprior_elicitation}
-\title{Estimate the approximation made in the hyperprior elicitation for the number 
-of predictors associated with each response by Monte-Carlo simulation.}
+\title{Evaluate the approximation in the hyperprior elicitation for the number 
+of predictors associated with each response}
 \usage{
 map_hyperprior_elicitation(p0, p, q, n_draws = 1e+05, n_cpus = 1)
 }
@@ -24,8 +24,9 @@ A list of errors for the prior mean and prior standard deviation of
   the number of predictors associated with each response.
 }
 \description{
-This function is used to provide guide hyperprior elicitation before running
-\code{\link{atlasqtl}}.
+This function is used to guide hyperprior elicitation before running
+\code{\link{atlasqtl}}. The errors arising from the approximation in the 
+hyper prior elicitation are estimated by Monte-Carlo simulation.
 }
 \examples{
 seed <- 123; set.seed(seed)

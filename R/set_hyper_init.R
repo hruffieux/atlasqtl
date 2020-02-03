@@ -420,11 +420,12 @@ auto_set_init_ <- function(Y, p, p0, shr_fac_inv, user_seed) {
 
 
 
-#' Estimate the approximation made in the hyperprior elicitation for the number 
-#' of predictors associated with each response by Monte-Carlo simulation.
+#' Evaluate the approximation in the hyperprior elicitation for the number 
+#' of predictors associated with each response
 #'
-#' This function is used to provide guide hyperprior elicitation before running
-#' \code{\link{atlasqtl}}.
+#' This function is used to guide hyperprior elicitation before running
+#' \code{\link{atlasqtl}}. The errors arising from the approximation in the 
+#' hyper prior elicitation are estimated by Monte-Carlo simulation.
 #'
 #' @param p0 Vector of size 2 whose entries are the prior expectation and 
 #'   variance of the number of predictors associated with each response.
