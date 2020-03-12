@@ -6,6 +6,7 @@
 # and ticks to prevent overflow/underflow.
 #
 
+
 check_natural_ <- function(x, eps = .Machine$double.eps^0.75){
   if (any(x < eps | abs(x - round(x)) > eps)) {
     stop(paste0(deparse(substitute(x)),
@@ -665,3 +666,70 @@ plot_trace_var_hs_ <- function(lam2_inv_vb, sig02_inv_vb, shr_fac_inv, it, trace
   create_named_list_(trace_ind_max, trace_var_max)
   
 }
+
+
+add_collinear_back_ <- function(beta_vb, gam_vb, theta_vb, initial_colnames_X, rmvd_coll_x, verbose) {
+  
+  stopifnot(length(rmvd_coll_x) > 0)
+  
+  p_all <- length(initial_colnames_X) # all the (non-constant) variables, including the collinear variables
+                                      # (we don't add any posterior summary for the constant variables...)
+  
+  if (verbose) {
+    cat("Adding the posterior summary to the final output for the collinear X variables: \n")
+    print(rmvd_coll_x)
+  }
+
+  gam_vb_wo_coll <- gam_vb
+  beta_vb_wo_coll <- beta_vb
+  theta_vb_wo_coll <- theta_vb
+  
+  # matrices / vectors with the results for the collinear X variables added back
+  #
+  gam_vb <- beta_vb <- matrix(NA, nrow = p_all, ncol = ncol(gam_vb_wo_coll))
+  theta_vb <- rep(NA, p_all)
+
+  # boolean vector indicating the position of the collinear X variables
+  #
+  bool_rmvd <- initial_colnames_X %in% rmvd_coll_x
+  
+  # original results (no result for the redundant X variables)
+  #
+  gam_vb[!bool_rmvd,] <- gam_vb_wo_coll
+  rownames(gam_vb)[!bool_rmvd] <- rownames(gam_vb_wo_coll)
+  
+  beta_vb[!bool_rmvd,] <- beta_vb_wo_coll
+  rownames(beta_vb)[!bool_rmvd] <- rownames(beta_vb_wo_coll)
+  
+  theta_vb[!bool_rmvd] <- theta_vb_wo_coll
+  names(theta_vb)[!bool_rmvd] <- names(theta_vb_wo_coll)
+  
+  # results for redundant X variables rebuilt from those X variables to which they are collinear
+  #
+  gam_vb_coll_var <- gam_vb[match(names(rmvd_coll_x), initial_colnames_X),, drop = FALSE]
+  rownames(gam_vb_coll_var) <- rmvd_coll_x
+  
+  beta_vb_coll_var <- beta_vb[match(names(rmvd_coll_x), initial_colnames_X),, drop = FALSE]
+  rownames(beta_vb_coll_var) <- rmvd_coll_x
+  
+  theta_vb_coll_var <- theta_vb[match(names(rmvd_coll_x), initial_colnames_X)]
+  names(theta_vb_coll_var) <- rmvd_coll_x
+  
+  # results for redundant X variables added back to the matrices / vectors
+  #
+  gam_vb[match(rmvd_coll_x, initial_colnames_X),] <- gam_vb_coll_var
+  rownames(gam_vb)[match(rmvd_coll_x, initial_colnames_X)] <- rownames(gam_vb_coll_var)
+  colnames(gam_vb) <- colnames(gam_vb_wo_coll)
+  
+  beta_vb[match(rmvd_coll_x, initial_colnames_X),] <- beta_vb_coll_var
+  rownames(beta_vb)[match(rmvd_coll_x, initial_colnames_X)] <- rownames(beta_vb_coll_var)
+  colnames(beta_vb) <- colnames(beta_vb_wo_coll)
+  
+  theta_vb[match(rmvd_coll_x, initial_colnames_X)] <- theta_vb_coll_var
+  names(theta_vb)[match(rmvd_coll_x, initial_colnames_X)] <- names(theta_vb_coll_var)
+  
+  create_named_list_(beta_vb, gam_vb, theta_vb)
+  
+}
+
+

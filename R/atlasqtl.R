@@ -50,6 +50,9 @@
 #'   Default is \code{NULL}, for no checkpointing.
 #' @param trace_path Path where to save trace plot for the variance of hotspot
 #'   propensities. Default is \code{NULL}, for no trace saved.
+#' @param add_collinear_back Boolean for re-adding the collinear variables X 
+#'   (removed as part of \code{atlasqtl} to ensure the stability of inference) 
+#'   to the final posterior summaries. Default is \code{FALSE}.
 #'   
 #' @details \code{atlasqtl} implements a flexible hierarchical regression 
 #'   framework that allows information-sharing across responses and predictors, 
@@ -177,7 +180,8 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
                      user_seed = NULL, verbose = 1, list_hyper = NULL, 
                      list_init = NULL, save_hyper = FALSE, save_init = FALSE, 
                      full_output = FALSE, thinned_elbo_eval = TRUE, 
-                     checkpoint_path = NULL, trace_path = NULL) {
+                     checkpoint_path = NULL, trace_path = NULL, 
+                     add_collinear_back = FALSE) {
   
   if (verbose != 0){
     cat(paste0("\n======================= \n",
@@ -290,6 +294,21 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
   
   res_atlas$rmvd_cst_x <- dat$rmvd_cst_x
   res_atlas$rmvd_coll_x <- dat$rmvd_coll_x
+  
+  if (add_collinear_back & length(res_atlas$rmvd_coll_x) > 0) {
+    
+    list_coll_back <- add_collinear_back_(res_atlas$beta_vb, 
+                                          res_atlas$gam_vb, 
+                                          res_atlas$theta_vb, 
+                                          dat$initial_colnames_X, 
+                                          res_atlas$rmvd_coll_x,
+                                          verbose)
+    
+    res_atlas$beta_vb <- list_coll_back$beta_vb
+    res_atlas$gam_vb <- list_coll_back$gam_vb
+    res_atlas$theta_vb <- list_coll_back$theta_vb
+    
+  }
   
   if (save_hyper) res_atlas$list_hyper <- list_hyper
   if (save_init) res_atlas$list_init <- list_init

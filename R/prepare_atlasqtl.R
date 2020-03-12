@@ -51,6 +51,10 @@ prepare_data_ <- function(Y, X, tol, maxit, user_seed, verbose, checkpoint_path,
   X <- list_X_cst$mat
   bool_cst_x <- list_X_cst$bool_cst
   rmvd_cst_x <- list_X_cst$rmvd_cst
+  
+  initial_colnames_X <- colnames(X) # names (and ordering) of the variables before 
+                                    # having removed the collinear variables 
+                                    # but after having removed the constant variables
 
   list_X_coll <- rm_collinear_(X, verbose)
   X <- list_X_coll$mat
@@ -69,7 +73,7 @@ prepare_data_ <- function(Y, X, tol, maxit, user_seed, verbose, checkpoint_path,
 
   Y <- scale(Y, center = TRUE, scale = FALSE)
 
-  create_named_list_(Y, X, bool_rmvd_x, rmvd_cst_x, rmvd_coll_x) 
+  create_named_list_(Y, X, bool_rmvd_x, initial_colnames_X, rmvd_cst_x, rmvd_coll_x) 
 
 }
 
