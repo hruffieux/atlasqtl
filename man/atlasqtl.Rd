@@ -5,11 +5,25 @@
 \title{Fit a flexible hierarchical model for hotspot detection using annealed 
 variational inference.}
 \usage{
-atlasqtl(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
-  user_seed = NULL, verbose = 1, list_hyper = NULL,
-  list_init = NULL, save_hyper = FALSE, save_init = FALSE,
-  full_output = FALSE, thinned_elbo_eval = TRUE,
-  checkpoint_path = NULL, trace_path = NULL)
+atlasqtl(
+  Y,
+  X,
+  p0,
+  anneal = c(1, 2, 10),
+  tol = 0.1,
+  maxit = 1000,
+  user_seed = NULL,
+  verbose = 1,
+  list_hyper = NULL,
+  list_init = NULL,
+  save_hyper = FALSE,
+  save_init = FALSE,
+  full_output = FALSE,
+  thinned_elbo_eval = TRUE,
+  checkpoint_path = NULL,
+  trace_path = NULL,
+  add_collinear_back = FALSE
+)
 }
 \arguments{
 \item{Y}{Response data matrix of dimension n x q, where n is the number of
@@ -72,6 +86,10 @@ Default is \code{NULL}, for no checkpointing.}
 
 \item{trace_path}{Path where to save trace plot for the variance of hotspot
 propensities. Default is \code{NULL}, for no trace saved.}
+
+\item{add_collinear_back}{Boolean for re-adding the collinear variables X 
+(removed as part of \code{atlasqtl} to ensure the stability of inference) 
+to the final posterior summaries. Default is \code{FALSE}.}
 }
 \value{
 An object of class "\code{atlasqtl}" containing the following 
