@@ -1,0 +1,126 @@
+---
+output:
+  md_document:
+    variant: gfm
+html_preview: false
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+<!-- First time: run usethis::use_readme_rmd() to create a pre-commit hook that 
+prevents from committing if the README.Rmd has changed, but has not been 
+re-knitted to generate an updated README.md -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+
+```{r echo=FALSE, results="hide", message=FALSE}
+require(badger)
+
+# modified badger function to all the Travis pipeline to run on other branches than the master
+#
+my_currentGitHubRef <- function(ref) {
+	if (!is.null(ref)) {return(ref)}
+
+	url <- desc::desc_get_field("URL")
+	if (!grepl("gitHub", url, ignore.case = TRUE)) {
+		stop("reference could not be determined by the DESCRIPTION' url")
+	}
+
+	url <- unlist(strsplit(url, ",\\s*"))
+	url <- url[grepl("github", url, ignore.case = TRUE)][[1]]
+
+	ref <- gsub("https://github.com/", "", url)
+	ref
+}
+
+my_badge_travis <- function(ref = NULL, is_commercial = FALSE, branch = "master") 
+{
+    ref <- my_currentGitHubRef(ref)
+    ext <- ifelse(is_commercial, "com/", "org/")
+    svg <- paste0("https://travis-ci.", ext, ref, ".svg?branch=", branch)
+    url <- paste0("https://travis-ci.", ext, ref)
+    paste0("[![](", svg, ")](", url, ")")
+}
+```
+
+
+## atlasqtl - Fast global-local hotspot QTL detection
+
+<!-- Run for the R CMD checks, run usethis::use_github_actions() to set up the pipeline, possibly modify the .yaml file and then: -->
+<!-- `r badge_github_actions("hruffieux/atlasqtl")` # TODO. not enabled yet, needs pre-install of GSL lib for windows -->
+`r my_badge_travis("hruffieux/atlasqtl", branch = "devel")`
+`r badge_license("GPL v3", url = "https://www.gnu.org/licenses/gpl-3.0")`
+`r badge_devel("hruffieux/atlasqtl", "blue")`
+`r badge_code_size("hruffieux/atlasqtl")`
+`r badge_doi("10.1214/20-AOAS1332", "yellow")`
+
+## Overview
+
+**atlasqtl** is an R package implementing a scalable hierarchical modelling 
+framework for variable selection in regression problems with many predictors and 
+many responses. The method is tailored to the detection of hotspots, i.e., 
+predictors associated with several responses. The *hotspot propensity* of each 
+candidate predictor is modelled using a horseshoe distribution (Carvalho et al. 
+2009), whose local scale flexibly models the large hotspot effects and whose 
+global scale adapts to the overall signal sparsity. Inference is performed using 
+efficient batch variational inference updates which are coupled with simulated 
+annealing schemes to improve the exploration of multimodal parameter spaces. 
+
+The method can be employed in any sparse multiple-response regression setting, 
+and is particularly suited to large molecular quantitative trait locus (QTL) 
+problems, in which hotspot genetic variants, controlling many molecular levels 
+at once, may be responsible for decisive regulatory mechanisms. Hence, our 
+approach is a tool that can help towards understanding the functional 
+architecture underlying complex traits and outlining a *hotspot atlas* of the 
+human genome. 
+
+Reference: H. Ruffieux, A. C. Davison, J. Hager, J. Inshaw, B. Fairfax, 
+S. Richardson, and L. Bottolo. A global-local approach for detecting hotspots in 
+multiple response regression. The Annals of Applied Statistics, 14:905-928, 2020.
+
+## Warning
+
+**This is a development branch**, it is not guaranteed to be stable at any given 
+time and features are subject to change. Please use the [stable version](https://github.com/hruffieux/atlasqtl), unless you want to test and 
+report issues.
+
+## Installation
+
+**Important note:** the R package depends on the GSL library which needs to be manually 
+installed. For example on Ubuntu,
+
+``` bash
+$ sudo apt-get install libgsl-dev
+```
+
+or on mac, 
+
+``` bash
+$ brew install gsl
+```
+
+after having installed Homebrew.
+
+
+Then, to install the package in R, run the following command:
+
+``` r
+if(!require(remotes)) install.packages("remotes")
+remotes::install_github("hruffieux/atlasqtl", ref = "devel")
+```
+
+## License and authors
+
+This software uses the GPL v3 license, see [LICENSE](LICENSE).
+Authors and copyright are provided in [DESCRIPTION](DESCRIPTION).
+
+## Issues
+
+To report an issue, please use the [atlasqtl issue tracker](https://github.com/hruffieux/atlasqtl/issues) at github.com.
