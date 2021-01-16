@@ -2,7 +2,7 @@ Package: atlasqtl
 Type: Package
 Title: fAsT gLobal-locAl hotSpot QTL detection
 Version: 0.1.4
-Date: 2020-03-11
+Date: 2021-01-16
 Authors@R: c(
     person("Helene", "Ruffieux", email = "helene.ruffieux@mrc-bsu.cam.ac.uk",
             role = c("aut", "cre")),
@@ -16,10 +16,10 @@ Description: Global-local hierachical approach for joint detection of hotspot
     exploration of highly multimodal spaces. This software allows joint 
     inference at large scale, e.g., for molecular quantitative trait locus (QTL) 
     studies, where the hotspots are genetic variants regulating several 
-    molecular traits simultaneously. See Helene Ruffieux, Anthony C. Davison, 
-    Jorg Hager, Jamie Inshaw, Benjamin P. Fairfax, Sylvia Richardson, Leonardo 
-    Bottolo, A global-local approach for detecting hotspots in multiple-response 
-    regression, arXiv:1811.03334, 2018.  
+    molecular traits simultaneously. See H. Ruffieux, A. C. Davison, J. Hager,
+    J. Inshaw, B. Fairfax, S. Richardson, and L. Bottolo. A global-local 
+    approach for detecting hotspots in multiple response regression. The Annals 
+    of Applied Statistics, 14:905-928, 2020.
 Depends:
     R (>= 3.2.0)
 License: GPL (>= 3) | file LICENSE
@@ -33,7 +33,7 @@ Imports:
     PowerTOST (>= 1.4-6),
     Rcpp (>= 0.12.9),
     RcppEigen (>= 0.3.2.9.0)
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.1
 Suggests: testthat
 LinkingTo: Rcpp, RcppEigen
 Encoding: UTF-8

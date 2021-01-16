@@ -25,7 +25,7 @@ require(badger)
 ```
 
 
-## atlasqtl - Fast global-local hotspot QTL detection
+## atlasqtl - Fast global-local hotspot QTL detection <img src="man/figures/atlasqtl_logo.png" align="right" height="150"/>
 
 <!-- Run for the R CMD checks, run usethis::use_github_actions() to set up the pipeline, possibly modify the .yaml file and then: -->
 <!-- `r badge_github_actions("hruffieux/atlasqtl")` # TODO. not enabled yet, needs pre-install of GSL lib for windows -->
@@ -61,8 +61,8 @@ multiple response regression. The Annals of Applied Statistics, 14:905-928, 2020
 
 ## Installation
 
-**Important note:** the R package depends on the GSL library which needs to be manually 
-installed. For example on Ubuntu,
+**Important note:** the R package depends on the GSL library which needs to be 
+manually installed. For example on Ubuntu,
 
 ``` bash
 $ sudo apt-get install libgsl-dev
