@@ -23,9 +23,6 @@ logo
 
 dir.create("man/figures/", showWarnings = FALSE)
 
-require(ggsci)
-col <- scale_color_startrek()
-
 sticker(logo, 
         package="atlasqtl", 
         p_size=4.5, 
