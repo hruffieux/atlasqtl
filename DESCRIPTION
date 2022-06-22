@@ -1,6 +1,6 @@
 Package: atlasqtl
 Type: Package
-Title: fAsT gLobal-locAl hotSpot QTL detection
+Title: Flexible sparse regression for hierarchically-related responses using annealed variational inference
 Version: 0.1.4
 Date: 2021-01-16
 Authors@R: c(
@@ -10,12 +10,15 @@ Authors@R: c(
             role = c("aut")),
     person("Leonardo", "Bottolo", email = "lb664@cam.ac.uk",
             role = c("aut")))
-Description: Global-local hierachical approach for joint detection of hotspot 
-    predictors in multiple-response regression. Inference uses closed-form 
-    variational updates coupled with a simulated annealing algorithm to enhance 
-    exploration of highly multimodal spaces. This software allows joint 
-    inference at large scale, e.g., for molecular quantitative trait locus (QTL) 
-    studies, where the hotspots are genetic variants regulating several 
+Description: Flexible sparse regression for variable selection in large 
+    predictor and response settings, based on a series of hierarchically-related 
+    spike-and-slab submodels. The model is also tailored to the detection of 
+    hotspots, namely, predictors associated with multiple responses, which it 
+    represents using a global-local horseshoe specification. Inference uses 
+    closed-form variational updates coupled with a simulated annealing algorithm 
+    to enhance exploration of highly multimodal spaces. This software allows 
+    joint inference at large scale, e.g., for molecular quantitative trait locus 
+    (QTL) studies, where the hotspots are genetic variants regulating several 
     molecular traits simultaneously. See H. Ruffieux, A. C. Davison, J. Hager,
     J. Inshaw, B. Fairfax, S. Richardson, and L. Bottolo. A global-local 
     approach for detecting hotspots in multiple response regression. The Annals 
@@ -33,7 +36,7 @@ Imports:
     PowerTOST (>= 1.4-6),
     Rcpp (>= 0.12.9),
     RcppEigen (>= 0.3.2.9.0)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Suggests: testthat
 LinkingTo: Rcpp, RcppEigen
 Encoding: UTF-8
