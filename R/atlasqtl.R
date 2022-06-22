@@ -237,7 +237,7 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
   
   list_hyper <- prepare_list_hyper_(list_hyper, Y, p, p0, bool_rmvd_x, 
                                     names_x, names_y, verbose)
-  
+
   if (verbose != 0) cat("... done. == \n\n")
   
   

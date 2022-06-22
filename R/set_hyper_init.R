@@ -172,7 +172,7 @@ auto_set_hyper_ <- function(Y, p, p0) {
                   "of the number of active predictors per responses supplied in p0.",
                   "Please change p0."))
     })
-  
+
   # n0 sets the level of sparsity.
   #
   n0 <- get_mu(E_p_t, t02, p)
@@ -376,7 +376,6 @@ auto_set_init_ <- function(Y, p, p0, shr_fac_inv, user_seed) {
                   "of the number of active predictors per responses supplied in p0.",
                   "Please change p0."))
     })
-
 
   # n0 sets the level of sparsity.
   n0 <- get_mu(E_p_t, t02, p)

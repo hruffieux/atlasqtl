@@ -7,6 +7,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // coreDualLoop
 void coreDualLoop(const MapMat X, const MapMat Y, MapArr2D gam_vb, const MapArr2D log_Phi_theta_plus_zeta, const MapArr2D log_1_min_Phi_theta_plus_zeta, const double log_sig2_inv_vb, const MapArr1D log_tau_vb, MapMat m1_beta, MapMat X_beta_vb, MapArr2D mu_beta_vb, const MapArr1D sig2_beta_vb, const MapArr1D tau_vb, const MapArr1D shuffled_ind, const double c);
 RcppExport SEXP _atlasqtl_coreDualLoop(SEXP XSEXP, SEXP YSEXP, SEXP gam_vbSEXP, SEXP log_Phi_theta_plus_zetaSEXP, SEXP log_1_min_Phi_theta_plus_zetaSEXP, SEXP log_sig2_inv_vbSEXP, SEXP log_tau_vbSEXP, SEXP m1_betaSEXP, SEXP X_beta_vbSEXP, SEXP mu_beta_vbSEXP, SEXP sig2_beta_vbSEXP, SEXP tau_vbSEXP, SEXP shuffled_indSEXP, SEXP cSEXP) {
