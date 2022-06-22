@@ -12,8 +12,8 @@
 \item{...}{further arguments passed to or from other methods.}
 }
 \description{
-This function provides functionality for printing a summary of the atlasqtl
-run.
+This function provides functionality for printing basic information about the 
+atlasqtl run.
 }
 \seealso{
 \code{\link{atlasqtl}}
