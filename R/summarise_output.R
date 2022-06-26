@@ -95,10 +95,14 @@ summary.atlasqtl <- function(object, ...) {
 #' with the position and size of "hotspot" predictors (i.e., predictors 
 #' associated with multiple responses).
 #' 
-#' @param x an object with S3 class \code{"atlasqtl"}
-#' @param thres_ppi threshold to be applied on the posterior probabilities of 
+#' @param x an object with S3 class \code{"atlasqtl"}.
+#' @param thres threshold to be applied on the posterior probabilities of 
 #'                  association to define hotspots (default is 0.5, for the 
 #'                  Median Probability Model).
+#' @param fdr_adjust if TRUE the threshold is applied on FDR estimates computed
+#'                   from the "atlasqtl" posterior probabilities of association,
+#'                   otherwise it is directly applied on the posterior 
+#'                   probabilities of association (default is FALSE).
 #' @param pch type of points.
 #' @param ylim_max upper limit for y-axis (must be set to NULL if \code{add} is TRUE).
 #' @param main plot title (must be set to NULL if \code{add} is TRUE).
@@ -111,13 +115,17 @@ summary.atlasqtl <- function(object, ...) {
 #' 
 #' @export 
 #' 
-#' 
-plot.atlasqtl <- function(x, thres_ppi = 0.5, pch = 20, ylim_max = NULL, 
-                          main = "Hotspot sizes", xlab = "Predictors", 
-                          ylab = "sum_k PPI_st > thres",
+plot.atlasqtl <- function(x, thres = 0.5, fdr_adjust = FALSE, pch = 20, 
+                          ylim_max = NULL, main = "Hotspot sizes", 
+                          xlab = "Predictors", ylab = "sum_k PPI_st > thres",
                           add = FALSE, ...) { # add possibility to choose thres_ppi by bayesian FDR adjustment
   
-  rs_thres <- rowSums(x$gam_vb > thres_ppi)
+  if (fdr_adjust) {
+    mat_fdr <- assign_bFDR(x$gam_vb)
+    rs_thres <- rowSums(mat_fdr < thres)
+  } else {
+    rs_thres <- rowSums(x$gam_vb > thres)
+  }
   
   if (!add) {
     plot(rs_thres, pch = pch, 
@@ -134,5 +142,37 @@ plot.atlasqtl <- function(x, thres_ppi = 0.5, pch = 20, ylim_max = NULL,
   }
   
 }
+
+
+#' Compute Bayesian FDR estimates 
+#' 
+#' This function computes Bayesian FDR estimates from posterior probabilities of 
+#' association
+#' 
+#' @param mat_ppi a matrix of posterior probabilities of assication (e.g, gam_vb
+#'                from the "atlasqtl" object).
+#' 
+#' @seealso \code{\link{atlasqtl}}
+#' 
+#' @export 
+#' 
+assign_bFDR <- function(mat_ppi) {
+  
+  vec_ppi <- as.vector(mat_ppi)
+  ind <- order(vec_ppi, decreasing = TRUE)
+  vec_ppi_ord <- vec_ppi[ind]
+  
+  vec_fdr_ord <- cumsum(1-vec_ppi_ord) / 1:length(vec_ppi)
+  
+  ind_back <- order(ind)
+  vec_fdr <- vec_fdr_ord[ind_back]
+  
+  mat_fdr <- matrix(vec_fdr, ncol = ncol(mat_ppi))
+  rownames(mat_fdr) <- rownames(mat_ppi)
+  colnames(mat_fdr) <- colnames(mat_ppi)
+  
+  mat_fdr
+}
+
 
 # do summary and plot functions, and add bayesian FDR function

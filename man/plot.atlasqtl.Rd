@@ -6,7 +6,8 @@
 \usage{
 \method{plot}{atlasqtl}(
   x,
-  thres_ppi = 0.5,
+  thres = 0.5,
+  fdr_adjust = FALSE,
   pch = 20,
   ylim_max = NULL,
   main = "Hotspot sizes",
@@ -17,11 +18,16 @@
 )
 }
 \arguments{
-\item{x}{an object with S3 class \code{"atlasqtl"}}
+\item{x}{an object with S3 class \code{"atlasqtl"}.}
 
-\item{thres_ppi}{threshold to be applied on the posterior probabilities of 
+\item{thres}{threshold to be applied on the posterior probabilities of 
 association to define hotspots (default is 0.5, for the 
 Median Probability Model).}
+
+\item{fdr_adjust}{if TRUE the threshold is applied on FDR estimates computed
+from the "atlasqtl" posterior probabilities of association,
+otherwise it is directly applied on the posterior 
+probabilities of association (default is FALSE).}
 
 \item{pch}{type of points.}
 
