@@ -140,8 +140,9 @@ summary.atlasqtl <- function(object, thres, fdr_adjust = FALSE, ...) {
 #' @export 
 #' 
 plot.atlasqtl <- function(x, thres = 0.5, fdr_adjust = FALSE, pch = 20, 
-                          ylim_max = NULL, main = "Hotspot sizes", 
-                          xlab = "Predictors", ylab = "sum_k PPI_st > thres",
+                          ylim_max = NULL, main = "Hotspot manhattan plot", 
+                          xlab = "Predictors", 
+                          ylab = "Nb of associated responses",
                           add = FALSE, ...) { 
   
   if (fdr_adjust) {
