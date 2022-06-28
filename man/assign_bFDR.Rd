@@ -2,7 +2,8 @@
 % Please edit documentation in R/summarise_output.R
 \name{assign_bFDR}
 \alias{assign_bFDR}
-\title{Compute Bayesian FDR estimates}
+\title{Compute Bayesian FDR estimates for pairwise association between the 
+predictors and responses}
 \usage{
 assign_bFDR(mat_ppi)
 }
@@ -12,7 +13,7 @@ from the "atlasqtl" object).}
 }
 \description{
 This function computes Bayesian FDR estimates from posterior probabilities of 
-association
+association.
 }
 \seealso{
 \code{\link{atlasqtl}}

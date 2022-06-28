@@ -4,10 +4,19 @@
 \alias{summary.atlasqtl}
 \title{Summary function for S3 class "atlasqtl"}
 \usage{
-\method{summary}{atlasqtl}(object, ...)
+\method{summary}{atlasqtl}(object, thres, fdr_adjust = FALSE, ...)
 }
 \arguments{
 \item{object}{an object with S3 class \code{"atlasqtl"}}
+
+\item{thres}{threshold to be applied on the posterior probabilities of 
+association (PPI) to define hotspots (default is 0.5, for the 
+Median Probability Model).}
+
+\item{fdr_adjust}{if TRUE the threshold is applied on FDR estimates computed
+from the "atlasqtl" posterior probabilities of association,
+otherwise it is directly applied on the posterior 
+probabilities of association (default is FALSE).}
 
 \item{...}{additional arguments affecting the summary produced.}
 }

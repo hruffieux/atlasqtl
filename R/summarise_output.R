@@ -64,13 +64,20 @@ print.atlasqtl <- function(x, ...) {
 #' atlasqtl posterior output.
 #' 
 #' @param object an object with S3 class \code{"atlasqtl"}
+#' @param thres threshold to be applied on the posterior probabilities of 
+#'              association (PPI) to define hotspots (default is 0.5, for the 
+#'              Median Probability Model).
+#' @param fdr_adjust if TRUE the threshold is applied on FDR estimates computed
+#'                   from the "atlasqtl" posterior probabilities of association,
+#'                   otherwise it is directly applied on the posterior 
+#'                   probabilities of association (default is FALSE).
 #' @param ... additional arguments affecting the summary produced.
 #' 
 #' @seealso \code{\link{atlasqtl}}
 #' 
 #' @export 
 #' 
-summary.atlasqtl <- function(object, ...) {
+summary.atlasqtl <- function(object, thres, fdr_adjust = FALSE, ...) {
   
     cat(paste0("\n***************************************************************** \n", 
                "ATLASQTL: summary of posterior quantities for variable selection.\n", 
@@ -83,7 +90,24 @@ summary.atlasqtl <- function(object, ...) {
     print(summary(as.vector(object$beta_vb))) 
     cat("\nPosterior mean of hotspot propensities, E(theta_s | y)\n ")
     print(summary(object$theta_vb)) 
-
+    
+    if (fdr_adjust) {
+      mat_fdr <- assign_bFDR(object$gam_vb)
+      nb_pairwise <- sum(mat_fdr < thres)
+      rs_thres <- rowSums(mat_fdr < thres)
+    } else {
+      nb_pairwise <- sum(object$gam_vb > thres)
+      rs_thres <- rowSums(object$gam_vb > thres)
+    }
+    cat(paste0("\n\nUsing ", ifelse(fdr_adjust, "an FDR adjustment of ", "a PPI threshold of "), 
+               thres, ":\n"))
+    cat("--------------------------------\n")
+    cat(paste0("\nNumber of pairwise (predictor-response) associations: ", nb_pairwise), "\n")
+    cat(paste0("\nNumber of predictors associated with at least one response ", 
+               "(active predictors): ", sum(rs_thres>0)), "\n")
+    cat("\nHotspot sizes (number of responses associated with each active predictors):\n")
+    print(summary(rs_thres[rs_thres>0])) 
+    
 }
 
 
@@ -97,8 +121,8 @@ summary.atlasqtl <- function(object, ...) {
 #' 
 #' @param x an object with S3 class \code{"atlasqtl"}.
 #' @param thres threshold to be applied on the posterior probabilities of 
-#'                  association to define hotspots (default is 0.5, for the 
-#'                  Median Probability Model).
+#'              association to define hotspots (default is 0.5, for the 
+#'              Median Probability Model).
 #' @param fdr_adjust if TRUE the threshold is applied on FDR estimates computed
 #'                   from the "atlasqtl" posterior probabilities of association,
 #'                   otherwise it is directly applied on the posterior 
@@ -118,7 +142,7 @@ summary.atlasqtl <- function(object, ...) {
 plot.atlasqtl <- function(x, thres = 0.5, fdr_adjust = FALSE, pch = 20, 
                           ylim_max = NULL, main = "Hotspot sizes", 
                           xlab = "Predictors", ylab = "sum_k PPI_st > thres",
-                          add = FALSE, ...) { # add possibility to choose thres_ppi by bayesian FDR adjustment
+                          add = FALSE, ...) { 
   
   if (fdr_adjust) {
     mat_fdr <- assign_bFDR(x$gam_vb)
@@ -144,10 +168,11 @@ plot.atlasqtl <- function(x, thres = 0.5, fdr_adjust = FALSE, pch = 20,
 }
 
 
-#' Compute Bayesian FDR estimates 
+#' Compute Bayesian FDR estimates for pairwise association between the 
+#' predictors and responses
 #' 
 #' This function computes Bayesian FDR estimates from posterior probabilities of 
-#' association
+#' association.
 #' 
 #' @param mat_ppi a matrix of posterior probabilities of assication (e.g, gam_vb
 #'                from the "atlasqtl" object).
@@ -173,6 +198,3 @@ assign_bFDR <- function(mat_ppi) {
   
   mat_fdr
 }
-
-
-# do summary and plot functions, and add bayesian FDR function
