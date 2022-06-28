@@ -157,11 +157,7 @@ plot.atlasqtl <- function(x, thres = 0.5, fdr_adjust = FALSE, pch = 20,
          main = main, 
          xlab = xlab,
          ylab = ylab)
-  } else {
-    stopifnot(all(c(is.null(ylim_max), 
-                    is.null(main), 
-                    is.null(xlab), 
-                    is.null(ylab))))
+  } else { 
     points(rs_thres, pch = pch)
   }
   
@@ -174,7 +170,7 @@ plot.atlasqtl <- function(x, thres = 0.5, fdr_adjust = FALSE, pch = 20,
 #' This function computes Bayesian FDR estimates from posterior probabilities of 
 #' association.
 #' 
-#' @param mat_ppi a matrix of posterior probabilities of assication (e.g, gam_vb
+#' @param mat_ppi a matrix of posterior probabilities of association (e.g, gam_vb
 #'                from the "atlasqtl" object).
 #' 
 #' @seealso \code{\link{atlasqtl}}
