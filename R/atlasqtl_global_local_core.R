@@ -366,7 +366,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
       diff_lb <- abs(lb_opt - lb_old)
       
       create_named_list_(beta_vb, gam_vb, theta_vb, X_beta_vb, zeta_vb, 
-                         n, p, q, p0, anneal, converged, it, maxit, tol, lb_opt, 
+                         n, p, q, anneal, converged, it, maxit, tol, lb_opt, 
                          diff_lb)
       
     }
