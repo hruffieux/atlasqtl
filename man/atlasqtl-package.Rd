@@ -19,6 +19,6 @@ and L. Bottolo. A global-local approach for detecting hotspots in multiple
 response regression. The Annals of Applied Statistics, 14:905-928, 2020.
 }
 \section{atlasqtl functions}{
- atlasqtl, map_hyperprior_elicitation, print.atlasqtl, set_hyper, set_init, summary.atlasqtl.
+ atlasqtl, assign_bFDR, map_hyperprior_elicitation, print.atlasqtl, set_hyper, set_init, summary.atlasqtl.
 }
 
