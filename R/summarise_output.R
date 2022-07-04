@@ -80,7 +80,7 @@ print.atlasqtl <- function(x, ...) {
 #' 
 summary.atlasqtl <- function(object, thres, fdr_adjust = FALSE, full_summary = TRUE, ...) {
   
-    cat(paste0("\n****************************************************** \n", 
+    cat(paste0("****************************************************** \n", 
                "* ATLASQTL: posterior summary for variable selection *\n", 
                "****************************************************** \n\n"))
     
