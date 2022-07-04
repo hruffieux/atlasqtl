@@ -43,7 +43,7 @@ print.atlasqtl <- function(x, ...) {
     cat(paste0("The posterior quantities inferred by ATLASQTL can\n",
                "be accessed as list elements from the `atlasqtl` S3\n", 
                "object, and a summary can obtained using the\n",  
-               "`summary` function.\n"))
+               "`summary` function.\n\n"))
     
   } else {
     cat(paste0("************************************************ \n", 
@@ -107,15 +107,25 @@ summary.atlasqtl <- function(object, thres, fdr_adjust = FALSE, full_summary = T
     cat("-----------------------------\n")
     cat(paste0("\nNb of pairwise (predictor-response) associations: ", nb_pairwise), "\n")
     cat(paste0("\nNb of predictors associated with > 1 response ", 
-               "(active predictors): ", sum(rs_thres>0)), "\n")
-    cat("\nHotspot sizes (nb of responses associated with each active predictors):\n")
+               "(active \npredictors): ", sum(rs_thres>0)), "\n")
+    cat("\nHotspot sizes (nb of responses associated with each \nactive predictors):\n")
     print(summary(rs_thres[rs_thres>0])) 
     
     if (any(rs_thres>0)) {
       sorted_hotspot_sizes <- sort(rs_thres, decreasing = TRUE)
       top <- min(sum(rs_thres>0), 6)
-      cat(paste0("\nTop hotspots: \n", paste0(names(sorted_hotspot_sizes)[1:top], 
-                 " (size ", sorted_hotspot_sizes[1:top], ")", collapse = ", ")))
+      
+      top_half <- ifelse(top > 3, 3, top) 
+      
+      cat(paste0("\nTop hotspots: \n", paste0(names(sorted_hotspot_sizes)[1:top_half], 
+                                              " (size ", sorted_hotspot_sizes[1:top_half], ")", collapse = ", "), "\n"))
+      
+      if (top > 3) {
+        
+        cat(paste0(names(sorted_hotspot_sizes)[(top_half+1):top], 
+                                                " (size ", sorted_hotspot_sizes[(top_half+1):top], ")", collapse = ", "))
+        
+      }
     }
 
     
