@@ -4,7 +4,7 @@
 \alias{summary.atlasqtl}
 \title{Summary function for S3 class "atlasqtl"}
 \usage{
-\method{summary}{atlasqtl}(object, thres, fdr_adjust = FALSE, ...)
+\method{summary}{atlasqtl}(object, thres, fdr_adjust = FALSE, full_summary = TRUE, ...)
 }
 \arguments{
 \item{object}{an object with S3 class \code{"atlasqtl"}}
@@ -17,6 +17,8 @@ Median Probability Model).}
 from the "atlasqtl" posterior probabilities of association,
 otherwise it is directly applied on the posterior 
 probabilities of association (default is FALSE).}
+
+\item{full_summary}{Whether or not to print a detailed summary. Default is TRUE.}
 
 \item{...}{additional arguments affecting the summary produced.}
 }

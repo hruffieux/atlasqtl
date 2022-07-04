@@ -10,9 +10,9 @@
   fdr_adjust = FALSE,
   pch = 20,
   ylim_max = NULL,
-  main = "Hotspot sizes",
+  main = "Hotspot manhattan plot",
   xlab = "Predictors",
-  ylab = "sum_k PPI_st > thres",
+  ylab = "Nb of associated responses",
   add = FALSE,
   ...
 )

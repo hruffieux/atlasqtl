@@ -71,25 +71,28 @@ print.atlasqtl <- function(x, ...) {
 #'                   from the "atlasqtl" posterior probabilities of association,
 #'                   otherwise it is directly applied on the posterior 
 #'                   probabilities of association (default is FALSE).
+#' @param full_summary Whether or not to print a detailed summary. Default is TRUE.
 #' @param ... additional arguments affecting the summary produced.
 #' 
 #' @seealso \code{\link{atlasqtl}}
 #' 
 #' @export 
 #' 
-summary.atlasqtl <- function(object, thres, fdr_adjust = FALSE, ...) {
+summary.atlasqtl <- function(object, thres, fdr_adjust = FALSE, full_summary = TRUE, ...) {
   
-    cat(paste0("\n***************************************************************** \n", 
-               "ATLASQTL: summary of posterior quantities for variable selection.\n", 
-               "****************************************************************** \n\n"))
-    cat("Summary for:\n")
-    cat("============\n\n")
-    cat("Posterior probabilities pairwise association, pr(gamma_st = 1 | y)\n")
-    print(summary(as.vector(object$gam_vb)))
-    cat("\nPosterior mean of pairwise regression coefficients, E(beta_st | y)\n")
-    print(summary(as.vector(object$beta_vb))) 
-    cat("\nPosterior mean of hotspot propensities, E(theta_s | y)\n ")
-    print(summary(object$theta_vb)) 
+    cat(paste0("\n****************************************************** \n", 
+               "* ATLASQTL: posterior summary for variable selection *\n", 
+               "****************************************************** \n\n"))
+    
+    if (full_summary) {
+      cat("Posterior probabilities pairwise association, pr(gamma_st = 1 | y)\n")
+      print(summary(as.vector(object$gam_vb)))
+      cat("\nPosterior mean of pairwise regression coefficients, E(beta_st | y)\n")
+      print(summary(as.vector(object$beta_vb))) 
+      cat("\nPosterior mean of hotspot propensities, E(theta_s | y)\n ")
+      print(summary(object$theta_vb)) 
+      cat("\n\n")
+    }
     
     if (fdr_adjust) {
       mat_fdr <- assign_bFDR(object$gam_vb)
@@ -99,14 +102,22 @@ summary.atlasqtl <- function(object, thres, fdr_adjust = FALSE, ...) {
       nb_pairwise <- sum(object$gam_vb > thres)
       rs_thres <- rowSums(object$gam_vb > thres)
     }
-    cat(paste0("\n\nUsing ", ifelse(fdr_adjust, "an FDR adjustment of ", "a PPI threshold of "), 
+    cat(paste0("Using ", ifelse(fdr_adjust, "FDR adjustment of ", "PPI threshold of "), 
                thres, ":\n"))
-    cat("--------------------------------\n")
-    cat(paste0("\nNumber of pairwise (predictor-response) associations: ", nb_pairwise), "\n")
-    cat(paste0("\nNumber of predictors associated with at least one response ", 
+    cat("-----------------------------\n")
+    cat(paste0("\nNb of pairwise (predictor-response) associations: ", nb_pairwise), "\n")
+    cat(paste0("\nNb of predictors associated with > 1 response ", 
                "(active predictors): ", sum(rs_thres>0)), "\n")
-    cat("\nHotspot sizes (number of responses associated with each active predictors):\n")
+    cat("\nHotspot sizes (nb of responses associated with each active predictors):\n")
     print(summary(rs_thres[rs_thres>0])) 
+    
+    if (any(rs_thres>0)) {
+      sorted_hotspot_sizes <- sort(rs_thres, decreasing = TRUE)
+      top <- min(sum(rs_thres>0), 6)
+      cat(paste0("\nTop hotspots: \n", paste0(names(sorted_hotspot_sizes)[1:top], 
+                 " (size ", sorted_hotspot_sizes[1:top], ")", collapse = ", ")))
+    }
+
     
 }
 

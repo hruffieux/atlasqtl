@@ -8,7 +8,7 @@ predictors and responses}
 assign_bFDR(mat_ppi)
 }
 \arguments{
-\item{mat_ppi}{a matrix of posterior probabilities of assication (e.g, gam_vb
+\item{mat_ppi}{a matrix of posterior probabilities of association (e.g, gam_vb
 from the "atlasqtl" object).}
 }
 \description{
