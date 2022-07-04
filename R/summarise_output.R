@@ -106,8 +106,8 @@ summary.atlasqtl <- function(object, thres, fdr_adjust = FALSE, full_summary = T
                thres, ":\n"))
     cat("-----------------------------\n")
     cat(paste0("\nNb of pairwise (predictor-response) associations: ", nb_pairwise), "\n")
-    cat(paste0("\nNb of predictors associated with > 1 response ", 
-               "(active \npredictors): ", sum(rs_thres>0)), "\n")
+    cat(paste0("\nNb of predictors associated with at least one response \n", 
+               "(active predictors): ", sum(rs_thres>0)), "\n")
     cat("\nHotspot sizes (nb of responses associated with each \nactive predictors):\n")
     print(summary(rs_thres[rs_thres>0])) 
     
