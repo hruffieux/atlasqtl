@@ -102,9 +102,9 @@ summary.atlasqtl <- function(object, thres, fdr_adjust = FALSE, full_summary = T
       nb_pairwise <- sum(object$gam_vb > thres)
       rs_thres <- rowSums(object$gam_vb > thres)
     }
-    cat(paste0("Using ", ifelse(fdr_adjust, "FDR adjustment of ", "PPI threshold of "), 
-               thres, ":\n"))
-    cat("-----------------------------\n")
+    cat(paste0("Using ", ifelse(fdr_adjust, "an FDR control of ", "an PPI threshold of "), 
+               100*thres, "%:\n"))
+    cat("---------------------------\n")
     cat(paste0("\nNb of pairwise (predictor-response) associations: ", nb_pairwise), "\n")
     cat(paste0("\nNb of predictors associated with at least one response \n", 
                "(active predictors): ", sum(rs_thres>0)), "\n")
@@ -118,7 +118,8 @@ summary.atlasqtl <- function(object, thres, fdr_adjust = FALSE, full_summary = T
       top_half <- ifelse(top > 3, 3, top) 
       
       cat(paste0("\nTop hotspots: \n", paste0(names(sorted_hotspot_sizes)[1:top_half], 
-                                              " (size ", sorted_hotspot_sizes[1:top_half], ")", collapse = ", "), "\n"))
+                                              " (size ", sorted_hotspot_sizes[1:top_half], ")", collapse = ", "), 
+                 ifelse(top>3, ", ", ". "), "\n"))
       
       if (top > 3) {
         
