@@ -102,9 +102,11 @@ summary.atlasqtl <- function(object, thres, fdr_adjust = FALSE, full_summary = T
       nb_pairwise <- sum(object$gam_vb > thres)
       rs_thres <- rowSums(object$gam_vb > thres)
     }
-    cat(paste0("Using ", ifelse(fdr_adjust, "an FDR control of ", "an PPI threshold of "), 
-               100*thres, "%:\n"))
-    cat("---------------------------\n")
+    cat(ifelse(fdr_adjust, 
+               paste0("Using a ", 100*thres,"% FDR control:\n",
+                      "-----------------------\n"), 
+               paste0("Using a PPI threshold of ", thres, ":\n",
+                      "------------------------------\n")))
     cat(paste0("\nNb of pairwise (predictor-response) associations: ", nb_pairwise), "\n")
     cat(paste0("\nNb of predictors associated with at least one response \n", 
                "(active predictors): ", sum(rs_thres>0)), "\n")
