@@ -6,7 +6,8 @@
 #' @param x an object with S3 class \code{"atlasqtl"}
 #' @param ... further arguments passed to or from other methods.
 #' 
-#' @seealso \code{\link{atlasqtl}}
+#' @seealso \code{\link{atlasqtl}}, \code{\link{plot.atlasqtl}}, 
+#'          \code{\link{summary.atlasqtl}}
 #' 
 #' @export 
 #' 
@@ -65,16 +66,17 @@ print.atlasqtl <- function(x, ...) {
 #' 
 #' @param object an object with S3 class \code{"atlasqtl"}
 #' @param thres threshold to be applied on the posterior probabilities of 
-#'              association (PPI) to define hotspots (default is 0.5, for the 
-#'              Median Probability Model).
+#'              association (PPI) to report associations (default is 0.5, for 
+#'              the Median Probability Model).
 #' @param fdr_adjust if TRUE the threshold is applied on FDR estimates computed
 #'                   from the "atlasqtl" posterior probabilities of association,
 #'                   otherwise it is directly applied on the posterior 
 #'                   probabilities of association (default is FALSE).
-#' @param full_summary Whether or not to print a detailed summary. Default is TRUE.
+#' @param full_summary whether or not to print a detailed summary. Default is TRUE.
 #' @param ... additional arguments affecting the summary produced.
 #' 
-#' @seealso \code{\link{atlasqtl}}
+#' @seealso \code{\link{atlasqtl}}, \code{\link{plot.atlasqtl}}, 
+#'          \code{\link{print.atlasqtl}}, \code{\link{assign_bFDR}}
 #' 
 #' @export 
 #' 
@@ -135,12 +137,10 @@ summary.atlasqtl <- function(object, thres, fdr_adjust = FALSE, full_summary = T
 }
 
 
-
-
 #' Plot function for S3 class "atlasqtl"
 #' 
 #' This function provides functionality for plotting a so-called Manhattan plot 
-#' with the position and size of "hotspot" predictors (i.e., predictors 
+#' with the positions and sizes of "hotspot" predictors (i.e., predictors 
 #' associated with multiple responses).
 #' 
 #' @param x an object with S3 class \code{"atlasqtl"}.
@@ -152,19 +152,20 @@ summary.atlasqtl <- function(object, thres, fdr_adjust = FALSE, full_summary = T
 #'                   otherwise it is directly applied on the posterior 
 #'                   probabilities of association (default is FALSE).
 #' @param pch type of points.
-#' @param ylim_max upper limit for y-axis (must be set to NULL if \code{add} is TRUE).
-#' @param main plot title (must be set to NULL if \code{add} is TRUE).
-#' @param xlab x-axis title (must be set to NULL if \code{add} is TRUE).
-#' @param ylab y-axis title (must be set to NULL if \code{add} is TRUE).
+#' @param ylim_max upper limit for y-axis (ignored if \code{add} is TRUE).
+#' @param main plot title (ignored if \code{add} is TRUE).
+#' @param xlab x-axis title (ignored if \code{add} is TRUE).
+#' @param ylab y-axis title (ignored if \code{add} is TRUE).
 #' @param add whether the plot should be overlaid on an existing plot.
 #' @param ... additional arguments.
 #' 
-#' @seealso \code{\link{atlasqtl}}
+#' @seealso \code{\link{atlasqtl}}, \code{\link{print.atlasqtl}}, 
+#'          \code{\link{summary.atlasqtl}}, \code{\link{assign_bFDR}}
 #' 
 #' @export 
 #' 
 plot.atlasqtl <- function(x, thres = 0.5, fdr_adjust = FALSE, pch = 20, 
-                          ylim_max = NULL, main = "Hotspot manhattan plot", 
+                          ylim_max = NULL, main = "Hotspot Manhattan plot", 
                           xlab = "Predictors", 
                           ylab = "Nb of associated responses",
                           add = FALSE, ...) { 
@@ -189,16 +190,17 @@ plot.atlasqtl <- function(x, thres = 0.5, fdr_adjust = FALSE, pch = 20,
 }
 
 
-#' Compute Bayesian FDR estimates for pairwise association between the 
+#' Computes Bayesian FDR estimates for pairwise associations between the 
 #' predictors and responses
 #' 
 #' This function computes Bayesian FDR estimates from posterior probabilities of 
 #' association.
 #' 
-#' @param mat_ppi a matrix of posterior probabilities of association (e.g, gam_vb
-#'                from the "atlasqtl" object).
+#' @param mat_ppi a matrix of posterior probabilities of association (e.g, 
+#'                gam_vb from the "atlasqtl" object).
 #' 
-#' @seealso \code{\link{atlasqtl}}
+#' @seealso \code{\link{atlasqtl}}, \code{\link{plot.atlasqtl}}, 
+#'          \code{\link{summary.atlasqtl}}
 #' 
 #' @export 
 #' 

@@ -2,19 +2,20 @@
 % Please edit documentation in R/summarise_output.R
 \name{assign_bFDR}
 \alias{assign_bFDR}
-\title{Compute Bayesian FDR estimates for pairwise association between the 
+\title{Computes Bayesian FDR estimates for pairwise associations between the 
 predictors and responses}
 \usage{
 assign_bFDR(mat_ppi)
 }
 \arguments{
-\item{mat_ppi}{a matrix of posterior probabilities of association (e.g, gam_vb
-from the "atlasqtl" object).}
+\item{mat_ppi}{a matrix of posterior probabilities of association (e.g, 
+gam_vb from the "atlasqtl" object).}
 }
 \description{
 This function computes Bayesian FDR estimates from posterior probabilities of 
 association.
 }
 \seealso{
-\code{\link{atlasqtl}}
+\code{\link{atlasqtl}}, \code{\link{plot.atlasqtl}}, 
+         \code{\link{summary.atlasqtl}}
 }

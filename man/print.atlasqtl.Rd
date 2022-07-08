@@ -16,5 +16,6 @@ This function provides functionality for printing basic information about the
 atlasqtl run.
 }
 \seealso{
-\code{\link{atlasqtl}}
+\code{\link{atlasqtl}}, \code{\link{plot.atlasqtl}}, 
+         \code{\link{summary.atlasqtl}}
 }

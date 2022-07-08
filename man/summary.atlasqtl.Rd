@@ -10,15 +10,15 @@
 \item{object}{an object with S3 class \code{"atlasqtl"}}
 
 \item{thres}{threshold to be applied on the posterior probabilities of 
-association (PPI) to define hotspots (default is 0.5, for the 
-Median Probability Model).}
+association (PPI) to report associations (default is 0.5, for 
+the Median Probability Model).}
 
 \item{fdr_adjust}{if TRUE the threshold is applied on FDR estimates computed
 from the "atlasqtl" posterior probabilities of association,
 otherwise it is directly applied on the posterior 
 probabilities of association (default is FALSE).}
 
-\item{full_summary}{Whether or not to print a detailed summary. Default is TRUE.}
+\item{full_summary}{whether or not to print a detailed summary. Default is TRUE.}
 
 \item{...}{additional arguments affecting the summary produced.}
 }
@@ -27,5 +27,6 @@ This function provides functionality for printing a basic summary of the
 atlasqtl posterior output.
 }
 \seealso{
-\code{\link{atlasqtl}}
+\code{\link{atlasqtl}}, \code{\link{plot.atlasqtl}}, 
+         \code{\link{print.atlasqtl}}, \code{\link{assign_bFDR}}
 }

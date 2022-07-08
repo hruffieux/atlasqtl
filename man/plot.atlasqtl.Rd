@@ -10,7 +10,7 @@
   fdr_adjust = FALSE,
   pch = 20,
   ylim_max = NULL,
-  main = "Hotspot manhattan plot",
+  main = "Hotspot Manhattan plot",
   xlab = "Predictors",
   ylab = "Nb of associated responses",
   add = FALSE,
@@ -31,13 +31,13 @@ probabilities of association (default is FALSE).}
 
 \item{pch}{type of points.}
 
-\item{ylim_max}{upper limit for y-axis (must be set to NULL if \code{add} is TRUE).}
+\item{ylim_max}{upper limit for y-axis (ignored if \code{add} is TRUE).}
 
-\item{main}{plot title (must be set to NULL if \code{add} is TRUE).}
+\item{main}{plot title (ignored if \code{add} is TRUE).}
 
-\item{xlab}{x-axis title (must be set to NULL if \code{add} is TRUE).}
+\item{xlab}{x-axis title (ignored if \code{add} is TRUE).}
 
-\item{ylab}{y-axis title (must be set to NULL if \code{add} is TRUE).}
+\item{ylab}{y-axis title (ignored if \code{add} is TRUE).}
 
 \item{add}{whether the plot should be overlaid on an existing plot.}
 
@@ -45,9 +45,10 @@ probabilities of association (default is FALSE).}
 }
 \description{
 This function provides functionality for plotting a so-called Manhattan plot 
-with the position and size of "hotspot" predictors (i.e., predictors 
+with the positions and sizes of "hotspot" predictors (i.e., predictors 
 associated with multiple responses).
 }
 \seealso{
-\code{\link{atlasqtl}}
+\code{\link{atlasqtl}}, \code{\link{print.atlasqtl}}, 
+         \code{\link{summary.atlasqtl}}, \code{\link{assign_bFDR}}
 }
