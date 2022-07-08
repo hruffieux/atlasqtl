@@ -15,7 +15,7 @@ re-knitted to generate an updated README.md -->
 v3](https://img.shields.io/badge/license-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![](https://img.shields.io/badge/devel%20version-0.1.4-blue.svg)](https://github.com/hruffieux/atlasqtl)
 [![](https://img.shields.io/github/languages/code-size/hruffieux/atlasqtl.svg)](https://github.com/hruffieux/atlasqtl)
-[![](https://img.shields.io/badge/doi-10.1214/20--AOAS1332-yellow.svg)](https://doi.org/10.1214/20-AOAS1332)
+[![](https://img.shields.io/badge/doi-10.1214/20--AOAS1332-green.svg)](https://doi.org/10.1214/20-AOAS1332)
 
 ## Overview
 

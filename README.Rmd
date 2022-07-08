@@ -33,7 +33,7 @@ require(badger)
 `r badge_license("GPL v3", url = "https://www.gnu.org/licenses/gpl-3.0")`
 `r badge_devel("hruffieux/atlasqtl", "blue")`
 `r badge_code_size("hruffieux/atlasqtl")`
-`r badge_doi("10.1214/20-AOAS1332", "yellow")`
+`r badge_doi("10.1214/20-AOAS1332", "green")`
 
 ## Overview
 
