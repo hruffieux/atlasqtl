@@ -3,8 +3,6 @@
 prevents from committing if the README.Rmd has changed, but has not been 
 re-knitted to generate an updated README.md -->
 
-    #> Warning: package 'badger' was built under R version 4.1.2
-
 ## atlasqtl - variable selection in sparse regression with hierarchically-related responses <img src="man/figures/atlasqtl_logo.png" align="right" height="150"/>
 
 <!-- Run for the R CMD checks, run usethis::use_github_actions() to set up the pipeline, possibly modify the .yaml file and then: -->
@@ -15,7 +13,7 @@ re-knitted to generate an updated README.md -->
 v3](https://img.shields.io/badge/license-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![](https://img.shields.io/badge/devel%20version-0.1.4-blue.svg)](https://github.com/hruffieux/atlasqtl)
 [![](https://img.shields.io/github/languages/code-size/hruffieux/atlasqtl.svg)](https://github.com/hruffieux/atlasqtl)
-[![](https://img.shields.io/badge/doi-10.1214/20--AOAS1332-green.svg)](https://doi.org/10.1214/20-AOAS1332)
+[![](https://img.shields.io/badge/doi-10.1214/20--AOAS1332-blue.svg)](https://doi.org/10.1214/20-AOAS1332)
 
 ## Overview
 

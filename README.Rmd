@@ -15,7 +15,8 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.path = "man/figures/README-",
-  out.width = "100%"
+  out.width = "100%",
+  warning = FALSE
 )
 ```
 
@@ -33,7 +34,7 @@ require(badger)
 `r badge_license("GPL v3", url = "https://www.gnu.org/licenses/gpl-3.0")`
 `r badge_devel("hruffieux/atlasqtl", "blue")`
 `r badge_code_size("hruffieux/atlasqtl")`
-`r badge_doi("10.1214/20-AOAS1332", "green")`
+`r badge_doi("10.1214/20-AOAS1332", "blue")`
 
 ## Overview
 
