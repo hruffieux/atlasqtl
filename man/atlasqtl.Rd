@@ -2,8 +2,8 @@
 % Please edit documentation in R/atlasqtl.R
 \name{atlasqtl}
 \alias{atlasqtl}
-\title{Fit a flexible hierarchical model for hotspot detection using annealed 
-variational inference.}
+\title{Flexible sparse regression for hierarchically-related responses using 
+annealed variational inference.}
 \usage{
 atlasqtl(
   Y,
@@ -134,8 +134,8 @@ An object of class "\code{atlasqtl}" containing the following
             parameters are returned.}
 }
 \description{
-Fit a flexible hierarchical model for hotspot detection using annealed 
-variational inference.
+Flexible sparse regression for hierarchically-related responses using 
+annealed variational inference.
 }
 \details{
 \code{atlasqtl} implements a flexible hierarchical regression 

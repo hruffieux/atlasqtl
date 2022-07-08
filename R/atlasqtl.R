@@ -2,8 +2,8 @@
 #     https://github.com/hruffieux/atlasqtl
 #
 
-#' Fit a flexible hierarchical model for hotspot detection using annealed 
-#' variational inference. 
+#' Flexible sparse regression for hierarchically-related responses using 
+#' annealed variational inference. 
 #'
 #' @param Y Response data matrix of dimension n x q, where n is the number of
 #'   samples and q is the number of response variables.

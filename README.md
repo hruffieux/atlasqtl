@@ -3,7 +3,9 @@
 prevents from committing if the README.Rmd has changed, but has not been 
 re-knitted to generate an updated README.md -->
 
-## atlasqtl - Fast global-local hotspot QTL detection <img src="man/figures/atlasqtl_logo.png" align="right" height="150"/>
+    #> Warning: package 'badger' was built under R version 4.1.2
+
+## atlasqtl - variable selection in sparse regression with hierarchically-related responses <img src="man/figures/atlasqtl_logo.png" align="right" height="150"/>
 
 <!-- Run for the R CMD checks, run usethis::use_github_actions() to set up the pipeline, possibly modify the .yaml file and then: -->
 <!-- [![R build status](https://github.com/hruffieux/atlasqtl/workflows/R-CMD-check/badge.svg)](https://github.com/hruffieux/atlasqtl/actions) # TODO. not enabled yet, needs pre-install of GSL lib for windows -->
@@ -63,7 +65,7 @@ Then, to install the package in R, run the following command:
 
 ``` r
 if(!require(remotes)) install.packages("remotes")
-remotes::install_github("hruffieux/atlasqtl")
+remotes::install_github("hruffieux/atlasqtl", ref = "devel")
 ```
 
 ## License and authors

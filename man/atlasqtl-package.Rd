@@ -3,20 +3,22 @@
 \docType{package}
 \name{atlasqtl-package}
 \alias{atlasqtl-package}
-\title{atlasqtl: a package for fAsT gLobal-locAl hotSpot QTL detection}
+\title{atlasqtl: an R package for variable selection in sparse regression with hierarchically-related responses}
 \description{
-Global-local hierachical approach for joint detection of hotspot predictors 
-in multiple-response regression. Inference uses closed-form variational 
-updates coupled with a simulated annealing algorithm to enhance exploration 
-of highly multimodal spaces. This software allows joint inference at 
-large-scale, e.g., for molecular quantitative trait locus (QTL) studies where 
-the hotspots are genetic variants regulating several molecular traits 
-simultaneously. See Helene Ruffieux, Anthony C. Davison, Jorg Hager, 
-Jamie Inshaw, Benjamin P. Fairfax, Sylvia Richardson, Leonardo Bottolo, A 
-global-local approach for detecting hotspots in multiple-response regression, 
-arXiv:1811.03334, 2018.
+Flexible sparse regression for variable selection in large predictor and 
+response settings, based on a series of hierarchically-related spike-and-slab 
+submodels. The model is also tailored to the detection of hotspots, namely, 
+predictors associated with multiple responses, which it represents using a 
+global-local horseshoe specification. Inference uses closed-form variational 
+updates coupled with a simulated annealing algorithm to enhance exploration of 
+highly multimodal spaces. This software allows joint inference at large scale, 
+e.g., for molecular quantitative trait locus (QTL) studies, where the hotspots 
+are genetic variants regulating several molecular traits simultaneously. 
+See H. Ruffieux, A. C. Davison, J. Hager, J. Inshaw, B. Fairfax, S. Richardson, 
+and L. Bottolo. A global-local approach for detecting hotspots in multiple 
+response regression. The Annals of Applied Statistics, 14:905-928, 2020.
 }
 \section{atlasqtl functions}{
- atlasqtl, map_hyperprior_elicitation, set_hyper, set_init.
+ atlasqtl, assign_bFDR, map_hyperprior_elicitation, print.atlasqtl, set_hyper, set_init, summary.atlasqtl.
 }
 

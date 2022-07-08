@@ -300,7 +300,8 @@ atlasqtl_global_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit,
       diff_lb <- abs(lb_opt - lb_old)
       
       create_named_list_(beta_vb, gam_vb, theta_vb, X_beta_vb, zeta_vb, 
-                         converged, it, lb_opt, diff_lb)
+                         n, p, q, anneal, converged, it, maxit, tol, lb_opt, 
+                         diff_lb)
       
     }
   })
