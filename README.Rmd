@@ -30,7 +30,7 @@ require(badger)
 
 <!-- Run for the R CMD checks, run usethis::use_github_actions() to set up the pipeline, possibly modify the .yaml file and then: -->
 <!-- `r badge_github_actions("hruffieux/atlasqtl")` # TODO. not enabled yet, needs pre-install of GSL lib for windows -->
-`r badge_travis("hruffieux/atlasqtl")`
+<!-- `r badge_travis("hruffieux/atlasqtl")` -->
 `r badge_license("GPL v3", url = "https://www.gnu.org/licenses/gpl-3.0")`
 `r badge_devel("hruffieux/atlasqtl", "blue")`
 `r badge_code_size("hruffieux/atlasqtl")`
