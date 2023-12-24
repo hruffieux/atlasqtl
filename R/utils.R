@@ -173,7 +173,7 @@ inv_mills_ratio_ <- function(y, U, log_1_pnorm_U, log_pnorm_U) {
   
   stopifnot(y %in% c(0, 1))
   
-  # writing explicitely the formula for pnorm(, log = TRUE) is faster...
+  # writing explicitly the formula for pnorm(, log = TRUE) is faster...
   if (y == 1) {
     
     m <- exp(-U^2/2 - log(sqrt(2*pi)) - log_pnorm_U)
