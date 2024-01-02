@@ -11,7 +11,7 @@ re-knitted to generate an updated README.md -->
 
 [![License: GPL
 v3](https://img.shields.io/badge/license-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![](https://img.shields.io/badge/devel%20version-0.1.4-blue.svg)](https://github.com/hruffieux/atlasqtl)
+[![](https://img.shields.io/badge/devel%20version-0.1.5-blue.svg)](https://github.com/hruffieux/atlasqtl)
 [![](https://img.shields.io/github/languages/code-size/hruffieux/atlasqtl.svg)](https://github.com/hruffieux/atlasqtl)
 [![](https://img.shields.io/badge/doi-10.1214/20--AOAS1332-blue.svg)](https://doi.org/10.1214/20-AOAS1332)
 
@@ -70,7 +70,7 @@ Then, to install the package in R, run the following command:
 
 ``` r
 if(!require(remotes)) install.packages("remotes")
-remotes::install_github("hruffieux/atlasqtl", ref = "devel")
+remotes::install_github("hruffieux/atlasqtl", ref = "handling-missingness")
 ```
 
 ## License and authors

@@ -16,6 +16,17 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
   p <- ncol(X)
   q <- ncol(Y)
   
+  if (any(is.na(Y))) {
+    
+    mis_pat <- ifelse(is.na(Y), 0, 1)
+    Y[is.na(Y)] <- 0
+    X_norm_sq <- crossprod(X^2, mis_pat)
+    
+  } else {
+    
+    mis_pat <- X_norm_sq <- NULL
+    
+  }
   
   # Gathering initial variational parameters. Do it explicitly.
   # with() function not used here as the objects will be modified later.
@@ -85,7 +96,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
     # Stored/precomputed objects
     #
     beta_vb <- update_beta_vb_(gam_vb, mu_beta_vb)
-    m2_beta <- update_m2_beta_(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = TRUE)
+    m2_beta <- update_m2_beta_(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = TRUE) # first time keep sweep = TRUE even when missing data, since uses the initial parameter sig2_beta_vb which is a vector.
     
     X_beta_vb <- update_X_beta_vb_(X, beta_vb)
     
@@ -113,13 +124,13 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
       # % #
       
       # % #
-      eta_vb <- update_eta_vb_(n, eta, gam_vb, c = c)
+      eta_vb <- update_eta_vb_(n, eta, gam_vb, mis_pat, c = c)
       kappa_vb <- update_kappa_vb_(Y, kappa, X_beta_vb, beta_vb, m2_beta, 
-                                   sig2_inv_vb, c = c)
+                                   sig2_inv_vb, X_norm_sq, mis_pat, c = c)
       
       tau_vb <- eta_vb / kappa_vb
       
-      sig2_beta_vb <- update_sig2_beta_vb_(n, sig2_inv_vb, tau_vb, c = c)
+      sig2_beta_vb <- update_sig2_beta_vb_(n, sig2_inv_vb, tau_vb, X_norm_sq, c = c)
       
       log_tau_vb <- update_log_tau_vb_(eta_vb, kappa_vb)
       log_sig2_inv_vb <- update_log_sig2_inv_vb_(nu_vb, rho_vb)
@@ -134,11 +145,18 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
         #
         shuffled_ind <- as.numeric(sample(0:(p-1))) # Zero-based index in C++
         
+        if (is.null(mis_pat)) {
+          coreDualLoop(X, Y, gam_vb, log_Phi_theta_plus_zeta, 
+                       log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb, 
+                       beta_vb, X_beta_vb, mu_beta_vb, sig2_beta_vb, tau_vb, 
+                       shuffled_ind, c = c)
+        } else {
+          coreDualMisLoop(X, Y, gam_vb, log_Phi_theta_plus_zeta, 
+                          log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb, 
+                          beta_vb, X_beta_vb, mu_beta_vb, sig2_beta_vb, tau_vb, 
+                          shuffled_ind, mis_pat, c = c)
+        }
         
-        coreDualLoop(X, Y, gam_vb, log_Phi_theta_plus_zeta, 
-                     log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb, 
-                     beta_vb, X_beta_vb, mu_beta_vb, sig2_beta_vb, tau_vb, 
-                     shuffled_ind, c = c)
         
       } else if (batch == "0"){ # no batch, used only internally (slower)
                                 # schemes "x" of "x-y" are not batch concave
@@ -146,21 +164,49 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
         
         for (k in sample(1:q)) {
           
-          for (j in sample(1:p)) {
+          
+          if (is.null(mis_pat)) {
             
-            X_beta_vb[, k] <- X_beta_vb[, k] - X[, j] * beta_vb[j, k]
+            for (j in sample(1:p)) {
+              
+              X_beta_vb[, k] <- X_beta_vb[, k] - X[, j] * beta_vb[j, k]
+              
+              mu_beta_vb[j, k] <- c * sig2_beta_vb[k] * tau_vb[k] * crossprod(Y[, k] - X_beta_vb[, k], X[, j])
+              
+              gam_vb[j, k] <- exp(-log_one_plus_exp_(c * (pnorm(theta_vb[j] + zeta_vb[k], lower.tail = FALSE, log.p = TRUE) -
+                                                            pnorm(theta_vb[j] + zeta_vb[k], log.p = TRUE) -
+                                                            log_tau_vb[k] / 2 - log_sig2_inv_vb / 2 -
+                                                            mu_beta_vb[j, k] ^ 2 / (2 * sig2_beta_vb[k]) -
+                                                            log(sig2_beta_vb[k]) / 2)))
+              
+              beta_vb[j, k] <- gam_vb[j, k] * mu_beta_vb[j, k]
+              
+              X_beta_vb[, k] <- X_beta_vb[, k] + X[, j] * beta_vb[j, k]
+              
+            }
             
-            mu_beta_vb[j, k] <- c * sig2_beta_vb[k] * tau_vb[k] * crossprod(Y[, k] - X_beta_vb[, k], X[, j])
+          } else {
             
-            gam_vb[j, k] <- exp(-log_one_plus_exp_(c * (pnorm(theta_vb[j] + zeta_vb[k], lower.tail = FALSE, log.p = TRUE) -
-                                                          pnorm(theta_vb[j] + zeta_vb[k], log.p = TRUE) -
-                                                          log_tau_vb[k] / 2 - log_sig2_inv_vb / 2 -
-                                                          mu_beta_vb[j, k] ^ 2 / (2 * sig2_beta_vb[k]) -
-                                                          log(sig2_beta_vb[k]) / 2)))
+            X_beta_vb[, k] <- X_beta_vb[, k] * mis_pat[, k]
+            X_pat <- sweep(X, 1, mis_pat[, k], `*`)
             
-            beta_vb[j, k] <- gam_vb[j, k] * mu_beta_vb[j, k]
-            
-            X_beta_vb[, k] <- X_beta_vb[, k] + X[, j] * beta_vb[j, k]
+            for (j in sample(1:p)) {
+              
+              X_beta_vb[, k] <- X_beta_vb[, k] - X_pat[, j] * beta_vb[j, k]
+              
+              mu_beta_vb[j, k] <- c * sig2_beta_vb[j, k] * tau_vb[k] * crossprod(Y[, k] - X_beta_vb[, k], X_pat[, j])
+              
+              gam_vb[j, k] <- exp(-log_one_plus_exp_(c * (pnorm(theta_vb[j] + zeta_vb[k], lower.tail = FALSE, log.p = TRUE) -
+                                                            pnorm(theta_vb[j] + zeta_vb[k], log.p = TRUE) -
+                                                            log_tau_vb[k] / 2 - log_sig2_inv_vb / 2 -
+                                                            mu_beta_vb[j, k] ^ 2 / (2 * sig2_beta_vb[j, k]) -
+                                                            log(sig2_beta_vb[j, k]) / 2)))
+              
+              beta_vb[j, k] <- gam_vb[j, k] * mu_beta_vb[j, k]
+              
+              X_beta_vb[, k] <- X_beta_vb[, k] + X_pat[, j] * beta_vb[j, k]
+              
+            }
             
           }
         }
@@ -171,7 +217,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
         
       }
       
-      m2_beta <- update_m2_beta_(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = TRUE)
+      m2_beta <- update_m2_beta_(gam_vb, mu_beta_vb, sig2_beta_vb, mis_pat = mis_pat)
       
       Z <- update_Z_(gam_vb, theta_plus_zeta_vb, log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, c = c) 
       
@@ -291,7 +337,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
                                        shr_fac_inv, sig02_inv_vb, sig2_beta_vb,
                                        sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb,
                                        t02_inv, tau_vb, theta_vb, vec_sum_log_det_zeta,
-                                       xi_inv_vb, zeta_vb)
+                                       xi_inv_vb, zeta_vb, X_norm_sq, mis_pat)
           
           if (verbose != 0 & (it == it_init | it %% max(5, batch_conv) == 0))
             cat(paste0("ELBO = ", format(lb_new), "\n\n"))
@@ -387,15 +433,16 @@ elbo_global_local_ <- function(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
                                shr_fac_inv, sig02_inv_vb, sig2_beta_vb, 
                                sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb, 
                                t02_inv, tau_vb, theta_vb, vec_sum_log_det_zeta, 
-                               xi_inv_vb, zeta_vb) {
+                               xi_inv_vb, zeta_vb, X_norm_sq, mis_pat) {
   
   n <- nrow(Y)
   p <- length(L_vb)
   
   # needed for monotonically increasing elbo.
   #
-  eta_vb <- update_eta_vb_(n, eta, gam_vb)
-  kappa_vb <- update_kappa_vb_(Y, kappa, X_beta_vb, beta_vb, m2_beta, sig2_inv_vb)
+  eta_vb <- update_eta_vb_(n, eta, gam_vb, mis_pat)
+  kappa_vb <- update_kappa_vb_(Y, kappa, X_beta_vb, beta_vb, m2_beta, 
+                               sig2_inv_vb, X_norm_sq, mis_pat)
   
   nu_vb <- update_nu_vb_(nu, sum(gam_vb))
   rho_vb <- update_rho_vb_(rho, m2_beta, tau_vb)
@@ -407,7 +454,7 @@ elbo_global_local_ <- function(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
   log_xi_inv_vb <- update_log_sig2_inv_vb_(nu_xi_inv_vb, rho_xi_inv_vb)
   
   
-  elbo_A <- e_y_(n, kappa, kappa_vb, log_tau_vb, m2_beta, sig2_inv_vb, tau_vb)
+  elbo_A <- e_y_(n, kappa, kappa_vb, log_tau_vb, m2_beta, sig2_inv_vb, tau_vb, mis_pat)
   
   elbo_B <- e_beta_gamma_(gam_vb, log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, log_sig2_inv_vb, 
                           log_tau_vb, zeta_vb, 

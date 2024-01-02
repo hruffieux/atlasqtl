@@ -150,7 +150,7 @@ auto_set_hyper_ <- function(Y, p, p0) {
   nu <- 1e-2
   rho <- 1
 
-  eta <- 1 / median(apply(Y, 2, var)) 
+  eta <- 1 / median(apply(Y, 2, var, na.rm = TRUE)) 
   if (!is.finite(eta)) eta <- 1e3
   eta <- rep(eta, q)
   kappa <- rep(1, q)
@@ -391,7 +391,7 @@ auto_set_init_ <- function(Y, p, p0, shr_fac_inv, user_seed) {
 
   sig2_inv_vb <- 1e-2
 
-  tau_vb <- 1 / median(apply(Y, 2, var))
+  tau_vb <- 1 / median(apply(Y, 2, var, na.rm = TRUE))
   if (!is.finite(tau_vb)) tau_vb <- 1e3
   tau_vb <- rep(tau_vb, q)
 

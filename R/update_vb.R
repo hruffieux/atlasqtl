@@ -16,9 +16,9 @@
 
 update_beta_vb_ <- function(gam_vb, mu_beta_vb) gam_vb * mu_beta_vb
 
-update_m2_beta_ <- function(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = FALSE) {
+update_m2_beta_ <- function(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = FALSE, mis_pat = NULL) {
   
-  if(sweep) {
+  if(sweep | is.null(mis_pat)) {
     
     sweep(mu_beta_vb ^ 2, 2, sig2_beta_vb, `+`) * gam_vb
     
@@ -30,15 +30,21 @@ update_m2_beta_ <- function(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = FALSE) {
   
 }
 
-update_sig2_beta_vb_ <- function(n, sig2_inv_vb, tau_vb = NULL, c = 1) {
+update_sig2_beta_vb_ <- function(n, sig2_inv_vb, tau_vb = NULL, X_norm_sq = NULL, c = 1) {
   
   if(is.null(tau_vb)) {
     
-    1 / (c * (n - 1 + sig2_inv_vb))
+    if (is.null(X_norm_sq))
+      1 / (c * (n - 1 + sig2_inv_vb))
+    else
+      1 / (c * (X_norm_sq + sig2_inv_vb))
     
   } else {
     
-    1 / (c * (n - 1 + sig2_inv_vb) * tau_vb)
+    if (is.null(X_norm_sq))
+      1 / (c * (n - 1 + sig2_inv_vb) * tau_vb)
+    else
+      1 / (c * sweep(X_norm_sq + sig2_inv_vb, 2, tau_vb, `*`))
     
   }
 }
@@ -107,15 +113,43 @@ update_log_sig2_inv_vb_ <- function(nu_vb, rho_vb) digamma(nu_vb) - log(rho_vb)
 ## tau's updates ##
 ###################
 
-update_eta_vb_ <- function(n, eta, gam_vb, c = 1) c * (eta + n / 2 + colSums(gam_vb) / 2) - c + 1
+update_eta_vb_ <- function(n, eta, gam_vb, mis_pat = NULL, c = 1) {
 
-update_kappa_vb_ <- function(Y, kappa, X_beta_vb, beta_vb, m2_beta, sig2_inv_vb, c = 1) {
+  if (is.null(mis_pat))
+    c * (eta + n / 2 + colSums(gam_vb) / 2) - c + 1
+  else
+    c * (eta + colSums(mis_pat) / 2 + colSums(gam_vb) / 2) - c + 1
+  
+}
+
+update_kappa_vb_ <- function(Y, kappa, X_beta_vb, beta_vb, m2_beta, sig2_inv_vb, 
+                             X_norm_sq = NULL, mis_pat = NULL, c = 1) {
   
   n <- nrow(Y)
   
   c * (kappa + (colSums(Y^2) - 2 * colSums(Y * X_beta_vb)  +
                   (n - 1 + sig2_inv_vb) * colSums(m2_beta) +
                   colSums(X_beta_vb^2) - (n - 1) * colSums(beta_vb^2))/ 2)
+  
+  
+  
+  stopifnot(!xor(is.null(X_norm_sq), is.null(mis_pat)))
+  
+  if (is.null(mis_pat)) {
+    
+    n <- nrow(Y)
+    
+    c * (kappa + (colSums(Y^2) - 2 * colSums(Y * X_beta_vb)  +
+                    (n - 1 + sig2_inv_vb) * colSums(m2_beta) +
+                    colSums(X_beta_vb^2) - (n - 1) * colSums(beta_vb^2))/ 2)
+    
+  } else {
+    
+    c * (kappa + (colSums(Y^2) - 2 * colSums(Y * X_beta_vb)  +
+                    sig2_inv_vb * colSums(m2_beta) + colSums(X_norm_sq * m2_beta) +
+                    colSums(X_beta_vb^2 * mis_pat) - colSums(X_norm_sq * beta_vb^2))/ 2)
+    
+  }
   
 }
 

@@ -29,11 +29,20 @@ prepare_data_ <- function(Y, X, tol, maxit, user_seed, verbose, checkpoint_path,
   n <- nrow(X)
   p <- ncol(X)
 
-  check_structure_(Y, "matrix", "numeric")
+  check_structure_(Y, "matrix", "numeric", na_ok = TRUE)
+  
   q <- ncol(Y)
-
+  
   if (nrow(Y) != n) 
     stop("X and Y must have the same number of samples.")
+  
+  if (sum(!is.na(Y)) / (n * q) < 0.05)
+    stop("Too few non-NA values in matrix Y. Exit.")
+  
+  ind_low <- apply(Y, 2, function(y) sum(!is.na(y)) / n < 0.025)
+  if (any(ind_low))
+      stop(paste0("Column(s) ", which(ind_low), " of matrix Y have more than ",
+                  "97.5% missing values, and should be removed. Exit."))
 
   if (is.null(rownames(X)) & is.null(rownames(Y)))
     rownames(X) <- rownames(Y) <- paste0("Ind_", 1:n)

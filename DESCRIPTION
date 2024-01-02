@@ -1,8 +1,8 @@
 Package: atlasqtl
 Type: Package
 Title: Flexible sparse regression for hierarchically-related responses using annealed variational inference
-Version: 0.1.4
-Date: 2021-01-16
+Version: 0.1.5
+Date: 2024-01-02
 Authors@R: c(
     person("Helene", "Ruffieux", email = "helene.ruffieux@mrc-bsu.cam.ac.uk",
             role = c("aut", "cre")),
@@ -30,13 +30,11 @@ LazyData: TRUE
 Imports:
     gsl (>= 1.9-10.3),
     LaplacesDemon (>= 16.1.1),
-    Matrix (>= 1.2-2),
     parallel,
-    plyr (>= 1.8.4),
     PowerTOST (>= 1.4-6),
     Rcpp (>= 0.12.9),
     RcppEigen (>= 0.3.2.9.0)
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.3
 Suggests: testthat
 LinkingTo: Rcpp, RcppEigen
 Encoding: UTF-8
