@@ -10,7 +10,28 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
                                         checkpoint_path = NULL, 
                                         trace_path = NULL, full_output = FALSE, 
                                         thinned_elbo_eval = TRUE,
-                                        debug = FALSE, batch = "y") {
+                                        debug = FALSE, batch = "0" # <-------
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        ) {
   
   n <- nrow(Y)
   p <- ncol(X)
@@ -25,8 +46,12 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
   } else {
     
     mis_pat <- X_norm_sq <- NULL
+    cp_X <- crossprod(X)
     
   }
+  
+  Y_norm_sq <- colSums(Y^2)
+  cp_Y_X <- crossprod(Y, X)
   
   # Gathering initial variational parameters. Do it explicitly.
   # with() function not used here as the objects will be modified later.
@@ -125,7 +150,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
       
       # % #
       eta_vb <- update_eta_vb_(n, eta, gam_vb, mis_pat, c = c)
-      kappa_vb <- update_kappa_vb_(Y, kappa, X_beta_vb, beta_vb, m2_beta, 
+      kappa_vb <- update_kappa_vb_(n, Y_norm_sq, cp_Y_X, cp_X, kappa, X_beta_vb, beta_vb, m2_beta, 
                                    sig2_inv_vb, X_norm_sq, mis_pat, c = c)
       
       tau_vb <- eta_vb / kappa_vb
@@ -337,7 +362,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
                                        shr_fac_inv, sig02_inv_vb, sig2_beta_vb,
                                        sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb,
                                        t02_inv, tau_vb, theta_vb, vec_sum_log_det_zeta,
-                                       xi_inv_vb, zeta_vb, X_norm_sq, mis_pat)
+                                       xi_inv_vb, zeta_vb, X_norm_sq, Y_norm_sq, cp_Y_X, cp_X, mis_pat)
           
           if (verbose != 0 & (it == it_init | it %% max(5, batch_conv) == 0))
             cat(paste0("ELBO = ", format(lb_new), "\n\n"))
@@ -393,7 +418,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
                          nu_s0_vb, nu_vb, nu_xi_inv_vb, rho_s0_vb, rho_vb, 
                          rho_xi_inv_vb, shr_fac_inv, sig02_inv_vb, sig2_beta_vb, 
                          sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb, tau_vb, 
-                         theta_vb, X_beta_vb, xi_inv_vb, zeta_vb)
+                         theta_vb, X_beta_vb, cp_Y_X, cp_X, xi_inv_vb, zeta_vb)
       
     } else {
       
@@ -433,7 +458,7 @@ elbo_global_local_ <- function(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
                                shr_fac_inv, sig02_inv_vb, sig2_beta_vb, 
                                sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb, 
                                t02_inv, tau_vb, theta_vb, vec_sum_log_det_zeta, 
-                               xi_inv_vb, zeta_vb, X_norm_sq, mis_pat) {
+                               xi_inv_vb, zeta_vb, X_norm_sq, Y_norm_sq, cp_Y_X, cp_X, mis_pat) {
   
   n <- nrow(Y)
   p <- length(L_vb)
@@ -441,7 +466,7 @@ elbo_global_local_ <- function(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
   # needed for monotonically increasing elbo.
   #
   eta_vb <- update_eta_vb_(n, eta, gam_vb, mis_pat)
-  kappa_vb <- update_kappa_vb_(Y, kappa, X_beta_vb, beta_vb, m2_beta, 
+  kappa_vb <- update_kappa_vb_(n, Y_norm_sq, cp_Y_X, cp_X, kappa, X_beta_vb, beta_vb, m2_beta, 
                                sig2_inv_vb, X_norm_sq, mis_pat)
   
   nu_vb <- update_nu_vb_(nu, sum(gam_vb))
