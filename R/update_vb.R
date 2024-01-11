@@ -125,14 +125,6 @@ update_eta_vb_ <- function(n, eta, gam_vb, mis_pat = NULL, c = 1) {
 update_kappa_vb_ <- function(Y, kappa, X_beta_vb, beta_vb, m2_beta, sig2_inv_vb, 
                              X_norm_sq = NULL, mis_pat = NULL, c = 1) {
   
-  n <- nrow(Y)
-  
-  c * (kappa + (colSums(Y^2) - 2 * colSums(Y * X_beta_vb)  +
-                  (n - 1 + sig2_inv_vb) * colSums(m2_beta) +
-                  colSums(X_beta_vb^2) - (n - 1) * colSums(beta_vb^2))/ 2)
-  
-  
-  
   stopifnot(!xor(is.null(X_norm_sq), is.null(mis_pat)))
   
   if (is.null(mis_pat)) {
