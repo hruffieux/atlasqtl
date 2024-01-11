@@ -73,29 +73,28 @@ void coreDualMisLoop(const MapMat X,
                   const MapArr1D shuffled_ind,
                   const MapArr2D mis_pat,
                   const double c = 1) {
-  
-  
+
   const Arr1D cst = -(log_tau_vb + log_sig2_inv_vb)/ 2;
-  
+   
   X_beta_vb *= mis_pat;
-  
+   
   for (int i = 0; i < X.cols(); ++i) {
-    
+     
     int j = shuffled_ind[i];
-    
+
     X_beta_vb -= ((X.col(j) * m1_beta.row(j)).array() * mis_pat);
-    
+
     mu_beta_vb.row(j) = c * sig2_beta_vb.row(j).transpose() * tau_vb *
       ((Y - X_beta_vb.matrix()).transpose() * X.col(j)).array();
-    
+
     gam_vb.row(j) = exp(-logOnePlusExp(c * (log_1_min_Phi_theta_plus_zeta.row(j) -
-      log_Phi_theta_plus_zeta.row(j) - mu_beta_vb.row(j).square() / (2 * sig2_beta_vb.row(j).transpose()) - 
-      log(sig2_beta_vb.row(j).transpose()) / 2 + cst.transpose())));
-    
+      log_Phi_theta_plus_zeta.row(j) - mu_beta_vb.row(j).square() / (2 * sig2_beta_vb.row(j)) -
+      log(sig2_beta_vb.row(j)) / 2 + cst.transpose())));
+
     m1_beta.row(j) = mu_beta_vb.row(j) * gam_vb.row(j);
-    
+
     X_beta_vb += ((X.col(j) * m1_beta.row(j)).array() * mis_pat);
-    
+
   }
   
 }
