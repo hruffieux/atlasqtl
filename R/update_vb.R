@@ -124,7 +124,7 @@ update_eta_vb_ <- function(n, eta, gam_vb, mis_pat = NULL, c = 1) {
   
 }
 
-update_kappa_vb_ <- function(n, Y_norm_sq, cp_Y_X, cp_X, kappa, X_beta_vb, # remove X_beta_vb from arguments once version for missingness implemented
+update_kappa_vb_ <- function(n, Y_norm_sq, cp_Y_X, cp_betaX_X, kappa, X_beta_vb, # remove X_beta_vb from arguments once version for missingness implemented
                              beta_vb, m2_beta, sig2_inv_vb, 
                              X_norm_sq = NULL, mis_pat = NULL, c = 1) {
   
@@ -136,15 +136,25 @@ update_kappa_vb_ <- function(n, Y_norm_sq, cp_Y_X, cp_X, kappa, X_beta_vb, # rem
     #                 (n - 1 + sig2_inv_vb) * colSums(m2_beta) +
     #                 colSums(X_beta_vb^2) - (n - 1) * colSums(beta_vb^2))/ 2)
 
+    # c * (kappa + (Y_norm_sq - 2 * colSums(beta_vb * t(cp_Y_X))  +
+    #                 (n - 1 + sig2_inv_vb) * colSums(m2_beta) +
+    #                 diag(crossprod(beta_vb, cp_X %*% beta_vb)) - (n - 1) * colSums(beta_vb^2))/ 2) 
+    
     c * (kappa + (Y_norm_sq - 2 * colSums(beta_vb * t(cp_Y_X))  +
                     (n - 1 + sig2_inv_vb) * colSums(m2_beta) +
-                    diag(crossprod(beta_vb, cp_X %*% beta_vb)) - (n - 1) * colSums(beta_vb^2))/ 2)
+                    diag(cp_betaX_X %*% beta_vb) - (n - 1) * colSums(beta_vb^2))/ 2) 
+    
     
   } else {
     
     c * (kappa + (Y_norm_sq - 2 * colSums(Y * X_beta_vb)  +
                     sig2_inv_vb * colSums(m2_beta) + colSums(X_norm_sq * m2_beta) +
                     colSums(X_beta_vb^2 * mis_pat) - colSums(X_norm_sq * beta_vb^2))/ 2)
+    
+    # c * (kappa + (Y_norm_sq - 2 * colSums(beta_vb * t(cp_Y_X))  +
+    #                 sig2_inv_vb * colSums(m2_beta) + colSums(X_norm_sq * m2_beta) +
+    #                 diag(crossprod(beta_vb * mis_pat, cp_X %*% beta_vb * mis_pat)) # this is wrong.
+    # - colSums(X_norm_sq * beta_vb^2))/ 2)
     
   }
   
