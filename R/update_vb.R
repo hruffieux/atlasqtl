@@ -51,6 +51,8 @@ update_sig2_beta_vb_ <- function(n, sig2_inv_vb, tau_vb = NULL, X_norm_sq = NULL
 
 update_X_beta_vb_ <- function(X, beta_vb) X %*% beta_vb
 
+update_cp_betaX_X_ <- function(cp_X, beta_vb) crossprod(beta_vb, cp_X)
+
 
 ####################
 ## b's updates ##
