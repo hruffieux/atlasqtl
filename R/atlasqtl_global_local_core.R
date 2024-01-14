@@ -10,7 +10,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
                                         checkpoint_path = NULL, 
                                         trace_path = NULL, full_output = FALSE, 
                                         thinned_elbo_eval = TRUE,
-                                        debug = FALSE, batch = "0") {
+                                        debug = FALSE, batch = "y") {
   
   n <- nrow(Y)
   p <- ncol(X)
@@ -112,7 +112,6 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
     beta_vb <- update_beta_vb_(gam_vb, mu_beta_vb)
     m2_beta <- update_m2_beta_(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = TRUE) # first time keep sweep = TRUE even when missing data, since uses the initial parameter sig2_beta_vb which is a vector.
     
-    X_beta_vb <- update_X_beta_vb_(X, beta_vb) # TODO: remove
     cp_betaX_X <- update_cp_betaX_X_(cp_X, beta_vb, cp_X_rm)
     
     # Fixed VB parameter
@@ -161,21 +160,15 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
         shuffled_ind <- as.numeric(sample(0:(p-1))) # Zero-based index in C++
         
         if (is.null(mis_pat)) {
-          # coreDualLoop(X, Y, gam_vb, log_Phi_theta_plus_zeta,
-          #              log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb,
-          #              beta_vb, X_beta_vb, mu_beta_vb, sig2_beta_vb, tau_vb,
-          #              shuffled_ind, c = c)
           coreDualLoop(cp_X, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta,
                        log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb,
                        beta_vb, cp_betaX_X, mu_beta_vb, sig2_beta_vb, tau_vb,
                        shuffled_ind, c = c)
         } else {
-          coreDualMisLoop(X, Y, gam_vb, log_Phi_theta_plus_zeta, 
+          coreDualMisLoop(cp_X, cp_X_rm, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta, 
                           log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb, 
-                          beta_vb, X_beta_vb, mu_beta_vb, sig2_beta_vb, tau_vb, 
-                          shuffled_ind, mis_pat, c = c)
-          
-          cp_betaX_X <- update_cp_betaX_X_(cp_X, beta_vb, cp_X_rm) #<-------------- remove once cpp implemented
+                          beta_vb, cp_betaX_X, mu_beta_vb, sig2_beta_vb, tau_vb, 
+                          shuffled_ind, c = c)
         }
         
         
@@ -349,8 +342,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
           lb_new <- elbo_global_local_(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
                                        kappa, kappa_vb, L_vb, lam2_inv_vb, 
                                        log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, 
-                                       m0, m2_beta,
-                                       X_beta_vb, n0, nu, nu_s0_vb, nu_vb, nu_xi_inv_vb,
+                                       m0, m2_beta, n0, nu, nu_s0_vb, nu_vb, nu_xi_inv_vb,
                                        Q_app, rho, rho_s0_vb, rho_vb, rho_xi_inv_vb,
                                        shr_fac_inv, sig02_inv_vb, sig2_beta_vb,
                                        sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb,
@@ -411,7 +403,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
                          nu_s0_vb, nu_vb, nu_xi_inv_vb, rho_s0_vb, rho_vb, 
                          rho_xi_inv_vb, shr_fac_inv, sig02_inv_vb, sig2_beta_vb, 
                          sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb, tau_vb, 
-                         theta_vb, X_beta_vb, cp_Y_X, cp_X, cp_betaX_X, xi_inv_vb, zeta_vb)
+                         theta_vb, cp_Y_X, cp_X, cp_betaX_X, xi_inv_vb, zeta_vb)
       
     } else {
       
@@ -421,15 +413,13 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
       
       rownames(gam_vb) <- rownames(beta_vb) <- names_x
       colnames(gam_vb) <- colnames(beta_vb) <- names_y
-      rownames(X_beta_vb) <- names_n
-      colnames(X_beta_vb) <- names_y
       names(theta_vb) <- names_x
       names(zeta_vb) <- names_y
       names(lam2_inv_vb) <- names_x
       
       diff_lb <- abs(lb_opt - lb_old)
       
-      create_named_list_(beta_vb, gam_vb, theta_vb, X_beta_vb, zeta_vb, 
+      create_named_list_(beta_vb, gam_vb, theta_vb, zeta_vb, 
                          n, p, q, anneal, converged, it, maxit, tol, lb_opt, 
                          diff_lb)
       
@@ -446,7 +436,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
 elbo_global_local_ <- function(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb, 
                                kappa, kappa_vb, L_vb, lam2_inv_vb, 
                                log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, m0, m2_beta, 
-                               X_beta_vb, n0, nu, nu_s0_vb, nu_vb, nu_xi_inv_vb, 
+                               n0, nu, nu_s0_vb, nu_vb, nu_xi_inv_vb, 
                                Q_app, rho, rho_s0_vb, rho_vb, rho_xi_inv_vb, 
                                shr_fac_inv, sig02_inv_vb, sig2_beta_vb, 
                                sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb, 
