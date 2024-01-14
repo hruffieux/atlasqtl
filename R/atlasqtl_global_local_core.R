@@ -10,7 +10,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
                                         checkpoint_path = NULL, 
                                         trace_path = NULL, full_output = FALSE, 
                                         thinned_elbo_eval = TRUE,
-                                        debug = FALSE, batch = "y") {
+                                        debug = FALSE, batch = "0") {
   
   n <- nrow(Y)
   p <- ncol(X)
@@ -190,21 +190,6 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
             
             for (j in sample(1:p)) {
               
-              # X_beta_vb[, k] <- X_beta_vb[, k] - X[, j] * beta_vb[j, k]
-              # 
-              # mu_beta_vb[j, k] <- c * sig2_beta_vb[k] * tau_vb[k] * crossprod(Y[, k] - X_beta_vb[, k], X[, j])
-              # 
-              # gam_vb[j, k] <- exp(-log_one_plus_exp_(c * (pnorm(theta_vb[j] + zeta_vb[k], lower.tail = FALSE, log.p = TRUE) -
-              #                                               pnorm(theta_vb[j] + zeta_vb[k], log.p = TRUE) -
-              #                                               log_tau_vb[k] / 2 - log_sig2_inv_vb / 2 -
-              #                                               mu_beta_vb[j, k] ^ 2 / (2 * sig2_beta_vb[k]) -
-              #                                               log(sig2_beta_vb[k]) / 2)))
-              # 
-              # beta_vb[j, k] <- gam_vb[j, k] * mu_beta_vb[j, k]
-              # 
-              # X_beta_vb[, k] <- X_beta_vb[, k] + X[, j] * beta_vb[j, k]
-
-              
               cp_betaX_X[k, ] <- cp_betaX_X[k, ] - beta_vb[j, k] * cp_X[j, ]
 
               mu_beta_vb[j, k] <- c * sig2_beta_vb[k] * tau_vb[k] * (cp_Y_X[k, j] - cp_betaX_X[k, j])
@@ -223,25 +208,22 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
             
           } else {
             
-            X_beta_vb[, k] <- X_beta_vb[, k] * mis_pat[, k]
-            X_pat <- sweep(X, 1, mis_pat[, k], `*`)
-            
             for (j in sample(1:p)) {
-              
-              X_beta_vb[, k] <- X_beta_vb[, k] - X_pat[, j] * beta_vb[j, k]
-              
-              mu_beta_vb[j, k] <- c * sig2_beta_vb[j, k] * tau_vb[k] * crossprod(Y[, k] - X_beta_vb[, k], X_pat[, j])
-              
+
+              cp_betaX_X[k, ] <- cp_betaX_X[k, ] - beta_vb[j, k] * (cp_X[j, ] - cp_X_rm[[k]][j, ])
+
+              mu_beta_vb[j, k] <- c * sig2_beta_vb[j, k] * tau_vb[k] * (cp_Y_X[k, j] - cp_betaX_X[k, j])
+
               gam_vb[j, k] <- exp(-log_one_plus_exp_(c * (pnorm(theta_vb[j] + zeta_vb[k], lower.tail = FALSE, log.p = TRUE) -
                                                             pnorm(theta_vb[j] + zeta_vb[k], log.p = TRUE) -
                                                             log_tau_vb[k] / 2 - log_sig2_inv_vb / 2 -
                                                             mu_beta_vb[j, k] ^ 2 / (2 * sig2_beta_vb[j, k]) -
                                                             log(sig2_beta_vb[j, k]) / 2)))
-              
+
               beta_vb[j, k] <- gam_vb[j, k] * mu_beta_vb[j, k]
-              
-              X_beta_vb[, k] <- X_beta_vb[, k] + X_pat[, j] * beta_vb[j, k]
-              
+
+              cp_betaX_X[k, ] <- cp_betaX_X[k, ] + beta_vb[j, k] * (cp_X[j, ] - cp_X_rm[[k]][j, ])
+
             }
             
           }
