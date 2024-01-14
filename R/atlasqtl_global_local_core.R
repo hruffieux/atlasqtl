@@ -10,8 +10,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
                                         checkpoint_path = NULL, 
                                         trace_path = NULL, full_output = FALSE, 
                                         thinned_elbo_eval = TRUE,
-                                        debug = FALSE, batch = "y"
-                                        ) {
+                                        debug = FALSE, batch = "y") {
   
   n <- nrow(Y)
   p <- ncol(X)
@@ -23,15 +22,25 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
     Y[is.na(Y)] <- 0
     X_norm_sq <- crossprod(X^2, mis_pat)
     
+    cp_X_rm <- lapply(1:q, function(k) {
+      if (any(mis_pat[,k] == 0)) {
+        ind <- which(mis_pat[,k] == 0)
+        crossprod(X[ind,, drop = FALSE])
+      } else {
+        matrix(0, nrow = p, ncol = p)
+      }
+    })
+    
   } else {
     
-    mis_pat <- X_norm_sq <- NULL
-    cp_X <- crossprod(X)
+    mis_pat <- X_norm_sq <- cp_X_rm <- NULL
     
   }
   
-  Y_norm_sq <- colSums(Y^2)
+  Y_norm_sq <- colSums(Y^2) # must be after the if as some entries of y set to 0 when missing values
+  cp_X <- crossprod(X)
   cp_Y_X <- crossprod(Y, X)
+  
   
   # Gathering initial variational parameters. Do it explicitly.
   # with() function not used here as the objects will be modified later.
@@ -104,7 +113,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
     m2_beta <- update_m2_beta_(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = TRUE) # first time keep sweep = TRUE even when missing data, since uses the initial parameter sig2_beta_vb which is a vector.
     
     X_beta_vb <- update_X_beta_vb_(X, beta_vb) # TODO: remove
-    cp_betaX_X <- update_cp_betaX_X_(cp_X, beta_vb)
+    cp_betaX_X <- update_cp_betaX_X_(cp_X, beta_vb, cp_X_rm)
     
     # Fixed VB parameter
     #
@@ -131,8 +140,8 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
       
       # % #
       eta_vb <- update_eta_vb_(n, eta, gam_vb, mis_pat, c = c)
-      kappa_vb <- update_kappa_vb_(n, Y_norm_sq, cp_Y_X, cp_betaX_X, kappa, X_beta_vb, beta_vb, m2_beta, 
-                                   sig2_inv_vb, X_norm_sq, mis_pat, c = c)
+      kappa_vb <- update_kappa_vb_(n, Y_norm_sq, cp_Y_X, cp_betaX_X, kappa, 
+                                   beta_vb, m2_beta, sig2_inv_vb, X_norm_sq, c = c)
       
       tau_vb <- eta_vb / kappa_vb
       
@@ -165,6 +174,8 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
                           log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb, 
                           beta_vb, X_beta_vb, mu_beta_vb, sig2_beta_vb, tau_vb, 
                           shuffled_ind, mis_pat, c = c)
+          
+          cp_betaX_X <- update_cp_betaX_X_(cp_X, beta_vb, cp_X_rm) #<-------------- remove once cpp implemented
         }
         
         
@@ -458,7 +469,8 @@ elbo_global_local_ <- function(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
                                shr_fac_inv, sig02_inv_vb, sig2_beta_vb, 
                                sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb, 
                                t02_inv, tau_vb, theta_vb, vec_sum_log_det_zeta, 
-                               xi_inv_vb, zeta_vb, X_norm_sq, Y_norm_sq, cp_Y_X, cp_betaX_X, mis_pat) {
+                               xi_inv_vb, zeta_vb, X_norm_sq, Y_norm_sq, cp_Y_X, 
+                               cp_betaX_X, mis_pat) {
   
   n <- nrow(Y)
   p <- length(L_vb)
@@ -466,8 +478,8 @@ elbo_global_local_ <- function(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
   # needed for monotonically increasing elbo.
   #
   eta_vb <- update_eta_vb_(n, eta, gam_vb, mis_pat)
-  kappa_vb <- update_kappa_vb_(n, Y_norm_sq, cp_Y_X, cp_betaX_X, kappa, X_beta_vb, beta_vb, m2_beta, 
-                               sig2_inv_vb, X_norm_sq, mis_pat)
+  kappa_vb <- update_kappa_vb_(n, Y_norm_sq, cp_Y_X, cp_betaX_X, kappa, beta_vb, 
+                               m2_beta, sig2_inv_vb, X_norm_sq)
   
   nu_vb <- update_nu_vb_(nu, sum(gam_vb))
   rho_vb <- update_rho_vb_(rho, m2_beta, tau_vb)
