@@ -176,12 +176,28 @@
 #'
 #' @export
 #'
-atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000, 
+atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), maxit = 1000, 
                      user_seed = NULL, verbose = 1, list_hyper = NULL, 
                      list_init = NULL, save_hyper = FALSE, save_init = FALSE, 
                      full_output = FALSE, thinned_elbo_eval = TRUE, 
                      checkpoint_path = NULL, trace_path = NULL, 
-                     add_collinear_back = FALSE) {
+                     add_collinear_back = FALSE,
+                     batch,
+                     tol_loose,
+                     tol_tight,
+                     tol,
+                     burn_in = 20,
+                     burn_out = 10,
+                     maxit_subsample = 5,
+                     n_partial_update = 500,
+                     # c_maxit_subsample = 0,
+                     # min_maxit_subsample = 10, 
+                     # e0 = 0.2,
+                     # c_e = 1/500,
+                     # ELBO_diff_ladder, 
+                     iter_ladder,
+                     e_ladder,
+                     eval_perform) {
   
   if (verbose != 0){
     cat(paste0("\n======================= \n",
@@ -190,7 +206,7 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
   }
   
   check_verbose_(verbose)
-    
+  
   if (verbose != 0) cat("== Checking the annealing schedule ... \n\n")
   
   check_annealing_(anneal)
@@ -237,7 +253,7 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
   
   list_hyper <- prepare_list_hyper_(list_hyper, Y, p, p0, bool_rmvd_x, 
                                     names_x, names_y, verbose)
-
+  
   if (verbose != 0) cat("... done. == \n\n")
   
   
@@ -251,7 +267,7 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
   
   if (verbose != 0){
     
-
+    
     cat(paste0("**************************************************** \n",
                "Number of samples: ", n, "\n",
                "Number of (non-redundant) candidate predictors: ", p, "\n",
@@ -270,23 +286,48 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
   if (hs) {
     
     df <- 1
-
-    res_atlas <- atlasqtl_global_local_core_(Y, X, shr_fac_inv, anneal, df, tol, 
-                                             maxit, verbose, list_hyper, 
+    
+    res_atlas <- atlasqtl_global_local_core_(Y, X, shr_fac_inv, anneal, df,
+                                             maxit, verbose, list_hyper,
                                              list_init, checkpoint_path,
-                                             trace_path, full_output, 
-                                             thinned_elbo_eval, debug)
+                                             trace_path, full_output,
+                                             thinned_elbo_eval, debug,
+                                             batch,
+                                             tol_loose,
+                                             tol_tight,
+                                             tol,
+                                             burn_in,
+                                             burn_out,
+                                             maxit_subsample,
+                                             n_partial_update,
+                                             # c_maxit_subsample = 0,
+                                             # min_maxit_subsample = 10, 
+                                             # e0 = 0.2,
+                                             # c_e = 1/500,
+                                             # ELBO_diff_ladder, 
+                                             iter_ladder,
+                                             e_ladder,
+                                             eval_perform)
+    
+    # res_atlas <- atlasqtl_global_local_core_(Y, X, shr_fac_inv, anneal, df, tol,
+    #                                          maxit, verbose, list_hyper,
+    #                                          list_init, checkpoint_path,
+    #                                          trace_path, full_output,
+    #                                          thinned_elbo_eval,
+    #                                          debug, batch)
+    
     
   } else {
     
     if (!is.null(trace_path)) 
       warning(paste0("Provided argument trace_path not used, when using the ",
                      "global-scale-only model."))
-      
+    
     res_atlas <- atlasqtl_global_core_(Y, X, shr_fac_inv, anneal, df, tol, 
                                        maxit, verbose, list_hyper, list_init, 
                                        checkpoint_path, full_output, 
-                                       thinned_elbo_eval, debug)
+                                       thinned_elbo_eval, debug, 
+                                       batch)
     
   }
   
