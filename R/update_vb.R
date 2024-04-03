@@ -156,8 +156,8 @@ update_kappa_vb_ <- function(n, Y_norm_sq, cp_Y_X, cp_betaX_X, kappa,
     #                 diag(cp_betaX_X %*% beta_vb) - (n - 1) * colSums(beta_vb^2))/ 2)
     
     # diag_cp = lapply(1:nrow(cp_betaX_X), function(i) {sum(cp_betaX_X[i, ] * beta_vb[, i])}) %>% unlist
-    diag_cp = lapply(1:ncol(cp_betaX_X), function(i) {sum(cp_betaX_X[, i] * beta_vb[, i])}) %>% unlist
-    
+    # diag_cp = lapply(1:ncol(cp_betaX_X), function(i) {sum(cp_betaX_X[, i] * beta_vb[, i])}) %>% unlist
+    diag_cp = colSums(cp_betaX_X * beta_vb)
     c * (kappa + (Y_norm_sq - 2 * colSums(beta_vb * t(cp_Y_X))  +
                     (n - 1 + sig2_inv_vb) * colSums(m2_beta) +
                     diag_cp - (n - 1) * colSums(beta_vb^2))/ 2)
@@ -169,7 +169,8 @@ update_kappa_vb_ <- function(n, Y_norm_sq, cp_Y_X, cp_betaX_X, kappa,
     #                 sig2_inv_vb * colSums(m2_beta) + colSums(X_norm_sq * m2_beta) +
     #                 diag(cp_betaX_X %*% beta_vb) - colSums(X_norm_sq * beta_vb^2))/ 2)
     
-    diag_cp = lapply(1:ncol(cp_betaX_X), function(i) {sum(cp_betaX_X[ ,i] * beta_vb[, i])}) %>% unlist
+    # diag_cp = lapply(1:ncol(cp_betaX_X), function(i) {sum(cp_betaX_X[ ,i] * beta_vb[, i])}) %>% unlist
+    diag_cp = colSums(cp_betaX_X * beta_vb)
     c * (kappa + (Y_norm_sq - 2 * colSums(beta_vb * t(cp_Y_X))  +
                     sig2_inv_vb * colSums(m2_beta) + colSums(X_norm_sq * m2_beta) +
                     diag_cp - colSums(X_norm_sq * beta_vb^2))/ 2)

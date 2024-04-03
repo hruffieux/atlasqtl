@@ -64,7 +64,6 @@ void coreDualLoop(const MapMat cp_X,
     for (int b = 0; b < shuffled_ind.size(); b++) {
       int j = shuffled_ind[b];
       
-      //Rcout << "three: " << a << " " << k << " " << b << " " << j << "\n";
       
       double m1_beta_jk = m1_beta(j, k);
       //double cp_betaX_X_kj = cp_betaX_X(k, j) - m1_beta_jk * cp_X(j,j);
@@ -76,9 +75,9 @@ void coreDualLoop(const MapMat cp_X,
                                                - mu_beta_vb(j, k)*mu_beta_vb(j, k) / (2 * sig2_beta_vb[k])
                                                + cst[k])));
                                                
-                                               m1_beta(j, k) = gam_vb(j, k) * mu_beta_vb(j, k);
+      m1_beta(j, k) = gam_vb(j, k) * mu_beta_vb(j, k);
                                                
-                                               cp_betaX_X.col(k) += (m1_beta(j, k) - m1_beta_jk) * cp_X.col(j);
+      cp_betaX_X.col(k) += (m1_beta(j, k) - m1_beta_jk) * cp_X.col(j);
                                                
                                                
     } 

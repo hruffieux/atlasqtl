@@ -147,7 +147,12 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
     lb_new <- -Inf
     it <- 0
     it_0 = 0
-    e = e_ladder[1]
+    if(!is.null(e_ladder)){
+      e = e_ladder[1]
+    }else{
+      e = NULL
+    }
+    
     subsample_q = FALSE
     partial = FALSE
     diff_lb = Inf
@@ -213,11 +218,13 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
         
       }
       
-      if (sum(it >= iter_ladder) > 0){
-        e = e_ladder[sum(it >= iter_ladder)]
-      }else{
-        e = max(e_ladder)
-      }
+
+        if (sum(it >= iter_ladder) > 0){
+          e = e_ladder[sum(it >= iter_ladder)]
+        }else{
+          e = max(e_ladder)
+        }
+
       
       subsample_size = length(sample_q)
       # print(subsample_q)
