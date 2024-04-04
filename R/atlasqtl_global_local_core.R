@@ -160,10 +160,6 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
     if(eval_perform){
       subsample_ls = list()
       partial_ls = list()
-      # TPR_ls = list()
-      # FPR_ls = list()
-      # precision_ls = list()
-      # AUPRC_ls = list()
       ELBO_ls = list()
       ELBO_diff_ls = list()
       it_ls = list()
@@ -183,9 +179,11 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
       lb_old <- lb_new
       it <- it + 1
       it_0 = it_0 + 1
-      # print(maxit_subsample)
-      # print(paste0("it_0 = ", it_0))
-      # print(paste0("it = ", it))
+      
+      if(eval_perform){
+        subsample_ls = c(subsample_ls, subsample_q)
+        partial_ls = c(partial_ls, partial)
+      }
       
       if (verbose != 0 &  (it == 1 | it %% max(5, batch_conv) == 0)) 
         cat(paste0("Iteration ", format(it), "... \n"))
@@ -301,73 +299,40 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
             
             for (j in sample(1:p)) {
               
-              # browser()
-              # t0 = Sys.time()
-              
               cp_betaX_X[k, ] <- cp_betaX_X[k, ] - beta_vb[j, k] * cp_X[j, ]
-              # t1 = Sys.time()
               
               mu_beta_vb[j, k] <- c * sig2_beta_vb[k] * tau_vb[k] * (cp_Y_X[k, j] - cp_betaX_X[k, j])
-              # t2 = Sys.time()
               
               gam_vb[j, k] <- exp(-log_one_plus_exp_(c * (pnorm(theta_vb[j] + zeta_vb[k], lower.tail = FALSE, log.p = TRUE) -
                                                             pnorm(theta_vb[j] + zeta_vb[k], log.p = TRUE) -
                                                             log_tau_vb[k] / 2 - log_sig2_inv_vb / 2 -
                                                             mu_beta_vb[j, k] ^ 2 / (2 * sig2_beta_vb[k]) -
                                                             log(sig2_beta_vb[k]) / 2)))
-              # t3 = Sys.time()
               
               beta_vb[j, k] <- gam_vb[j, k] * mu_beta_vb[j, k]
-              # t4 = Sys.time()
-              
-              
+
               cp_betaX_X[k, ] <- cp_betaX_X[k, ] + beta_vb[j, k] * cp_X[j, ]
-              
-              # t5 = Sys.time()
-              
-              
-              # t1_ls = c(t1_ls, (t1-t0))
-              # t2_ls = c(t2_ls, (t2-t1))
-              # t3_ls = c(t3_ls, (t3-t2))
-              # t4_ls = c(t4_ls, (t4-t3))
-              # t5_ls = c(t5_ls, (t5-t4))
+
               
             }
             
           } else {
             
             for (j in sample(1:p)) {
-              
-              # browser()
-              # t0 = Sys.time()
+
               cp_betaX_X[k, ] <- cp_betaX_X[k, ] - beta_vb[j, k] * (cp_X[j, ] - cp_X_rm[[k]][j, ])
-              # t1 = Sys.time()
-              
+
               mu_beta_vb[j, k] <- c * sig2_beta_vb[j, k] * tau_vb[k] * (cp_Y_X[k, j] - cp_betaX_X[k, j])
-              # t2 = Sys.time()
-              
-              
+
               gam_vb[j, k] <- exp(-log_one_plus_exp_(c * (pnorm(theta_vb[j] + zeta_vb[k], lower.tail = FALSE, log.p = TRUE) -
                                                             pnorm(theta_vb[j] + zeta_vb[k], log.p = TRUE) -
                                                             log_tau_vb[k] / 2 - log_sig2_inv_vb / 2 -
                                                             mu_beta_vb[j, k] ^ 2 / (2 * sig2_beta_vb[j, k]) -
                                                             log(sig2_beta_vb[j, k]) / 2)))
-              # t3 = Sys.time()
-              
-              
+
               beta_vb[j, k] <- gam_vb[j, k] * mu_beta_vb[j, k]
-              # t4 = Sys.time()
-              
-              
+
               cp_betaX_X[k, ] <- cp_betaX_X[k, ] + beta_vb[j, k] * (cp_X[j, ] - cp_X_rm[[k]][j, ])
-              # t5 = Sys.time()
-              
-              # t1_ls = c(t1_ls, (t1-t0))
-              # t2_ls = c(t2_ls, (t2-t1))
-              # t3_ls = c(t3_ls, (t3-t2))
-              # t4_ls = c(t4_ls, (t4-t3))
-              # t5_ls = c(t5_ls, (t5-t4))
-              
             }
             
           }
@@ -618,34 +583,10 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
       
       t1 = Sys.time()-t0
       if(eval_perform){
-        #-------------------------------------------------------------------------
-        #evaluate the model performance by far:
-        #browser()
-        # fdr_adj_atlas = assign_bFDR(gam_vb)
-        # 
-        # decisions <- ifelse(fdr_adj_atlas <= cutoff, 1, 0)
-        # 
-        # # Calculate True Positive (TP), False Positive (FP), True Negative (TN), and False Negative (FN)
-        # TP <- sum(decisions * pat)
-        # FP <- sum(decisions * (1 - pat))
-        # TN <- sum((1 - decisions) * (1 - pat))
-        # FN <- sum((1 - decisions) * pat)
-        # 
-        # TPR <- TP / (TP + FN)
-        # FPR <- FP / (FP + TN)
-        # precision <- TP / (TP + FP)
-        # 
-        # pr <- PRROC::pr.curve(scores.class0 = as.vector(gam_vb), weights.class0 = as.vector(as.matrix(pat)), curve =TRUE)
-        # AUPRC = pr$auc.integral
-        # 
-        # TPR_ls = c(TPR_ls, TPR)
-        # FPR_ls = c(FPR_ls, FPR)
-        # precision_ls = c(precision_ls, precision)
-        # AUPRC_ls = c(AUPRC_ls, AUPRC)
         it_ls = c(it_ls, it)
         ELBO_ls = c(ELBO_ls, lb_new)
-        subsample_ls = c(subsample_ls, subsample_q)
-        partial_ls = c(partial_ls, partial)
+        # subsample_ls = c(subsample_ls, subsample_q)
+        # partial_ls = c(partial_ls, partial)
         e_ls = c(e_ls, e)
         ELBO_diff_ls = c(ELBO_diff_ls, diff_lb)
         time_loop_ls = c(time_loop_ls, t)
