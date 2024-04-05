@@ -51,12 +51,12 @@ update_sig2_beta_vb_ <- function(n, sig2_inv_vb, tau_vb = NULL, X_norm_sq = NULL
 
 # update_X_beta_vb_ <- function(X, beta_vb) X %*% beta_vb
 
-update_cp_betaX_X_ <- function(cp_X, beta_vb, cp_X_rm = NULL) {
+update_cp_X_Xbeta_ <- function(cp_X, beta_vb, cp_X_rm = NULL) {
   
-  out <- crossprod(beta_vb, cp_X)
+  out <- crossprod(cp_X, beta_vb)
   
   if (!is.null(cp_X_rm)) {
-    out <- out - t(sapply(seq_along(cp_X_rm), function(k) crossprod(cp_X_rm[[k]], beta_vb[,k])))
+    out <- out - sapply(seq_along(cp_X_rm), function(k) crossprod(cp_X_rm[[k]], beta_vb[,k]))
   }
 
   out
@@ -133,11 +133,11 @@ update_eta_vb_ <- function(n, eta, gam_vb, mis_pat = NULL, c = 1) {
   
 }
 
-update_kappa_vb_ <- function(n, Y_norm_sq, cp_Y_X, cp_betaX_X, kappa, 
+update_kappa_vb_ <- function(n, Y_norm_sq, cp_Y_X, cp_X_Xbeta, kappa, 
                              beta_vb, m2_beta, sig2_inv_vb, 
                              X_norm_sq = NULL, c = 1) {
   
-  diag_cp <- colSums(t(cp_betaX_X)*beta_vb)
+  diag_cp <- colSums(cp_X_Xbeta*beta_vb)
   
   if (is.null(X_norm_sq)) { # no missing values in Y
     
