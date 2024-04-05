@@ -28,12 +28,12 @@ void coreDualLoop(const MapMat cp_X,
                   MapArr2D mu_beta_vb,
                   const MapArr1D sig2_beta_vb,
                   const MapArr1D tau_vb,
-                  const MapArr1D shuffled_ind,
+                  const Eigen::VectorXi shuffled_ind,
                   const double c = 1) {
   
   const Arr1D cst = -(log_tau_vb + log_sig2_inv_vb + log(sig2_beta_vb) )/ 2;
   
-  for (int i = 0; i < cp_X.cols(); ++i) {
+  for (int i = 0; i < shuffled_ind.size(); ++i) {
     
     int j = shuffled_ind[i];
     
@@ -71,13 +71,13 @@ void coreDualMisLoop(const MapMat cp_X,
                      MapArr2D mu_beta_vb,
                      const MapArr2D sig2_beta_vb,
                      const MapArr1D tau_vb,
-                     const MapArr1D shuffled_ind,
+                     const Eigen::VectorXi shuffled_ind,
                      const double c = 1) {
   
   const Arr1D cst = -(log_tau_vb + log_sig2_inv_vb)/ 2;
   int q = cp_Y_X.rows();
   
-  for (int i = 0; i < cp_X.cols(); ++i) {
+  for (int i = 0; i < shuffled_ind.size(); ++i) {
     
     int j = shuffled_ind[i];
     

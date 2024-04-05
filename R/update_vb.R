@@ -137,18 +137,20 @@ update_kappa_vb_ <- function(n, Y_norm_sq, cp_Y_X, cp_betaX_X, kappa,
                              beta_vb, m2_beta, sig2_inv_vb, 
                              X_norm_sq = NULL, c = 1) {
   
+  diag_cp <- colSums(t(cp_betaX_X)*beta_vb)
+  
   if (is.null(X_norm_sq)) { # no missing values in Y
     
     c * (kappa + (Y_norm_sq - 2 * colSums(beta_vb * t(cp_Y_X))  +
                     (n - 1 + sig2_inv_vb) * colSums(m2_beta) +
-                    diag(cp_betaX_X %*% beta_vb) - (n - 1) * colSums(beta_vb^2))/ 2) 
+                    diag_cp - (n - 1) * colSums(beta_vb^2))/ 2) 
     
     
   } else {
   
     c * (kappa + (Y_norm_sq - 2 * colSums(beta_vb * t(cp_Y_X))  +
                     sig2_inv_vb * colSums(m2_beta) + colSums(X_norm_sq * m2_beta) +
-                    diag(cp_betaX_X %*% beta_vb) - colSums(X_norm_sq * beta_vb^2))/ 2)
+                    diag_cp - colSums(X_norm_sq * beta_vb^2))/ 2)
     
   }
   
