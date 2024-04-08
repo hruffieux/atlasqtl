@@ -157,18 +157,19 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
         #
         # Shuffle updates order at each iteration
         #
-        shuffled_ind <- as.numeric(sample(0:(p-1))) # Zero-based index in C++
+        shuffled_ind <- as.integer(sample(0:(p-1))) # Zero-based index in C++
+        sample_q <- as.integer(sample(0:(q-1))) # Zero-based index in C++
         
         if (is.null(mis_pat)) {
           coreDualLoop(cp_X, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta,
                        log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb,
                        beta_vb, cp_X_Xbeta, mu_beta_vb, sig2_beta_vb, tau_vb,
-                       shuffled_ind, c = c)
+                       shuffled_ind, sample_q = sample_q, c = c)
         } else {
           coreDualMisLoop(cp_X, cp_X_rm, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta, 
                           log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb, 
                           beta_vb, cp_X_Xbeta, mu_beta_vb, sig2_beta_vb, tau_vb, 
-                          shuffled_ind, c = c)
+                          shuffled_ind, sample_q = sample_q, c = c)
         }
         
         

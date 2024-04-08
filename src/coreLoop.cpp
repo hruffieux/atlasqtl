@@ -13,6 +13,25 @@
  */
 
 #include "utils.h"
+/*
+ double crossprod(const Eigen::VectorXd &one, const Eigen::VectorXd &two) {
+ // R Crossproduct of vectors = sum of element-wise products
+ // Assume one.size() == two.size() without checking
+ double sum = 0;
+ for (int i = 0; i < one.size(); i++) {
+ sum += one[i] * two[i];
+ }
+ return sum;
+ }
+ */
+
+double logOnePlusExp(double x) {
+  double m = x;
+  if (x < 0)
+    m = 0;
+  return log(exp(x-m) + exp(-m)) + m;
+}
+
 
 // for atlasqtl_core function
 // [[Rcpp::export]]
@@ -24,35 +43,46 @@ void coreDualLoop(const MapMat cp_X,
                   const double log_sig2_inv_vb,
                   const MapArr1D log_tau_vb,
                   MapMat m1_beta,
-                  MapMat cp_X_Xbeta,
+                  MapMat cp_betaX_X,
                   MapArr2D mu_beta_vb,
                   const MapArr1D sig2_beta_vb,
                   const MapArr1D tau_vb,
                   const Eigen::VectorXi shuffled_ind,
+                  const Eigen::VectorXi sample_q,
                   const double c = 1) {
+  
+  // Rcout << "one\n";
   
   const Arr1D cst = -(log_tau_vb + log_sig2_inv_vb + log(sig2_beta_vb) )/ 2;
   
-  for (int i = 0; i < shuffled_ind.size(); ++i) {
+  for (int a = 0; a < sample_q.size(); a++) {
+    int k = sample_q[a];
     
-    int j = shuffled_ind[i];
+    // Rcout << "two" << a << " " << k <<  "\n";
+    // Rcout << sample_q << "\n";
     
-    // cout << cp_X_Xbeta.rows();
-    
-    cp_X_Xbeta.noalias() -=  cp_X.row(j).transpose() * m1_beta.row(j);
-    
-    mu_beta_vb.row(j) = c * sig2_beta_vb * tau_vb * (cp_Y_X.col(j) - cp_X_Xbeta.row(j).transpose()).array();
-
-    gam_vb.row(j) = exp(-logOnePlusExp(c * (log_1_min_Phi_theta_plus_zeta.row(j) -
-      log_Phi_theta_plus_zeta.row(j) - mu_beta_vb.row(j).square() / (2 * sig2_beta_vb.transpose()) +
-      cst.transpose())));
-     
-    m1_beta.row(j) = mu_beta_vb.row(j) * gam_vb.row(j);
-     
-    cp_X_Xbeta.noalias() += cp_X.row(j).transpose() * m1_beta.row(j);
-    
+    for (int b = 0; b < shuffled_ind.size(); b++) {
+      int j = shuffled_ind[b];
+      
+      //Rcout << "three: " << a << " " << k << " " << b << " " << j << "\n";
+      
+      double m1_beta_jk = m1_beta(j, k);
+      //double cp_betaX_X_kj = cp_betaX_X(k, j) - m1_beta_jk * cp_X(j,j);
+      double cp_betaX_X_jk = cp_betaX_X(j, k) - m1_beta_jk * cp_X(j,j);
+      
+      mu_beta_vb(j, k) = c * sig2_beta_vb[k] * tau_vb[k] * (cp_Y_X(k, j) - cp_betaX_X_jk);
+      
+      gam_vb(j, k) = exp(-logOnePlusExp(c * (log_1_min_Phi_theta_plus_zeta(j, k) - log_Phi_theta_plus_zeta(j, k)
+                                               - mu_beta_vb(j, k)*mu_beta_vb(j, k) / (2 * sig2_beta_vb[k])
+                                               + cst[k])));
+                                               
+                                               m1_beta(j, k) = gam_vb(j, k) * mu_beta_vb(j, k);
+                                               
+                                               cp_betaX_X.col(k) += (m1_beta(j, k) - m1_beta_jk) * cp_X.col(j);
+                                               
+                                               
+    } 
   }
-  
 }
 
 
@@ -67,40 +97,42 @@ void coreDualMisLoop(const MapMat cp_X,
                      const double log_sig2_inv_vb,
                      const MapArr1D log_tau_vb,
                      MapMat m1_beta,
-                     MapMat cp_X_Xbeta, //MapArr2D X_beta_vb,
+                     MapMat cp_betaX_X, //MapArr2D X_beta_vb,
                      MapArr2D mu_beta_vb,
                      const MapArr2D sig2_beta_vb,
                      const MapArr1D tau_vb,
                      const Eigen::VectorXi shuffled_ind,
+                     const Eigen::VectorXi sample_q,
                      const double c = 1) {
   
   const Arr1D cst = -(log_tau_vb + log_sig2_inv_vb)/ 2;
-  int q = cp_Y_X.rows();
+  // int q = cp_Y_X.rows();
   
-  for (int i = 0; i < shuffled_ind.size(); ++i) {
+  for (int a = 0; a < sample_q.size(); a++) {
+    int k = sample_q[a];
+    MapMat cp_X_rm_k = as<MapMat>(cp_X_rm[k]);
     
-    int j = shuffled_ind[i];
-    
-    cp_X_Xbeta.noalias() -= cp_X.row(j).transpose() * m1_beta.row(j);
-    for (int k = 0; k < q; ++k) {
-      // MapMat cp_X_rm_k = as<MapMat>(cp_X_rm[k]);
-      cp_X_Xbeta.col(k) += m1_beta(j, k) * as<MapMat>(cp_X_rm[k]).row(j);
-    }
-    mu_beta_vb.row(j) = c * sig2_beta_vb.row(j).transpose() * tau_vb *
-      (cp_Y_X.col(j) - cp_X_Xbeta.row(j).transpose()).array();
-    
-    gam_vb.row(j) = exp(-logOnePlusExp(c * (log_1_min_Phi_theta_plus_zeta.row(j) -
-      log_Phi_theta_plus_zeta.row(j) - mu_beta_vb.row(j).square() / (2 * sig2_beta_vb.row(j)) -
-      log(sig2_beta_vb.row(j)) / 2 + cst.transpose())));
-    
-    m1_beta.row(j) = mu_beta_vb.row(j) * gam_vb.row(j);
-    
-    cp_X_Xbeta.noalias() += cp_X.row(j).transpose() * m1_beta.row(j);
-    for (int k = 0; k < q; ++k) {
-      // MapMat cp_X_rm_k = as<MapMat>(cp_X_rm[k]);
-      cp_X_Xbeta.col(k) -= m1_beta(j, k) * as<MapMat>(cp_X_rm[k]).row(j);
-    }
-    
+    for (int b = 0; b < shuffled_ind.size(); b++) {
+      int j = shuffled_ind[b];
+      
+      
+      double m1_beta_jk = m1_beta(j, k);
+      //double cp_betaX_X_kj = cp_betaX_X(k, j) - m1_beta(j, k)*(cp_X(j, j) - cp_X_rm_k(j, j));
+      double cp_betaX_X_jk = cp_betaX_X(j, k) - m1_beta_jk*(cp_X(j, j) - cp_X_rm_k(j, j));
+      
+      // cp_betaX_X.row(k) += -m1_beta(j, k) * (cp_X.row(j) - cp_X_rm_k.row(j));
+      
+      mu_beta_vb(j, k) = c * sig2_beta_vb(j,k) * tau_vb[k] * (cp_Y_X(k, j) - cp_betaX_X_jk);
+      
+      gam_vb(j, k) = exp(-logOnePlusExp(c * (log_1_min_Phi_theta_plus_zeta(j, k) -
+        log_Phi_theta_plus_zeta(j, k) - mu_beta_vb(j, k)*mu_beta_vb(j, k) / (2 * sig2_beta_vb(j, k)) -
+        log(sig2_beta_vb(j, k)) / 2 + cst[k])));
+      
+      m1_beta(j, k) = gam_vb(j, k) * mu_beta_vb(j, k);
+      cp_betaX_X.col(k) += (m1_beta(j, k) - m1_beta_jk) * (cp_X.col(j) - cp_X_rm_k.col(j)); 
+      
+      
+    } 
   }
   
 }
