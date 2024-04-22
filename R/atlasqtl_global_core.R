@@ -149,8 +149,8 @@ atlasqtl_global_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit,
       if (batch == "y") { # optimal scheme
         
         # C++ Eigen call for expensive updates
-        shuffled_ind <- as.integer(sample(0:(p-1))) # Zero-based index in C++
-        sample_q <- as.integer(sample(0:(q-1))) # Zero-based index in C++
+        shuffled_ind <- as.integer(0:(p-1)) # Zero-based index in C++
+        sample_q <- as.integer(0:(q-1)) # Zero-based index in C++
         
         if (is.null(mis_pat)) {
           coreDualLoop(cp_X, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta,
