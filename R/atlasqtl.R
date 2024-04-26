@@ -185,7 +185,6 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), maxit = 1000,
                      batch,
                      tol_loose,
                      tol_tight,
-                     tol,
                      burn_in = 20,
                      burn_out = 10,
                      maxit_subsample = 5,
@@ -216,7 +215,7 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), maxit = 1000,
   
   if (verbose != 0) cat("== Preparing the data ... \n\n")
   
-  dat <- prepare_data_(Y, X, tol, maxit, user_seed, verbose, checkpoint_path, 
+  dat <- prepare_data_(Y, X, tol = tol_tight, maxit, user_seed, verbose, checkpoint_path, 
                        trace_path)
   
   bool_rmvd_x <- dat$bool_rmvd_x
@@ -295,7 +294,6 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), maxit = 1000,
                                              batch,
                                              tol_loose,
                                              tol_tight,
-                                             tol,
                                              burn_in,
                                              burn_out,
                                              maxit_subsample,

@@ -15,7 +15,6 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
                                         # relative_tol = FALSE,
                                         tol_loose,
                                         tol_tight,
-                                        tol,
                                         burn_in = 20,
                                         burn_out = 10,
                                         maxit_subsample = 5,
@@ -147,11 +146,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
     lb_new <- -Inf
     it <- 0
     it_0 = 0
-    if(!is.null(e_ladder)){
-      e = e_ladder[1]
-    }else{
-      e = NULL
-    }
+    e = e_ladder[1]
     
     subsample_q = FALSE
     partial = FALSE
@@ -192,11 +187,12 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
       # generate subsample
       if(subsample_q | partial){
         #define the adaptive e
-        # if(diff_lb*c <= 1){
-        #   e = e0*(c_e*diff_lb)
-        # }else{
-        #   e = e0
-        # } 
+        if (sum(it >= iter_ladder) > 0){
+          e = e_ladder[sum(it >= iter_ladder)]
+        }else{
+          e = max(e_ladder)
+        }
+        
         # calculate the selection probability 
         r_vc = 1- apply((1 - gam_vb), 2, prod)
         select_prob =  (1 - e)*r_vc + e
@@ -216,21 +212,14 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
         
       }
       
-
-        if (sum(it >= iter_ladder) > 0){
-          e = e_ladder[sum(it >= iter_ladder)]
-        }else{
-          e = max(e_ladder)
-        }
-
+      if(partial){
+        tol = tol_loose
+      }else{
+        tol = tol_tight
+      }
       
       subsample_size = length(sample_q)
-      # print(subsample_q)
-      # print(partial)
-      # print(sample_q)
-      # print(length(sample_q))
       
-      # print(paste0("subsample_q = ", subsample_q))
       
       # % #
       nu_vb <- update_nu_vb_(nu, sum(gam_vb), c = c)
@@ -493,11 +482,6 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
           #   sum_exceed <- sum(diff_lb_rel > (times_conv_sched * tol))
           # }
           
-          if(partial){
-            tol = tol_loose
-          }else{
-            tol = tol_tight
-          }
           sum_exceed <- sum(diff_lb > (times_conv_sched * tol))
           
           # print(paste0("sum_exceed = ", sum_exceed))
