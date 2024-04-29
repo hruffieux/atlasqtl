@@ -29,6 +29,9 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
     
     sq_X <- X*X
     
+    k_index_vec <- match(1:q, vec_ind_k_mis)
+    k_index_vec[is.na(k_index_vec)] <- -1 #convert all NA to -1
+    
   } else {
     
     mis_pat <- X_norm_sq <- cp_X_rm <- cs_mis_pat <- vec_ind_k_mis <- list_ind_mis <- sq_X <- NULL
@@ -170,7 +173,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
           coreDualMisLoop(cp_X, sq_X, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta, 
                           log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb, 
                           beta_vb, cp_X_Xbeta, mu_beta_vb, sig2_beta_vb, tau_vb, 
-                          shuffled_ind, sample_q = sample_q, X, as.integer(vec_ind_k_mis-1), 
+                          shuffled_ind, sample_q = sample_q, X, as.integer(k_index_vec-1), 
                           list_ind_mis, c = c)
         }
         
