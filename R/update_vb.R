@@ -16,9 +16,9 @@
 
 update_beta_vb_ <- function(gam_vb, mu_beta_vb) gam_vb * mu_beta_vb
 
-update_m2_beta_ <- function(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = FALSE, mis_pat = NULL) {
+update_m2_beta_ <- function(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = FALSE, vec_ind_k_mis = NULL) {
   
-  if(sweep | is.null(mis_pat)) {
+  if(sweep | is.null(vec_ind_k_mis)) {
     
     sweep(mu_beta_vb ^ 2, 2, sig2_beta_vb, `+`) * gam_vb
     
@@ -51,17 +51,19 @@ update_sig2_beta_vb_ <- function(n, sig2_inv_vb, tau_vb = NULL, X_norm_sq = NULL
 
 # update_X_beta_vb_ <- function(X, beta_vb) X %*% beta_vb
 
-update_cp_X_Xbeta_ <- function(cp_X, beta_vb, cp_X_rm = NULL) {
+update_cp_X_Xbeta_ <- function(cp_X, beta_vb, vec_ind_k_mis, list_ind_mis, X) {
   
   out <- crossprod(cp_X, beta_vb)
   
-  if (!is.null(cp_X_rm)) {
-    out <- out - sapply(seq_along(cp_X_rm), function(k) crossprod(cp_X_rm[[k]], beta_vb[,k]))
+  # if (!is.null(cp_X_rm)) {
+  if (!is.null(vec_ind_k_mis)) {
+    # out <- out - sapply(seq_along(cp_X_rm), function(k) crossprod(cp_X_rm[[k]], beta_vb[,k]))
+    out[, vec_ind_k_mis] <- out[, vec_ind_k_mis, drop = FALSE] - sapply(seq_along(list_ind_mis), function(ind_l) 
+      crossprod(crossprod(X[list_ind_mis[[ind_l]],, drop = FALSE]), beta_vb[,vec_ind_k_mis[ind_l]]))
   }
-
+  
   out
 }
-
 
 ####################
 ## b's updates ##
@@ -124,12 +126,12 @@ update_log_sig2_inv_vb_ <- function(nu_vb, rho_vb) digamma(nu_vb) - log(rho_vb)
 ## tau's updates ##
 ###################
 
-update_eta_vb_ <- function(n, eta, gam_vb, mis_pat = NULL, c = 1) {
+update_eta_vb_ <- function(n, eta, gam_vb, cs_mis_pat = NULL, c = 1) {
 
-  if (is.null(mis_pat))
+  if (is.null(cs_mis_pat))
     c * (eta + n / 2 + colSums(gam_vb) / 2) - c + 1
   else
-    c * (eta + colSums(mis_pat) / 2 + colSums(gam_vb) / 2) - c + 1
+    c * (eta + cs_mis_pat / 2 + colSums(gam_vb) / 2) - c + 1
   
 }
 

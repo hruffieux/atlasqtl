@@ -19,21 +19,19 @@ atlasqtl_global_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit,
   if (any(is.na(Y))) {
     
     mis_pat <- ifelse(is.na(Y), 0, 1)
+    cs_mis_pat <- colSums(mis_pat)
+    vec_ind_k_mis <- which(n - cs_mis_pat > 0) # vector containing the indexes of the responses with at least one missing value
+    list_ind_mis <- lapply(vec_ind_k_mis, function(ind_k_mis) which(mis_pat[, ind_k_mis] == 0)) # list containing where each element corresponds to a response with at least one NA, and contains the sample indexes that are missing
+    names(list_ind_mis) <- vec_ind_k_mis
+    
     Y[is.na(Y)] <- 0
     X_norm_sq <- crossprod(X^2, mis_pat)
     
-    cp_X_rm <- lapply(1:q, function(k) {
-      if (any(mis_pat[,k] == 0)) {
-        ind <- which(mis_pat[,k] == 0)
-        crossprod(X[ind,, drop = FALSE])
-      } else {
-        matrix(0, nrow = p, ncol = p)
-      }
-    })
+    sq_X <- X*X
     
   } else {
     
-    mis_pat <- X_norm_sq <- cp_X_rm <- NULL
+    mis_pat <- X_norm_sq <- cs_mis_pat <- vec_ind_k_mis <- list_ind_mis <- sq_X <- NULL
     
   }
   
@@ -106,7 +104,7 @@ atlasqtl_global_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit,
     beta_vb <- update_beta_vb_(gam_vb, mu_beta_vb)
     m2_beta <- update_m2_beta_(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = TRUE) # first time keep sweep = TRUE even when missing data, since uses the initial parameter sig2_beta_vb which is a vector.
   
-    cp_X_Xbeta <- update_cp_X_Xbeta_(cp_X, beta_vb, cp_X_rm) 
+    cp_X_Xbeta <- update_cp_X_Xbeta_(cp_X, beta_vb, vec_ind_k_mis, list_ind_mis, X)
     
     
     converged <- FALSE
@@ -130,7 +128,7 @@ atlasqtl_global_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit,
       # % #
       
       # % #
-      eta_vb <- update_eta_vb_(n, eta, gam_vb, mis_pat, c = c)
+      eta_vb <- update_eta_vb_(n, eta, gam_vb, cs_mis_pat, c = c)
       
       kappa_vb <- update_kappa_vb_(n, Y_norm_sq, cp_Y_X, cp_X_Xbeta, kappa, beta_vb, 
                                    m2_beta, sig2_inv_vb, X_norm_sq, c = c)
@@ -158,10 +156,10 @@ atlasqtl_global_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit,
                        beta_vb, cp_X_Xbeta, mu_beta_vb, sig2_beta_vb, tau_vb,
                        shuffled_ind, sample_q = sample_q, c = c)
         } else {
-          coreDualMisLoop(cp_X, cp_X_rm, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta, 
+          coreDualMisLoop(cp_X, sq_X, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta, 
                           log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb, 
                           beta_vb, cp_X_Xbeta, mu_beta_vb, sig2_beta_vb, tau_vb, 
-                          shuffled_ind, sample_q = sample_q, c = c)
+                          shuffled_ind, sample_q = sample_q, X, as.integer(vec_ind_k_mis-1), list_ind_mis, c = c)
         }
         
         
@@ -196,7 +194,14 @@ atlasqtl_global_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit,
             
             for (j in sample(1:p)) {
               
-              cp_X_Xbeta[,k] <- cp_X_Xbeta[,k] - beta_vb[j, k] * (cp_X[j, ] - cp_X_rm[[k]][j, ])
+              # cp_X_Xbeta[, k] <- cp_X_Xbeta[, k] - beta_vb[j, k] * (cp_X[j, ] - cp_X_rm[[k]][j, ])
+              
+              cp_X_Xbeta[, k] <- cp_X_Xbeta[, k] - beta_vb[j, k] * cp_X[j, ]
+              
+              if (k %in% vec_ind_k_mis) {
+                X_ind_k_mis <- X[list_ind_mis[[which(vec_ind_k_mis == k)]],, drop = FALSE]
+                cp_X_Xbeta[, k] <- cp_X_Xbeta[, k] + beta_vb[j, k] * crossprod(X_ind_k_mis, X_ind_k_mis[,j, drop = F])
+              }
               
               mu_beta_vb[j, k] <- c * sig2_beta_vb[j, k] * tau_vb[k] * (cp_Y_X[k, j] - cp_X_Xbeta[j, k])
               
@@ -208,7 +213,13 @@ atlasqtl_global_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit,
               
               beta_vb[j, k] <- gam_vb[j, k] * mu_beta_vb[j, k]
               
-              cp_X_Xbeta[,k] <- cp_X_Xbeta[,k] + beta_vb[j, k] * (cp_X[j, ] - cp_X_rm[[k]][j, ])
+              # cp_X_Xbeta[, k] <- cp_X_Xbeta[, k] + beta_vb[j, k] * (cp_X[j, ] - cp_X_rm[[k]][j, ])
+              
+              cp_X_Xbeta[, k] <- cp_X_Xbeta[, k] + beta_vb[j, k] * cp_X[j, ]
+              
+              if (k %in% vec_ind_k_mis) {
+                cp_X_Xbeta[, k] <- cp_X_Xbeta[, k] - beta_vb[j, k] * crossprod(X_ind_k_mis, X_ind_k_mis[,j, drop = F])
+              }
               
             }
           }
@@ -220,7 +231,7 @@ atlasqtl_global_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit,
         
       }
       
-      m2_beta <- update_m2_beta_(gam_vb, mu_beta_vb, sig2_beta_vb, mis_pat = mis_pat)
+      m2_beta <- update_m2_beta_(gam_vb, mu_beta_vb, sig2_beta_vb, vec_ind_k_mis = vec_ind_k_mis)
       
       Z <- update_Z_(gam_vb, theta_plus_zeta_vb, log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, c = c) 
       
@@ -286,7 +297,7 @@ atlasqtl_global_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, maxit,
                                  shr_fac_inv, sig02_inv_vb, sig2_beta_vb, 
                                  sig2_inv_vb, sig2_theta_vb, sig2_zeta_vb, 
                                  t02_inv, tau_vb, theta_vb, vec_sum_log_det_zeta, 
-                                 zeta_vb, X_norm_sq, Y_norm_sq, cp_Y_X, cp_X_Xbeta, mis_pat)
+                                 zeta_vb, X_norm_sq, Y_norm_sq, cp_Y_X, cp_X_Xbeta, cs_mis_pat)
           
           if (verbose != 0 & (it == it_init | it %% max(5, batch_conv) == 0))
             cat(paste0("ELBO = ", format(lb_new), "\n\n"))
@@ -375,14 +386,14 @@ elbo_global_ <- function(Y, beta_vb, eta, eta_vb, gam_vb, kappa, kappa_vb,
                          rho_s0, rho_s0_vb, rho_vb, shr_fac_inv, sig02_inv_vb, 
                          sig2_beta_vb, sig2_inv_vb, sig2_theta_vb, sig2_zeta_vb, 
                          t02_inv, tau_vb, theta_vb, vec_sum_log_det_zeta, 
-                         zeta_vb, X_norm_sq, Y_norm_sq, cp_Y_X, cp_X_Xbeta, mis_pat) {
+                         zeta_vb, X_norm_sq, Y_norm_sq, cp_Y_X, cp_X_Xbeta, cs_mis_pat) {
   
   n <- nrow(Y)
   p <- length(theta_vb)
   
   # needed for monotonically increasing elbo.
   #
-  eta_vb <- update_eta_vb_(n, eta, gam_vb, mis_pat)
+  eta_vb <- update_eta_vb_(n, eta, gam_vb, cs_mis_pat)
   kappa_vb <- update_kappa_vb_(n, Y_norm_sq, cp_Y_X, cp_X_Xbeta, kappa, beta_vb, 
                                m2_beta, sig2_inv_vb, X_norm_sq)
   
@@ -396,7 +407,7 @@ elbo_global_ <- function(Y, beta_vb, eta, eta_vb, gam_vb, kappa, kappa_vb,
   
   vec_sum_log_det_theta <- p * (log_sig02_inv_vb + log(shr_fac_inv) + log(sig2_theta_vb)) # E(log(det(sig02_inv))) + log(det(sig2_theta_vb_bl))
   
-  elbo_A <- e_y_(n, kappa, kappa_vb, log_tau_vb, m2_beta, sig2_inv_vb, tau_vb, mis_pat)
+  elbo_A <- e_y_(n, kappa, kappa_vb, log_tau_vb, m2_beta, sig2_inv_vb, tau_vb, cs_mis_pat)
   
   elbo_B <- e_beta_gamma_(gam_vb, log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, log_sig2_inv_vb, 
                           log_tau_vb, zeta_vb, 

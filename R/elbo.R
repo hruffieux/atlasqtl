@@ -133,12 +133,12 @@ e_theta_hs_ <- function(lam2_inv_vb, L_vb, log_sig02_inv_vb, m0, theta_vb, Q_app
 #######################
 
 e_y_ <- function(n, kappa, kappa_vb, log_tau_vb, m2_beta, sig2_inv_vb, tau_vb, 
-                 mis_pat = NULL) {
+                 cs_mis_pat = NULL) {
   
-  if (is.null(mis_pat)) {
+  if (is.null(cs_mis_pat)) {
     arg <- -n / 2 * log(2 * pi) + n / 2 * log_tau_vb
   } else {
-    arg <- colSums(mis_pat) * (log_tau_vb - log(2 * pi)) / 2
+    arg <- cs_mis_pat * (log_tau_vb - log(2 * pi)) / 2
   }
   
   sum(arg - tau_vb * (kappa_vb - colSums(m2_beta) * sig2_inv_vb / 2 - kappa))
