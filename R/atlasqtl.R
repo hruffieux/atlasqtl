@@ -185,16 +185,10 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), maxit = 1000,
                      batch,
                      tol_loose,
                      tol_tight,
-                     tol,
                      burn_in = 20,
-                     burn_out = 10,
+                     maxit_full = 10,
                      maxit_subsample = 5,
                      n_partial_update = 500,
-                     # c_maxit_subsample = 0,
-                     # min_maxit_subsample = 10, 
-                     # e0 = 0.2,
-                     # c_e = 1/500,
-                     # ELBO_diff_ladder, 
                      iter_ladder,
                      e_ladder,
                      eval_perform) {
@@ -216,7 +210,7 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), maxit = 1000,
   
   if (verbose != 0) cat("== Preparing the data ... \n\n")
   
-  dat <- prepare_data_(Y, X, tol, maxit, user_seed, verbose, checkpoint_path, 
+  dat <- prepare_data_(Y, X, tol=tol_tight, maxit, user_seed, verbose, checkpoint_path, 
                        trace_path)
   
   bool_rmvd_x <- dat$bool_rmvd_x
@@ -295,27 +289,13 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), maxit = 1000,
                                              batch,
                                              tol_loose,
                                              tol_tight,
-                                             tol,
                                              burn_in,
-                                             burn_out,
+                                             maxit_full,
                                              maxit_subsample,
                                              n_partial_update,
-                                             # c_maxit_subsample = 0,
-                                             # min_maxit_subsample = 10, 
-                                             # e0 = 0.2,
-                                             # c_e = 1/500,
-                                             # ELBO_diff_ladder, 
                                              iter_ladder,
                                              e_ladder,
                                              eval_perform)
-    
-    # res_atlas <- atlasqtl_global_local_core_(Y, X, shr_fac_inv, anneal, df, tol,
-    #                                          maxit, verbose, list_hyper,
-    #                                          list_init, checkpoint_path,
-    #                                          trace_path, full_output,
-    #                                          thinned_elbo_eval,
-    #                                          debug, batch)
-    
     
   } else {
     
