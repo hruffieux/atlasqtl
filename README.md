@@ -70,7 +70,7 @@ Then, to install the package in R, run the following command:
 
 ``` r
 if(!require(remotes)) install.packages("remotes")
-remotes::install_github("hruffieux/atlasqtl", ref = "precomputed-objects")
+remotes::install_github("hruffieux/atlasqtl", ref = "memory-opt-missing-responses")
 ```
 
 ## License and authors
