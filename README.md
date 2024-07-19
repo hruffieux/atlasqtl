@@ -70,7 +70,7 @@ Then, to install the package in R, run the following command:
 
 ``` r
 if(!require(remotes)) install.packages("remotes")
-remotes::install_github("hruffieux/atlasqtl", ref = "devel")
+remotes::install_github("hruffieux/atlasqtl", ref = "original-version-no-opt-large-n-no-missingness-handling")
 ```
 
 ## License and authors
