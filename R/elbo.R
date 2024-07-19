@@ -16,16 +16,21 @@ e_beta_gamma_ <- function(gam_vb, log_1_pnorm, log_pnorm, log_sig2_inv_vb, log_t
   
   q <- length(tau_vb)
   
-  
-  sum(log_sig2_inv_vb * gam_vb / 2 +
+  arg <- log_sig2_inv_vb * gam_vb / 2 +
         sweep(gam_vb, 2, log_tau_vb, `*`) / 2 -
         sweep(m2_beta, 2, tau_vb, `*`) * sig2_inv_vb / 2 +
         gam_vb * log_pnorm +
         (1 - gam_vb) * log_1_pnorm - #log(1 - exp(log_pnorm)) is unstable
-        sig2_zeta_vb / 2 + 1 / 2 * sweep(gam_vb, 2, log(sig2_beta_vb) + 1, `*`) -
-        gam_vb * log(gam_vb + eps) - (1 - gam_vb) * log(1 - gam_vb + eps) -
-        sig2_theta_vb / 2)
+        sig2_zeta_vb / 2 -  gam_vb * log(gam_vb + eps) - 
+        (1 - gam_vb) * log(1 - gam_vb + eps) - sig2_theta_vb / 2
   
+  sig2_beta_vb <- as.matrix(sig2_beta_vb)
+  if (ncol(sig2_beta_vb) > 1) {
+    sum(arg + 1 / 2 * gam_vb * (log(sig2_beta_vb) + 1))
+  } else {
+    sum(arg + 1 / 2 * sweep(gam_vb, 2, log(sig2_beta_vb) + 1, `*`))
+  }
+
 }
 
 
@@ -127,10 +132,16 @@ e_theta_hs_ <- function(lam2_inv_vb, L_vb, log_sig02_inv_vb, m0, theta_vb, Q_app
 ## E log p(y | rest) ##
 #######################
 
-e_y_ <- function(n, kappa, kappa_vb, log_tau_vb, m2_beta, sig2_inv_vb, tau_vb) {
+e_y_ <- function(n, kappa, kappa_vb, log_tau_vb, m2_beta, sig2_inv_vb, tau_vb, 
+                 mis_pat = NULL) {
   
-  sum(-n / 2 * log(2 * pi) + n / 2 * log_tau_vb - tau_vb *
-        (kappa_vb - colSums(m2_beta) * sig2_inv_vb / 2 - kappa))
+  if (is.null(mis_pat)) {
+    arg <- -n / 2 * log(2 * pi) + n / 2 * log_tau_vb
+  } else {
+    arg <- colSums(mis_pat) * (log_tau_vb - log(2 * pi)) / 2
+  }
+  
+  sum(arg - tau_vb * (kappa_vb - colSums(m2_beta) * sig2_inv_vb / 2 - kappa))
   
 }
 

@@ -11,7 +11,7 @@ re-knitted to generate an updated README.md -->
 
 [![License: GPL
 v3](https://img.shields.io/badge/license-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![](https://img.shields.io/badge/devel%20version-0.1.4-blue.svg)](https://github.com/hruffieux/atlasqtl)
+[![](https://img.shields.io/badge/devel%20version-0.1.5-blue.svg)](https://github.com/hruffieux/atlasqtl)
 [![](https://img.shields.io/github/languages/code-size/hruffieux/atlasqtl.svg)](https://github.com/hruffieux/atlasqtl)
 [![](https://img.shields.io/badge/doi-10.1214/20--AOAS1332-blue.svg)](https://doi.org/10.1214/20-AOAS1332)
 
@@ -42,6 +42,13 @@ S. Richardson, and L. Bottolo. A global-local approach for detecting
 hotspots in multiple response regression. The Annals of Applied
 Statistics, 14:905-928, 2020.
 
+## Warning
+
+**This is a development branch**, it is not guaranteed to be stable at
+any given time and features are subject to change. Please use the
+[stable version](https://github.com/hruffieux/atlasqtl), unless you want
+to test and report issues.
+
 ## Installation
 
 **Important note:** the R package depends on the GSL library which needs
@@ -63,7 +70,7 @@ Then, to install the package in R, run the following command:
 
 ``` r
 if(!require(remotes)) install.packages("remotes")
-remotes::install_github("hruffieux/atlasqtl")
+remotes::install_github("hruffieux/atlasqtl", ref = "precomputed-objects")
 ```
 
 ## License and authors

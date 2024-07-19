@@ -16,9 +16,9 @@
 
 update_beta_vb_ <- function(gam_vb, mu_beta_vb) gam_vb * mu_beta_vb
 
-update_m2_beta_ <- function(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = FALSE) {
+update_m2_beta_ <- function(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = FALSE, mis_pat = NULL) {
   
-  if(sweep) {
+  if(sweep | is.null(mis_pat)) {
     
     sweep(mu_beta_vb ^ 2, 2, sig2_beta_vb, `+`) * gam_vb
     
@@ -30,20 +30,37 @@ update_m2_beta_ <- function(gam_vb, mu_beta_vb, sig2_beta_vb, sweep = FALSE) {
   
 }
 
-update_sig2_beta_vb_ <- function(n, sig2_inv_vb, tau_vb = NULL, c = 1) {
+update_sig2_beta_vb_ <- function(n, sig2_inv_vb, tau_vb = NULL, X_norm_sq = NULL, c = 1) {
   
   if(is.null(tau_vb)) {
     
-    1 / (c * (n - 1 + sig2_inv_vb))
+    if (is.null(X_norm_sq))
+      1 / (c * (n - 1 + sig2_inv_vb))
+    else
+      1 / (c * (X_norm_sq + sig2_inv_vb))
     
   } else {
     
-    1 / (c * (n - 1 + sig2_inv_vb) * tau_vb)
+    if (is.null(X_norm_sq))
+      1 / (c * (n - 1 + sig2_inv_vb) * tau_vb)
+    else
+      1 / (c * sweep(X_norm_sq + sig2_inv_vb, 2, tau_vb, `*`))
     
   }
 }
 
-update_X_beta_vb_ <- function(X, beta_vb) X %*% beta_vb
+# update_X_beta_vb_ <- function(X, beta_vb) X %*% beta_vb
+
+update_cp_X_Xbeta_ <- function(cp_X, beta_vb, cp_X_rm = NULL) {
+  
+  out <- crossprod(cp_X, beta_vb)
+  
+  if (!is.null(cp_X_rm)) {
+    out <- out - sapply(seq_along(cp_X_rm), function(k) crossprod(cp_X_rm[[k]], beta_vb[,k]))
+  }
+
+  out
+}
 
 
 ####################
@@ -107,15 +124,35 @@ update_log_sig2_inv_vb_ <- function(nu_vb, rho_vb) digamma(nu_vb) - log(rho_vb)
 ## tau's updates ##
 ###################
 
-update_eta_vb_ <- function(n, eta, gam_vb, c = 1) c * (eta + n / 2 + colSums(gam_vb) / 2) - c + 1
+update_eta_vb_ <- function(n, eta, gam_vb, mis_pat = NULL, c = 1) {
 
-update_kappa_vb_ <- function(Y, kappa, X_beta_vb, beta_vb, m2_beta, sig2_inv_vb, c = 1) {
+  if (is.null(mis_pat))
+    c * (eta + n / 2 + colSums(gam_vb) / 2) - c + 1
+  else
+    c * (eta + colSums(mis_pat) / 2 + colSums(gam_vb) / 2) - c + 1
   
-  n <- nrow(Y)
+}
+
+update_kappa_vb_ <- function(n, Y_norm_sq, cp_Y_X, cp_X_Xbeta, kappa, 
+                             beta_vb, m2_beta, sig2_inv_vb, 
+                             X_norm_sq = NULL, c = 1) {
   
-  c * (kappa + (colSums(Y^2) - 2 * colSums(Y * X_beta_vb)  +
-                  (n - 1 + sig2_inv_vb) * colSums(m2_beta) +
-                  colSums(X_beta_vb^2) - (n - 1) * colSums(beta_vb^2))/ 2)
+  diag_cp <- colSums(cp_X_Xbeta*beta_vb)
+  
+  if (is.null(X_norm_sq)) { # no missing values in Y
+    
+    c * (kappa + (Y_norm_sq - 2 * colSums(beta_vb * t(cp_Y_X))  +
+                    (n - 1 + sig2_inv_vb) * colSums(m2_beta) +
+                    diag_cp - (n - 1) * colSums(beta_vb^2))/ 2) 
+    
+    
+  } else {
+  
+    c * (kappa + (Y_norm_sq - 2 * colSums(beta_vb * t(cp_Y_X))  +
+                    sig2_inv_vb * colSums(m2_beta) + colSums(X_norm_sq * m2_beta) +
+                    diag_cp - colSums(X_norm_sq * beta_vb^2))/ 2)
+    
+  }
   
 }
 
