@@ -156,6 +156,30 @@ update_kappa_vb_ <- function(n, Y_norm_sq, cp_Y_X, cp_X_Xbeta, kappa,
   
 }
 
+
+update_kappa_vb_no_precompute_ <- function(Y, kappa, X_beta_vb, beta_vb, m2_beta, sig2_inv_vb, 
+                             X_norm_sq = NULL, mis_pat = NULL, c = 1) {
+
+  stopifnot(!xor(is.null(X_norm_sq), is.null(mis_pat)))
+  
+  if (is.null(mis_pat)) {
+    
+    n <- nrow(Y)
+    
+    c * (kappa + (colSums(Y^2) - 2 * colSums(Y * X_beta_vb)  +
+                    (n - 1 + sig2_inv_vb) * colSums(m2_beta) +
+                    colSums(X_beta_vb^2) - (n - 1) * colSums(beta_vb^2))/ 2)
+    
+  } else {
+    
+    c * (kappa + (colSums(Y^2) - 2 * colSums(Y * X_beta_vb)  +
+                    sig2_inv_vb * colSums(m2_beta) + colSums(X_norm_sq * m2_beta) +
+                    colSums(X_beta_vb^2 * mis_pat) - colSums(X_norm_sq * beta_vb^2))/ 2)
+    
+  }
+  
+}
+
 update_log_tau_vb_ <- function(eta_vb, kappa_vb) digamma(eta_vb) - log(kappa_vb)
 
 

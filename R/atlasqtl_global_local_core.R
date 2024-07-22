@@ -27,6 +27,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
                                         n_partial_update = 500,
                                         epsilon = c(2, 1.5, 0.25),
                                         partial_elbo = F,
+                                        partial_elbo_eval = F,
                                         # iter_ladder,
                                         # e_ladder, 
                                         eval_perform) {
@@ -142,8 +143,9 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
     # Initialize ELBO, iterations, error terms
     #
     lb_new <- -Inf #the latest ELBO
-    it <- 0 #total number of iterations
-    it_0 = 0 #number of partial iterations
+    it <- 0 #total iteration index
+    it_0 = 0 #partial iteration index
+    it_a = 0 #annealing iteration index
     diff_lb = Inf #current difference of ELBO
     #define the error term in response selection
     e = 1
@@ -205,13 +207,6 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
           sample_q = sample(1:q)
         }
       }
-      # 
-      # #Update e for the next iteration
-      # if (sum(it >= iter_ladder) > 0){
-      #   e = e_ladder[sum(it >= iter_ladder)]
-      # }else{
-      #   e = max(e_ladder)
-      # }
       
       
       #record partial and subsample_q
@@ -446,30 +441,47 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
           # it <= it_init + 1 evaluate the ELBO for the first two non-annealed iterations
           # to (also) evaluate convergence between two consecutive iterations
           
-          
-          lb_new <- elbo_global_local_(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
-                                       kappa, kappa_vb, L_vb, lam2_inv_vb, 
-                                       log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, 
-                                       m0, m2_beta, n0, nu, nu_s0_vb, nu_vb, nu_xi_inv_vb,
-                                       Q_app, rho, rho_s0_vb, rho_vb, rho_xi_inv_vb,
-                                       shr_fac_inv, sig02_inv_vb, sig2_beta_vb,
-                                       sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb,
-                                       t02_inv, tau_vb, theta_vb, vec_sum_log_det_zeta,
-                                       xi_inv_vb, zeta_vb, X_norm_sq, Y_norm_sq, cp_Y_X, cp_X_Xbeta, mis_pat)
+          if(partial_elbo){
+            #only select the responses updated at the current iteration and calculate this elbo
+            lb_new <- elbo_global_local_partial_(Y, X, sample_q, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
+                                                 kappa, kappa_vb, L_vb, lam2_inv_vb, 
+                                                 log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, 
+                                                 m0, m2_beta,
+                                                 n0, nu, nu_s0_vb, nu_vb, nu_xi_inv_vb,
+                                                 Q_app, rho, rho_s0_vb, rho_vb, rho_xi_inv_vb,
+                                                 shr_fac_inv, sig02_inv_vb, sig2_beta_vb,
+                                                 sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb,
+                                                 t02_inv, tau_vb, theta_vb, vec_sum_log_det_zeta,
+                                                 xi_inv_vb, zeta_vb, mis_pat)
+            
+            
+          }else{
+            lb_new <- elbo_global_local_full_(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
+                                              kappa, kappa_vb, L_vb, lam2_inv_vb, 
+                                              log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, 
+                                              m0, m2_beta, n0, nu, nu_s0_vb, nu_vb, nu_xi_inv_vb,
+                                              Q_app, rho, rho_s0_vb, rho_vb, rho_xi_inv_vb,
+                                              shr_fac_inv, sig02_inv_vb, sig2_beta_vb,
+                                              sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb,
+                                              t02_inv, tau_vb, theta_vb, vec_sum_log_det_zeta,
+                                              xi_inv_vb, zeta_vb, X_norm_sq, Y_norm_sq, cp_Y_X, cp_X_Xbeta, mis_pat)
+
+          }
+
           
           if (verbose != 0 & (it == it_init | it %% max(5, batch_conv) == 0))
             cat(paste0("ELBO = ", format(lb_new), "\n\n"))
           
-          if (debug && lb_new + eps < lb_old)
-            stop("ELBO not increasing monotonically. Exit. ")
+          # if (debug && lb_new + eps < lb_old)
+          #   stop("ELBO not increasing monotonically. Exit. ")
           
-          if (partial_elbo){
+          if (partial_elbo_eval){
             diff_lb = abs(lb_new - lb_old)/length(sample_q)
           }else{
             diff_lb = abs(lb_new - lb_old)
           }
           
-          
+          diff_lb = abs(lb_new - lb_old)
           # Record the iteration where ELBO is evaluated
           if(eval_perform){
             it_eval_ls = c(it_eval_ls, it)
@@ -491,6 +503,8 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
             if (partial == TRUE){ #When tol_loose is reached, leave partial-update stage
               it_0 = 0
               partial = FALSE
+              
+              it_a = 0
             } else{ #when tol_tight is reached in the full-update stage, algorithm converges
               converged = TRUE
             }
@@ -521,6 +535,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
           partial = FALSE
           it_0 = 0
         }
+        
         
         # switch between full and partial update in the final convergence evaluation stage
         if(partial == FALSE & it >= (it_init + burn_in)){
@@ -636,7 +651,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
 # Internal function which implements the marginal log-likelihood variational
 # lower bound (ELBO) corresponding to the `atlasqtl_struct_core` algorithm.
 #
-elbo_global_local_ <- function(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb, 
+elbo_global_local_full_ <- function(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb, 
                                kappa, kappa_vb, L_vb, lam2_inv_vb, 
                                log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, m0, m2_beta, 
                                n0, nu, nu_s0_vb, nu_vb, nu_xi_inv_vb, 
@@ -690,6 +705,75 @@ elbo_global_local_ <- function(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
   elbo_H <- e_sig2_inv_(nu, nu_vb, log_sig2_inv_vb, rho, rho_vb, sig2_inv_vb)
   
   as.numeric(elbo_A + elbo_B + elbo_C + elbo_D + elbo_E + elbo_F + elbo_G + elbo_H)
+  
+}
+
+
+#The only change of whether we precompute or not in evaluating elbo is to compute kappa
+elbo_global_local_partial_ <- function(Y, X, sample_q, A2_inv, beta_vb, df, eta, eta_vb, gam_vb, 
+                               kappa, kappa_vb, L_vb, lam2_inv_vb, 
+                               log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, m0, m2_beta, 
+                               n0, nu, nu_s0_vb, nu_vb, nu_xi_inv_vb, 
+                               Q_app, rho, rho_s0_vb, rho_vb, rho_xi_inv_vb, 
+                               shr_fac_inv, sig02_inv_vb, sig2_beta_vb, 
+                               sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb, 
+                               t02_inv, tau_vb, theta_vb, vec_sum_log_det_zeta, 
+                               xi_inv_vb, zeta_vb, mis_pat) {
+  # browser()
+  Y = Y[, sample_q]
+  n <- nrow(Y)
+  p <- length(L_vb)
+  
+  # Get the X_beta_vb and X_norm_sq for the complete data
+  X_beta_vb = X %*% beta_vb
+  if (!is.null(mis_pat)) {
+    X_norm_sq <- crossprod(X^2, mis_pat)
+  } else {
+    X_norm_sq <- NULL
+  }
+  
+  # needed for monotonically increasing elbo.
+  #
+  
+  eta_vb <- update_eta_vb_(n, eta[sample_q], gam_vb[,sample_q], mis_pat[,sample_q])
+  kappa_vb <- update_kappa_vb_no_precompute_(Y, kappa[sample_q], X_beta_vb[,sample_q], beta_vb[,sample_q], m2_beta[,sample_q], 
+                                             sig2_inv_vb, X_norm_sq, mis_pat[,sample_q])
+  
+  nu_vb <- update_nu_vb_(nu, sum(gam_vb[,sample_q]))
+  rho_vb <- update_rho_vb_(rho, m2_beta[,sample_q], tau_vb[sample_q])
+  
+  log_tau_vb <- update_log_tau_vb_(eta_vb, kappa_vb) #eta_vb and kappa_vb already updated
+  log_sig2_inv_vb <- update_log_sig2_inv_vb_(nu_vb, rho_vb)
+  
+  log_sig02_inv_vb <- update_log_sig2_inv_vb_(nu_s0_vb, rho_s0_vb)
+  log_xi_inv_vb <- update_log_sig2_inv_vb_(nu_xi_inv_vb, rho_xi_inv_vb)
+  
+  
+  elbo_A <- e_y_(n, kappa[sample_q], kappa_vb, log_tau_vb, m2_beta[,sample_q], sig2_inv_vb, tau_vb[sample_q], mis_pat[,sample_q])
+  
+  elbo_B <- e_beta_gamma_(gam_vb[,sample_q], log_1_min_Phi_theta_plus_zeta[,sample_q], log_Phi_theta_plus_zeta[,sample_q], log_sig2_inv_vb, 
+                          log_tau_vb, zeta_vb[sample_q], 
+                          theta_vb[sample_q], m2_beta[,sample_q], sig2_beta_vb[sample_q], sig2_zeta_vb,
+                          sig2_theta_vb[sample_q], sig2_inv_vb, tau_vb[sample_q])
+  
+  elbo_C <- e_theta_hs_(lam2_inv_vb[sample_q], L_vb[sample_q], log_sig02_inv_vb + log(shr_fac_inv), 
+                        m0, theta_vb[sample_q], Q_app[sample_q], sig02_inv_vb * shr_fac_inv, 
+                        sig2_theta_vb[sample_q], df)
+  
+  elbo_D <- e_zeta_(zeta_vb[sample_q], n0[sample_q], sig2_zeta_vb, t02_inv, vec_sum_log_det_zeta)
+  
+  elbo_E <- e_tau_(eta[sample_q], eta_vb, kappa[sample_q], kappa_vb, log_tau_vb, tau_vb[sample_q])
+  
+  elbo_F <- e_sig2_inv_hs_(xi_inv_vb, nu_s0_vb, log_xi_inv_vb, log_sig02_inv_vb, 
+                           rho_s0_vb, sig02_inv_vb)
+  
+  elbo_G <- e_sig2_inv_(1 / 2, nu_xi_inv_vb, log_xi_inv_vb, A2_inv, 
+                        rho_xi_inv_vb, xi_inv_vb)
+  
+  elbo_H <- e_sig2_inv_(nu, nu_vb, log_sig2_inv_vb, rho, rho_vb, sig2_inv_vb)
+  
+  # as.numeric(elbo_A/length(sample_q) + elbo_B/length(sample_q) + elbo_C/length(sample_q) + elbo_D/length(sample_q) + elbo_E/length(sample_q) + elbo_F + elbo_G + elbo_H)
+  as.numeric(elbo_A + elbo_B + elbo_C + elbo_D + elbo_E + elbo_F + elbo_G + elbo_H)/length(sample_q)
   
 }
 

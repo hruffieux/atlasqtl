@@ -193,6 +193,7 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), maxit = 1000,
                      # e_ladder,
                      epsilon = c(2, 1.5, 0.25),
                      partial_elbo,
+                     partial_elbo_eval,
                      eval_perform) {
   
   if (verbose != 0){
@@ -299,6 +300,7 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), maxit = 1000,
                                              # e_ladder,
                                              epsilon,
                                              partial_elbo,
+                                             partial_elbo_eval,
                                              eval_perform)
     
   } else {
