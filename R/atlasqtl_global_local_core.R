@@ -6,6 +6,12 @@
 # See help of `atlasqtl` function for details.
 #
 library(tictoc)
+
+lognormal_cdf <- function(x, mu, sigma, m) {
+  return(m + (1 - m) * pnorm((log(x) - mu) / sigma))
+}
+
+
 atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, 
                                         maxit, verbose, list_hyper, list_init, 
                                         checkpoint_path = NULL, 
@@ -19,8 +25,10 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
                                         maxit_full = 10,
                                         maxit_subsample = 5,
                                         n_partial_update = 500,
-                                        iter_ladder,
-                                        e_ladder, 
+                                        epsilon = c(2, 1.5, 0.25),
+                                        partial_elbo = F,
+                                        # iter_ladder,
+                                        # e_ladder, 
                                         eval_perform) {
   
   n <- nrow(Y)
@@ -90,7 +98,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
     annealing <- TRUE
     ladder <- get_annealing_ladder_(anneal, verbose)
     c <- ladder[1]
-    c_s <- ifelse(anneal_scale, c, 1)
+    c_s <- ifelse(anneal_scale, c, 1) 
     it_init <- anneal[3] # first non-annealed iteration 
   }
   
@@ -138,11 +146,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
     it_0 = 0 #number of partial iterations
     diff_lb = Inf #current difference of ELBO
     #define the error term in response selection
-    if(!is.null(e_ladder)){ 
-      e = e_ladder[1]
-    }else{
-      e = NULL
-    }
+    e = 1
     
     # Initialize algorithm status
     #
@@ -201,13 +205,13 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
           sample_q = sample(1:q)
         }
       }
-      
-      #Update e for the next iteration
-      if (sum(it >= iter_ladder) > 0){
-        e = e_ladder[sum(it >= iter_ladder)]
-      }else{
-        e = max(e_ladder)
-      }
+      # 
+      # #Update e for the next iteration
+      # if (sum(it >= iter_ladder) > 0){
+      #   e = e_ladder[sum(it >= iter_ladder)]
+      # }else{
+      #   e = max(e_ladder)
+      # }
       
       
       #record partial and subsample_q
@@ -436,103 +440,110 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
       } else {
         
 
-      # Evaluate ELBO
-      #  
-      if (it <= it_init + 1 | it %% batch_conv == 0 | it %% batch_conv == 1){ 
-        # it <= it_init + 1 evaluate the ELBO for the first two non-annealed iterations
-        # to (also) evaluate convergence between two consecutive iterations
-        
-        
-        lb_new <- elbo_global_local_(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
-                                     kappa, kappa_vb, L_vb, lam2_inv_vb, 
-                                     log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, 
-                                     m0, m2_beta, n0, nu, nu_s0_vb, nu_vb, nu_xi_inv_vb,
-                                     Q_app, rho, rho_s0_vb, rho_vb, rho_xi_inv_vb,
-                                     shr_fac_inv, sig02_inv_vb, sig2_beta_vb,
-                                     sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb,
-                                     t02_inv, tau_vb, theta_vb, vec_sum_log_det_zeta,
-                                     xi_inv_vb, zeta_vb, X_norm_sq, Y_norm_sq, cp_Y_X, cp_X_Xbeta, mis_pat)
-        
-        if (verbose != 0 & (it == it_init | it %% max(5, batch_conv) == 0))
-          cat(paste0("ELBO = ", format(lb_new), "\n\n"))
-        
-        if (debug && lb_new + eps < lb_old)
-          stop("ELBO not increasing monotonically. Exit. ")
-        
-        diff_lb = abs(lb_new - lb_old)
-        
-        # Record the iteration where ELBO is evaluated
-        if(eval_perform){
-          it_eval_ls = c(it_eval_ls, it)
-        }
-        
-        # Set different tolerance depending on the stage of the algorithm
-        if(partial){
-          tol = tol_loose
-        }else{
-          tol = tol_tight
-        }
-        
-        sum_exceed <- sum(diff_lb > (times_conv_sched * tol))
-        # times_conv_sched*tol sets how many more iterations should be conducted before the next ELBO evaluaion, 
-        # which is defined by batch_conv_shed
-        
-        if (sum_exceed == 0){
+        # Evaluate ELBO
+        #  
+        if (it <= it_init + 1 | it %% batch_conv == 0 | it %% batch_conv == 1){ 
+          # it <= it_init + 1 evaluate the ELBO for the first two non-annealed iterations
+          # to (also) evaluate convergence between two consecutive iterations
           
-          if (partial == TRUE){ #When tol_loose is reached, leave partial-update stage
-            it_0 = 0
-            partial = FALSE
-          } else{ #when tol_tight is reached in the full-update stage, algorithm converges
-            converged = TRUE
+          
+          lb_new <- elbo_global_local_(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
+                                       kappa, kappa_vb, L_vb, lam2_inv_vb, 
+                                       log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, 
+                                       m0, m2_beta, n0, nu, nu_s0_vb, nu_vb, nu_xi_inv_vb,
+                                       Q_app, rho, rho_s0_vb, rho_vb, rho_xi_inv_vb,
+                                       shr_fac_inv, sig02_inv_vb, sig2_beta_vb,
+                                       sig2_inv_vb,  sig2_theta_vb, sig2_zeta_vb,
+                                       t02_inv, tau_vb, theta_vb, vec_sum_log_det_zeta,
+                                       xi_inv_vb, zeta_vb, X_norm_sq, Y_norm_sq, cp_Y_X, cp_X_Xbeta, mis_pat)
+          
+          if (verbose != 0 & (it == it_init | it %% max(5, batch_conv) == 0))
+            cat(paste0("ELBO = ", format(lb_new), "\n\n"))
+          
+          if (debug && lb_new + eps < lb_old)
+            stop("ELBO not increasing monotonically. Exit. ")
+          
+          if (partial_elbo){
+            diff_lb = abs(lb_new - lb_old)/length(sample_q)
+          }else{
+            diff_lb = abs(lb_new - lb_old)
           }
           
-        }else if (ind_batch_conv > sum_exceed) {
           
-          # If ELBO diff is too large, set the next time where ELBO is evaluated depending on how big the difference is
-          ind_batch_conv <- sum_exceed
-          batch_conv <- batch_conv_sched[ind_batch_conv]
+          # Record the iteration where ELBO is evaluated
+          if(eval_perform){
+            it_eval_ls = c(it_eval_ls, it)
+          }
           
+          # Set different tolerance depending on the stage of the algorithm
+          if(partial){
+            tol = tol_loose
+          }else{
+            tol = tol_tight
+          }
+          
+          sum_exceed <- sum(diff_lb > (times_conv_sched * tol))
+          # times_conv_sched*tol sets how many more iterations should be conducted before the next ELBO evaluaion, 
+          # which is defined by batch_conv_shed
+          
+          if (sum_exceed == 0){
+            
+            if (partial == TRUE){ #When tol_loose is reached, leave partial-update stage
+              it_0 = 0
+              partial = FALSE
+            } else{ #when tol_tight is reached in the full-update stage, algorithm converges
+              converged = TRUE
+            }
+            
+          }else if (ind_batch_conv > sum_exceed) {
+            
+            # If ELBO diff is too large, set the next time where ELBO is evaluated depending on how big the difference is
+            ind_batch_conv <- sum_exceed
+            batch_conv <- batch_conv_sched[ind_batch_conv]
+            
+          }
+        
+        }
+      
+        # update e:
+        e = lognormal_cdf(diff_lb, mu=epsilon[1], sigma=epsilon[2], m=epsilon[3])
+        
+        # Switch algorithm status at certain timepoints no matter we evaluate the convergence or not
+        # 
+        # enter the partial-update stage after burn_in
+        if(it == (it_init + burn_in - 1) ){
+          partial = TRUE
+          it_0 = 0
         }
         
-      }
-        
-      
-      # Switch algorithm status at certain timepoints no matter we evaluate the convergence or not
-      # 
-      # enter the partial-update stage after burn_in
-      if(it == (it_init + burn_in - 1) ){
-        partial = TRUE
-        it_0 = 0
-      }
-      
-      # leave the partial-update stage when reaching the maximum number of partial-update iterations (n_partial_update)
-      if (partial == TRUE & it >= (it_init + burn_in) & it_0 >= n_partial_update){
-        partial = FALSE
-        it_0 = 0
-      }
-      
-      # switch between full and partial update in the final convergence evaluation stage
-      if(partial == FALSE & it >= (it_init + burn_in)){
-        
-        # enters full-update when we have run maxit_subsample number of partial iterations
-        if(subsample_q == TRUE & it_0 >= maxit_subsample){
-          subsample_q = FALSE
-          it_0 = 0
-        } 
-        
-        # enters partial-update when we have run maxit_full number of partial iterations
-        if(it >= (it_init + burn_in) & subsample_q == FALSE & it_0 >= maxit_full){
-          subsample_q = TRUE
+        # leave the partial-update stage when reaching the maximum number of partial-update iterations (n_partial_update)
+        if (partial == TRUE & it >= (it_init + burn_in) & it_0 >= n_partial_update){
+          partial = FALSE
           it_0 = 0
         }
-      }
-      
-      checkpoint_(it, checkpoint_path, beta_vb, gam_vb, theta_vb, zeta_vb, 
-                  converged, lb_new, lb_old,
-                  lam2_inv_vb = lam2_inv_vb, sig02_inv_vb = sig02_inv_vb,
-                  names_x = colnames(X), names_y = colnames(Y))
         
+        # switch between full and partial update in the final convergence evaluation stage
+        if(partial == FALSE & it >= (it_init + burn_in)){
+          
+          # enters full-update when we have run maxit_subsample number of partial iterations
+          if(subsample_q == TRUE & it_0 >= maxit_subsample){
+            subsample_q = FALSE
+            it_0 = 0
+          } 
+          
+          # enters partial-update when we have run maxit_full number of partial iterations
+          if(it >= (it_init + burn_in) & subsample_q == FALSE & it_0 >= maxit_full){
+            subsample_q = TRUE
+            it_0 = 0
+          }
+        }
         
+        checkpoint_(it, checkpoint_path, beta_vb, gam_vb, theta_vb, zeta_vb, 
+                    converged, lb_new, lb_old,
+                    lam2_inv_vb = lam2_inv_vb, sig02_inv_vb = sig02_inv_vb,
+                    names_x = colnames(X), names_y = colnames(Y))
+          
+          
       }
       
       #run time of the entire iteration

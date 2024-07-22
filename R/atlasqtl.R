@@ -189,8 +189,10 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), maxit = 1000,
                      maxit_full = 10,
                      maxit_subsample = 5,
                      n_partial_update = 500,
-                     iter_ladder,
-                     e_ladder,
+                     # iter_ladder,
+                     # e_ladder,
+                     epsilon = c(2, 1.5, 0.25),
+                     partial_elbo,
                      eval_perform) {
   
   if (verbose != 0){
@@ -210,11 +212,7 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), maxit = 1000,
   
   if (verbose != 0) cat("== Preparing the data ... \n\n")
   
-<<<<<<< HEAD
   dat <- prepare_data_(Y, X, tol=tol_tight, maxit, user_seed, verbose, checkpoint_path, 
-=======
-  dat <- prepare_data_(Y, X, tol = tol_tight, maxit, user_seed, verbose, checkpoint_path, 
->>>>>>> 87e1e391cfa61d0245763cfe550ac20860f8836a
                        trace_path)
   
   bool_rmvd_x <- dat$bool_rmvd_x
@@ -297,8 +295,10 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), maxit = 1000,
                                              maxit_full,
                                              maxit_subsample,
                                              n_partial_update,
-                                             iter_ladder,
-                                             e_ladder,
+                                             # iter_ladder,
+                                             # e_ladder,
+                                             epsilon,
+                                             partial_elbo,
                                              eval_perform)
     
   } else {
