@@ -7,7 +7,7 @@
 #
 library(tictoc)
 
-# define the relationship beween lb_diff and e
+# define the relationship beween diff_lb and e
 # 
 # mu and sigma together controls the steepness
 # m: minimum value
@@ -21,7 +21,7 @@ lognormal_cdf <- function(x, mu, sigma, m) {
 # x_0: midpoint
 # m: minimum value
 shifted_logic <- function(x, k, x_0, m) {
-  y_min + (1 - y_min) * (1 - 1 / (1 + exp(-k * (x - x_0))))
+  m + (1 - m) * (1 - 1 / (1 + exp(-k * (x - x_0))))
 }
 
 
@@ -556,11 +556,16 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
       }
       
       # update e:
-      e_lb = lognormal_cdf(diff_lb, mu=epsilon_lb[1], sigma=epsilon_lb[2], m=epsilon_lb[3]) #define e by diff_lb
-      e_it = shifted_logic(it, k=epsilon_it[1], x_0=epsilon_it[2], m=epsilon_it[3]) #define e by iteration
-      # print(e_lb)
-      # print(e_it)
-      e = min(e_lb, e_it)
+      
+      if(it > burn_in){
+        e_lb = lognormal_cdf(diff_lb, mu=epsilon_lb[1], sigma=epsilon_lb[2], m=epsilon_lb[3]) #define e by diff_lb
+        e_it = shifted_logic(it, k=epsilon_it[1], x_0=epsilon_it[2], m=epsilon_it[3]) #define e by iteration
+        e = min(e_lb, e_it)
+      }else{
+        e_lb = 1
+        e_it = 1
+        e = 1
+      }
       
       #run time of the entire iteration
       t1 = Sys.time()-t0
