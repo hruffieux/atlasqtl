@@ -55,21 +55,6 @@ mu_t <- 1; v_t <- 4
 
 devtools::load_all()
 
-system.time(res_atlas <- atlasqtl(as.matrix(Y), as.matrix(X),
-                                  p0 = c(mu_t, v_t),
-                                  user_seed = 1, maxit= 50000,
-                                  thinned_elbo_eval = T,
-                                  batch = "y",
-                                  tol = 0.1,
-                                  anneal_tol = c(1, 0.1),
-                                  # anneal_tol = NULL,
-                                  anneal = c(1, 2, 10),
-                                  burn_in = 5,
-                                  epsilon_lb = c(2, 1.5, 0.25),
-                                  epsilon_it = c(0.1, 50, 0), #k, x_0, m
-                                  partial_elbo = F,
-                                  eval_perform = T))
-
 
 system.time(res_atlas <- atlasqtl(as.matrix(Y), as.matrix(X),
                                   p0 = c(mu_t, v_t),
@@ -90,39 +75,41 @@ system.time(res_atlas <- atlasqtl(as.matrix(Y), as.matrix(X),
                                   partial_elbo_eval = F, #whether diff_lb = lb_new -lb_old or (lb_new-lb_old)/length(sample_q)
                                   eval_perform = T))
 
-# system.time(res_atlas <- atlasqtl(as.matrix(Y), as.matrix(X),
-#                                   p0 = c(mu_t, v_t),
-#                                   user_seed = 1, maxit= 50000,
-#                                   tol=0.1))
-
-# Check how the ELBO changes over iterations by plotting
+########################
+## Algorithm evaluation ##
+########################
 
 perform_df= res_atlas$perform_df
-perform_df %>% ggplot(aes(x = iter, y = ELBO, color = annealing)) + geom_point()
 
+# Check how the ELBO changes over iterations 
 perform_df %>% 
-  ggplot(aes(x = iter, y = ELBO_diff, color = annealing)) + geom_point()
+  ggplot(aes(x = iter, y = ELBO, color = partial)) + geom_point()
+
+# Check how the difference of ELBO changes over iterations 
+perform_df %>% 
+  ggplot(aes(x = iter, y = ELBO_diff, color = partial)) + geom_point()
+
+# Check how e changes over iterations
+perform_df %>% 
+  ggplot(aes(x = iter, y = e, color = partial)) + geom_point()
 
 
-perform_df %>% ggplot(aes(x = iter, y = e, color = annealing)) + geom_point()
-
-
-lognormal_cdf <- function(x, mu, sigma, m) {
-  return(m + (1 - m) * pnorm((log(x) - mu) / sigma))
-}
-
-perform_df %>% mutate(
-   new_e = lognormal_cdf(ELBO_diff, mu =1, sigma = 1, m = 0.1)
-) %>% ggplot(aes(x = iter, y =  new_e)) + geom_point()
-
-lognormal_cdf(perform_df$ELBO_diff,mu=2, sigma = 1, m = 0.25)
-
-perform_df %>% mutate(
-  new_e = lognormal_cdf(iter, mu = 1, sigma = 0.5)
-) %>% ggplot(aes(x = iter, y =  new_e, color = subsample)) + geom_point()
+# lognormal_cdf <- function(x, mu, sigma, m) {
+#   return(m + (1 - m) * pnorm((log(x) - mu) / sigma))
+# }
+# 
+# perform_df %>% mutate(
+#    new_e = lognormal_cdf(ELBO_diff, mu =1, sigma = 1, m = 0.1)
+# ) %>% ggplot(aes(x = iter, y =  new_e)) + geom_point()
+# 
+# lognormal_cdf(perform_df$ELBO_diff,mu=2, sigma = 1, m = 0.25)
+# 
+# perform_df %>% mutate(
+#   new_e = lognormal_cdf(iter, mu = 1, sigma = 0.5)
+# ) %>% ggplot(aes(x = iter, y =  new_e, color = subsample)) + geom_point()
 
  
-
+#evaluate AUROC and AUPRC
 roc <- PRROC::roc.curve(scores.class0 = as.vector(res_atlas$gam_vb), weights.class0 = as.vector(as.matrix(pat)), curve =TRUE)
 AUROC = roc$auc
 AUROC 
