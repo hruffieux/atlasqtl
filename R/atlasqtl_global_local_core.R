@@ -7,8 +7,21 @@
 #
 library(tictoc)
 
+# define the relationship beween lb_diff and e
+# 
+# mu and sigma together controls the steepness
+# m: minimum value
 lognormal_cdf <- function(x, mu, sigma, m) {
   return(m + (1 - m) * pnorm((log(x) - mu) / sigma))
+}
+
+# define the relationship beween iteration and e when lb_diff is Inf in the initial thinned_elbo_eval stage
+#
+# k: steepness
+# x_0: midpoint
+# m: minimum value
+shifted_logic <- function(x, k, x_0, m) {
+  y_min + (1 - y_min) * (1 - 1 / (1 + exp(-k * (x - x_0))))
 }
 
 
@@ -19,16 +32,12 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
                                         thinned_elbo_eval = TRUE,
                                         debug = FALSE, 
                                         batch, 
-                                        tol_loose,
-                                        tol_tight,
-                                        burn_in = 20,
-                                        maxit_full = 10,
-                                        maxit_subsample = 5,
-                                        n_partial_update = 500,
-                                        epsilon = c(2, 1.5, 0.25),
+                                        tol,
+                                        anneal_tol = c(1, 0.1), #the first time lb_diff reach these values, we re-aneal for 10 iterations
+                                        burn_in = 10,
+                                        epsilon_lb = c(2, 1.5, 0.25),
+                                        epsilon_it,
                                         partial_elbo = F,
-                                        # iter_ladder,
-                                        # e_ladder, 
                                         eval_perform) {
   
   n <- nrow(Y)
@@ -90,16 +99,30 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
   #
   anneal_scale <- TRUE
   
+  tol_ls = c(anneal_tol, tol) %>% sort(decreasing = T)
+  tol = tol_ls[1]
+  anneal_index = 0
+  
   if (is.null(anneal)) {
     annealing <- FALSE
     c <- c_s <- 1 # c_s for scale parameters
     it_init <- 1 # first non-annealed iteration 
+    
+    anneal_finish = T
   } else {
     annealing <- TRUE
     ladder <- get_annealing_ladder_(anneal, verbose)
     c <- ladder[1]
     c_s <- ifelse(anneal_scale, c, 1) 
+    it_a = 0
     it_init <- anneal[3] # first non-annealed iteration 
+    
+    if(!is.null(anneal_tol)){
+      anneal_finish = F
+    }else{ #if no anneal_tol defined, then we assume we only anneal once in the beginning
+      anneal_finish = T
+    }
+    
   }
   
   eps <- .Machine$double.eps^0.5
@@ -143,26 +166,26 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
     #
     lb_new <- -Inf #the latest ELBO
     it <- 0 #total number of iterations
-    it_0 = 0 #number of partial iterations
     diff_lb = Inf #current difference of ELBO
     #define the error term in response selection
     e = 1
+  
     
     # Initialize algorithm status
     #
     converged <- FALSE #marks whether converged
-    partial = FALSE #marks whether in the partial-update stage or convergence evaluation stage
-    subsample_q = FALSE #marks whether running full or partial-update in the convergence evaluation stage
     
     # Initialize empty vectors to keep track of the algorithm
     #
     if(eval_perform){
-      partial_ls = list() #list of T/F, whether in the partial-update stage of not
-      subsample_ls = list() #list of T/F, whether subsampling in the convergence evaluation stage
+      annealing_ls = list()
+      anneal_index_ls = list()
       ELBO_ls = list() #ELBO
       ELBO_diff_ls = list() #difference of ELBO in two consecutive iterations
       it_ls = list() #iteration number
       e_ls = list() #error term in response selection
+      e_lb_ls = list()
+      e_it_ls = list()
       it_eval_ls = list() #iterations where ELBO is evaluated
       time_loop_ls = list() #runtime of CoreDualLoop
       time_total_ls = list() #total runtime of one iteration
@@ -178,33 +201,25 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
       
       lb_old <- lb_new
       it <- it + 1
-      it_0 = it_0 + 1
     
 
       if (verbose != 0 &  (it == 1 | it %% max(5, batch_conv) == 0)) 
         cat(paste0("Iteration ", format(it), "... \n"))
       
       
-      # generate subsample
-      if(subsample_q | partial){
-        
-        # calculate the selection probability 
-        r_vc = 1- apply((1 - gam_vb), 2, prod) #PPI
-        select_prob =  (1 - e)*r_vc + e #probability of selecting each response by adding the error
+      # decide which responses to be updated at this iteration
+      # 
+      # calculate the selection probability 
+      r_vc = 1- apply((1 - gam_vb), 2, prod) #PPI
+      select_prob =  (1 - e)*r_vc + e #probability of selecting each response by adding the error
 
-        if(batch == "y"){
-          sample_q = c(0:(q-1))[rbinom(q, size = 1, prob = select_prob) == 1]
-        }else{
-          sample_q = c(1:q)[rbinom(q, size = 1, prob = select_prob) == 1]
-        }
-        
+      if(batch == "y"){
+        sample_q = c(0:(q-1))[rbinom(q, size = 1, prob = select_prob) == 1] # switch to C++ indexing
       }else{
-        if(batch == "y"){
-          sample_q = sample(0:(q-1))
-        }else{
-          sample_q = sample(1:q)
-        }
+        sample_q = c(1:q)[rbinom(q, size = 1, prob = select_prob) == 1]
       }
+
+
       # 
       # #Update e for the next iteration
       # if (sum(it >= iter_ladder) > 0){
@@ -212,13 +227,6 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
       # }else{
       #   e = max(e_ladder)
       # }
-      
-      
-      #record partial and subsample_q
-      if(eval_perform){
-        partial_ls = c(partial_ls, partial)
-        subsample_ls = c(subsample_ls, subsample_q)
-      }
       
       # update VB parameters
       # % #
@@ -337,46 +345,70 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
       
       # keep this order!
       #  
+      # print("1")
+      # print(sig02_inv_vb)
+      # print("2")
+      # print(shr_fac_inv)
+      # print("3")
+      # print(theta_vb)
+      # print("4")
+      # print(sig2_theta_vb)
+      # print("5")
+      # print(m0)
       L_vb <- c_s * sig02_inv_vb * shr_fac_inv * (theta_vb^2 + sig2_theta_vb - 2 * theta_vb * m0 + m0^2) / 2 / df 
       rho_xi_inv_vb <- c_s * (A2_inv + sig02_inv_vb) 
       
-      if (annealing & anneal_scale) {
-        
+      # lam2_inv_vb <- update_annealed_lam2_inv_vb_(L_vb, c_s, df)
+      
+      if (c!=1) {
+          
         lam2_inv_vb <- update_annealed_lam2_inv_vb_(L_vb, c_s, df)
-        
+
       } else {
-        
+
         Q_app <- Q_approx_vec(L_vb)
-        
+
         if (df == 1) {
-          
+
           lam2_inv_vb <- 1 / (Q_app * L_vb) - 1
-          
+
         } else if (df == 3) {
-          
+
           lam2_inv_vb <- exp(-log(3) - log(L_vb) + log(1 - L_vb * Q_app) - log(Q_app * (1 + L_vb) - 1)) - 1 / 3
-          
+
         } else {
           # also works for df = 3 but might be slightly less efficient than the above
-          
+
           exponent <- (df + 1) / 2
-          
+
           lam2_inv_vb <- sapply(1:p, function(j) {
-            
+
             exp(log(compute_integral_hs_(df, L_vb[j] * df, m = exponent, n = exponent, Q_ab = Q_app[j])) -
                   log(compute_integral_hs_(df, L_vb[j] * df, m = exponent, n = exponent - 1, Q_ab = Q_app[j])))
-            
+
           })
-          
+
         }
-        
+
       }
       
       xi_inv_vb <- nu_xi_inv_vb / rho_xi_inv_vb
       
+      
+      # #Bug: sometimes lam2_inv_vb becomes NAN
+      # print("c")
+      # print(c)
+      # print("Number of NaN's in lam2_inv_vb")
+      # print(sum(is.nan(lam2_inv_vb)))
+      # #The chain of weird behaviors starts with some values of L_vb suddenly becomes very big, so that gsl::gamma_inc(-c+1, L_vb) = NaN
+      # #Even though I let gsl::gamma_inc(-c+1, L_vb) = 0 rather than NaN, lam2_inv_vb consists of gsl::gamma_inc(-c+2, L_vb)/gsl::gamma_inc(-c+1, L_vb) = 0/0
+      # print("L_vb")
+      # print(L_vb)
+      
+      
       sig2_theta_vb <- update_sig2_c0_vb_(q, 1 / (sig02_inv_vb * lam2_inv_vb * shr_fac_inv), c = c)
       
-      theta_vb <- update_theta_vb_(Z, m0, sig02_inv_vb * lam2_inv_vb * shr_fac_inv, sig2_theta_vb,
+      theta_vb <- update_theta_vb_(Z, m0, sig02_inv_vb * lam2_inv_vb * shr_fac_inv, sig2_theta_vb, 
                                    vec_fac_st = NULL, zeta_vb, is_mat = FALSE, c = c)
       
       nu_s0_vb <- update_nu_vb_(1 / 2, p, c = c_s)
@@ -396,9 +428,9 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
       if (verbose == 2 && (it == 1 | it %% max(5, batch_conv) == 0)) {
         
         cat(paste0("Variational hotspot propensity global scale: ", 
-                   format(sqrt(rho_s0_vb / (nu_s0_vb - 1) / shr_fac_inv), digits = 3), ".\n"))
+                   format(sqrt(rho_s0_vb / (nu_s0_vb - 1) / shr_fac_inv), digits = 3), ".\n")) #related to sigma_0
         cat("Approximate variational hotspot propensity local scale: \n")
-        print(summary(sqrt(1 / lam2_inv_vb)))
+        print(summary(sqrt(1 / lam2_inv_vb))) #local precision parameter lambda
         cat("\n")
         
       }
@@ -418,22 +450,32 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
       #
       if (annealing) {
         
-        if (verbose != 0 & (it == 1 | it %% 5 == 0))
+        if (verbose != 0 & (it == 1 | it_a %% 5 == 0))
           cat(paste0("Temperature = ", format(1 / c, digits = 4), "\n\n"))
         
         sig2_zeta_vb <- c * sig2_zeta_vb
         
-        c <- ifelse(it < length(ladder), ladder[it + 1], 1)
+        # print(it_a)
+        # print(length(ladder))
+        # print(c)
+        
+        c <- ifelse(it_a < length(ladder), ladder[it_a + 1], 1)
         c_s <- ifelse(anneal_scale, c, 1)
+        
         
         sig2_zeta_vb <- sig2_zeta_vb / c
         
         if (isTRUE(all.equal(c, 1))) {
-          
           annealing <- FALSE
+          it_a = 0
           
           if (verbose != 0)
             cat("** Exiting annealing mode. **\n\n")
+          if(anneal_index >= length(anneal_tol)){
+            anneal_finish = T
+          }
+        }else{
+          it_a = it_a + 1
         }
         
         
@@ -446,7 +488,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
           # it <= it_init + 1 evaluate the ELBO for the first two non-annealed iterations
           # to (also) evaluate convergence between two consecutive iterations
           
-          
+          # Q_app <- Q_approx_vec(L_vb)
           lb_new <- elbo_global_local_(Y, A2_inv, beta_vb, df, eta, eta_vb, gam_vb,
                                        kappa, kappa_vb, L_vb, lam2_inv_vb, 
                                        log_1_min_Phi_theta_plus_zeta, log_Phi_theta_plus_zeta, 
@@ -460,8 +502,8 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
           if (verbose != 0 & (it == it_init | it %% max(5, batch_conv) == 0))
             cat(paste0("ELBO = ", format(lb_new), "\n\n"))
           
-          if (debug && lb_new + eps < lb_old)
-            stop("ELBO not increasing monotonically. Exit. ")
+          # if (debug && lb_new + eps < lb_old)
+          #   stop("ELBO not increasing monotonically. Exit. ")
           
           if (partial_elbo){
             diff_lb = abs(lb_new - lb_old)/length(sample_q)
@@ -475,24 +517,23 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
             it_eval_ls = c(it_eval_ls, it)
           }
           
-          # Set different tolerance depending on the stage of the algorithm
-          if(partial){
-            tol = tol_loose
-          }else{
-            tol = tol_tight
-          }
           
           sum_exceed <- sum(diff_lb > (times_conv_sched * tol))
           # times_conv_sched*tol sets how many more iterations should be conducted before the next ELBO evaluaion, 
           # which is defined by batch_conv_shed
+          # ignore this for now but would want to come back to this scheme
           
+        
+          # browser()
           if (sum_exceed == 0){
-            
-            if (partial == TRUE){ #When tol_loose is reached, leave partial-update stage
-              it_0 = 0
-              partial = FALSE
-            } else{ #when tol_tight is reached in the full-update stage, algorithm converges
+            if(anneal_finish){
               converged = TRUE
+            }else{
+              if(sum(diff_lb <tol_ls) > anneal_index){
+                annealing = T #switch into annealing
+                anneal_index = anneal_index+ 1
+                tol = tol_ls[anneal_index + 1]
+              }
             }
             
           }else if (ind_batch_conv > sum_exceed) {
@@ -504,39 +545,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
           }
         
         }
-      
-        # update e:
-        e = lognormal_cdf(diff_lb, mu=epsilon[1], sigma=epsilon[2], m=epsilon[3])
-        
-        # Switch algorithm status at certain timepoints no matter we evaluate the convergence or not
-        # 
-        # enter the partial-update stage after burn_in
-        if(it == (it_init + burn_in - 1) ){
-          partial = TRUE
-          it_0 = 0
-        }
-        
-        # leave the partial-update stage when reaching the maximum number of partial-update iterations (n_partial_update)
-        if (partial == TRUE & it >= (it_init + burn_in) & it_0 >= n_partial_update){
-          partial = FALSE
-          it_0 = 0
-        }
-        
-        # switch between full and partial update in the final convergence evaluation stage
-        if(partial == FALSE & it >= (it_init + burn_in)){
-          
-          # enters full-update when we have run maxit_subsample number of partial iterations
-          if(subsample_q == TRUE & it_0 >= maxit_subsample){
-            subsample_q = FALSE
-            it_0 = 0
-          } 
-          
-          # enters partial-update when we have run maxit_full number of partial iterations
-          if(it >= (it_init + burn_in) & subsample_q == FALSE & it_0 >= maxit_full){
-            subsample_q = TRUE
-            it_0 = 0
-          }
-        }
+
         
         checkpoint_(it, checkpoint_path, beta_vb, gam_vb, theta_vb, zeta_vb, 
                     converged, lb_new, lb_old,
@@ -546,13 +555,24 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
           
       }
       
+      # update e:
+      e_lb = lognormal_cdf(diff_lb, mu=epsilon_lb[1], sigma=epsilon_lb[2], m=epsilon_lb[3]) #define e by diff_lb
+      e_it = shifted_logic(it, k=epsilon_it[1], x_0=epsilon_it[2], m=epsilon_it[3]) #define e by iteration
+      # print(e_lb)
+      # print(e_it)
+      e = min(e_lb, e_it)
+      
       #run time of the entire iteration
       t1 = Sys.time()-t0
       
       if(eval_perform){
+        annealing_ls = c(annealing_ls, annealing)
+        anneal_index_ls = c(anneal_index_ls, anneal_index)
         it_ls = c(it_ls, it)
         ELBO_ls = c(ELBO_ls, lb_new)
         e_ls = c(e_ls, e)
+        e_lb_ls = c(e_lb_ls, e_lb)
+        e_it_ls = c(e_it_ls, e_it)
         ELBO_diff_ls = c(ELBO_diff_ls, diff_lb)
         time_loop_ls = c(time_loop_ls, t)
         time_total_ls = c(time_total_ls, t1)
@@ -603,11 +623,13 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df,
       if(eval_perform){
         perform_df = data.frame(
           iter = it_ls %>% unlist,
-          subsample = subsample_ls %>% unlist,
-          partial = partial_ls %>% unlist,
+          annealing = annealing_ls %>% unlist,
+          anneal_index = anneal_index_ls %>% unlist,
           ELBO = ELBO_ls %>% unlist,
           ELBO_diff = ELBO_diff_ls %>% unlist,
           e = e_ls %>% unlist,
+          e_lb = e_lb_ls %>% unlist,
+          e_it = e_it_ls %>% unlist,
           time_loop = time_loop_ls %>% unlist,
           time_total = time_total_ls %>% unlist,
           subsample_size = subsample_size_ls %>% unlist

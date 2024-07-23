@@ -183,16 +183,12 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), maxit = 1000,
                      checkpoint_path = NULL, trace_path = NULL, 
                      add_collinear_back = FALSE,
                      batch,
-                     tol_loose,
-                     tol_tight,
+                     tol,
+                     anneal_tol = c(1, 0.1),
                      burn_in = 20,
-                     maxit_full = 10,
-                     maxit_subsample = 5,
-                     n_partial_update = 500,
-                     # iter_ladder,
-                     # e_ladder,
-                     epsilon = c(2, 1.5, 0.25),
-                     partial_elbo,
+                     epsilon_lb = c(2, 1.5, 0.25),
+                     epsilon_it =  c(0.1, 50, 0),
+                     partial_elbo = F,
                      eval_perform) {
   
   if (verbose != 0){
@@ -212,7 +208,7 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), maxit = 1000,
   
   if (verbose != 0) cat("== Preparing the data ... \n\n")
   
-  dat <- prepare_data_(Y, X, tol=tol_tight, maxit, user_seed, verbose, checkpoint_path, 
+  dat <- prepare_data_(Y, X, tol, maxit, user_seed, verbose, checkpoint_path, 
                        trace_path)
   
   bool_rmvd_x <- dat$bool_rmvd_x
@@ -289,15 +285,11 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), maxit = 1000,
                                              trace_path, full_output,
                                              thinned_elbo_eval, debug,
                                              batch,
-                                             tol_loose,
-                                             tol_tight,
+                                             tol,
+                                             anneal_tol,
                                              burn_in,
-                                             maxit_full,
-                                             maxit_subsample,
-                                             n_partial_update,
-                                             # iter_ladder,
-                                             # e_ladder,
-                                             epsilon,
+                                             epsilon_lb,
+                                             epsilon_it,
                                              partial_elbo,
                                              eval_perform)
     

@@ -69,9 +69,26 @@ update_cp_X_Xbeta_ <- function(cp_X, beta_vb, cp_X_rm = NULL) {
 
 update_annealed_lam2_inv_vb_ <- function(L_vb, c, df) { # here L_vb <- c * L_vb / df
   
+  
+  
   if (df == 1) {
+    if(c==1){
+      # dn = gsl::gamma_inc(1e-10, L_vb) * L_vb
+      dn = gsl::gamma_inc(1e-10, L_vb) * L_vb
+    }else{
+      dn = gsl::gamma_inc(- c + 1, L_vb) * L_vb
+    }
     
-    gsl::gamma_inc(- c + 2, L_vb) / (gsl::gamma_inc(- c + 1, L_vb) * L_vb) - 1
+    dn[dn==0]=1e-10
+    
+    # gsl::gamma_inc(- c + 2, L_vb) / (gsl::gamma_inc(- c + 1, L_vb) * L_vb) - 1
+    # print("dn")
+    # print(dn)
+    # print("nn")
+    # print(gsl::gamma_inc(- c + 2, L_vb))
+    # print("nn/dn")
+    # print((gsl::gamma_inc(- c + 2, L_vb) / dn))
+    (gsl::gamma_inc(- c + 2, L_vb) / dn) - 1
     
   } else { # also works for df = 1, but slightly less efficient
     
