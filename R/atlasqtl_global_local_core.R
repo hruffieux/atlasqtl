@@ -734,7 +734,7 @@ elbo_global_local_partial_ <- function(Y, X, sample_q, A2_inv, beta_vb, df, eta,
   
   # needed for monotonically increasing elbo.
   #
-  
+  browser()
   eta_vb <- update_eta_vb_(n, eta[sample_q], gam_vb[,sample_q], mis_pat[,sample_q])
   kappa_vb <- update_kappa_vb_no_precompute_(Y, kappa[sample_q], X_beta_vb[,sample_q], beta_vb[,sample_q], m2_beta[,sample_q], 
                                              sig2_inv_vb, X_norm_sq, mis_pat[,sample_q])
