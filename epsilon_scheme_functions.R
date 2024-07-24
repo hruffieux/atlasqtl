@@ -8,7 +8,7 @@ adjusted_lognormal_cdf <- function(x, mu, sigma, m) {
 
 data.frame(
    diff_lb = seq(0, 50, length.out = 5000),
-   e = adjusted_lognormal_cdf(seq(0, 50, length.out = 5000), mu=2, sigma=1.5, m=0.25)
+   e = adjusted_lognormal_cdf(seq(0, 50, length.out = 5000), mu=0.1, sigma=0.5, m=0)
 ) %>% ggplot(aes(x = diff_lb, y = e))+
   geom_point()+
   theme_bw()+
