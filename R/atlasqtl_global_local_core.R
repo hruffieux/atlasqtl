@@ -41,8 +41,10 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
   cp_X <- crossprod(X)
   cp_Y_X <- crossprod(Y, X)
   
-  cat(n_cores, " cores are used. \n")
-  
+  if(verbose){
+    cat(n_cores, " cores are used. \n")
+  }
+
   if(n_cores!=1){
     RcppParallel::setThreadOptions(numThreads = n_cores)
   }
@@ -186,6 +188,7 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
                                 beta_vb, cp_X_Xbeta, mu_beta_vb, sig2_beta_vb, tau_vb,
                                 shuffled_ind, sample_q = sample_q, c = c)
           }else{
+            # not working 
             coreDualMisLoopParResp(cp_X, cp_X_rm, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta, 
                                    log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb, 
                                    beta_vb, cp_X_Xbeta, mu_beta_vb, sig2_beta_vb, tau_vb, 

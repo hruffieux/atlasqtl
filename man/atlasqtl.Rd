@@ -16,6 +16,7 @@ atlasqtl(
   verbose = 1,
   list_hyper = NULL,
   list_init = NULL,
+  n_cores = 1,
   save_hyper = FALSE,
   save_init = FALSE,
   full_output = FALSE,
@@ -63,6 +64,8 @@ function or set to \code{NULL} for default hyperparameters.}
 \item{list_init}{An object of class "\code{init}" containing the initial
 variational parameters. Must be specified using the \code{\link{set_init}} 
 function or set to \code{NULL} for a default initialization.}
+
+\item{n_cores}{number of cores.}
 
 \item{save_hyper}{If \code{TRUE}, the hyperparameters used for the model are
 returned.}

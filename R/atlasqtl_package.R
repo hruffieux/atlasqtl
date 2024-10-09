@@ -15,7 +15,7 @@
 #'
 #' @section atlasqtl functions: atlasqtl, assign_bFDR, map_hyperprior_elicitation, print.atlasqtl, set_hyper, set_init, summary.atlasqtl.
 #'
-#' @docType package
+#' "_PACKAGE"
 #' @name atlasqtl-package
 #' @useDynLib atlasqtl, .registration = TRUE
 #' @import RcppEigen
