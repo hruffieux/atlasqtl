@@ -136,3 +136,200 @@ void coreDualMisLoop(const MapMat cp_X,
   }
   
 }
+
+
+struct coreDualLoopResp : public RcppParallel::Worker
+{
+  const MapMat cp_X;
+  const MapMat cp_Y_X;
+  MapArr2D gam_vb;
+  const MapArr2D log_Phi_theta_plus_zeta;
+  const MapArr2D log_1_min_Phi_theta_plus_zeta;
+  const double log_sig2_inv_vb;
+  const MapArr1D log_tau_vb;
+  MapMat m1_beta;
+  MapMat cp_betaX_X;
+  MapArr2D mu_beta_vb;
+  const MapArr1D sig2_beta_vb;
+  const MapArr1D tau_vb;
+  const Eigen::VectorXi shuffled_ind;
+  const Eigen::VectorXi sample_q;
+  const double c;
+  
+  
+  // initialize with source and destination
+  coreDualLoopResp(const MapMat cp_X,
+                   const MapMat cp_Y_X,
+                   MapArr2D gam_vb,
+                   const MapArr2D log_Phi_theta_plus_zeta,
+                   const MapArr2D log_1_min_Phi_theta_plus_zeta,
+                   const double log_sig2_inv_vb,
+                   const MapArr1D log_tau_vb,
+                   MapMat m1_beta,
+                   MapMat cp_betaX_X,
+                   MapArr2D mu_beta_vb,
+                   const MapArr1D sig2_beta_vb,
+                   const MapArr1D tau_vb,
+                   const Eigen::VectorXi shuffled_ind,
+                   const Eigen::VectorXi sample_q,
+                   const double c)
+    : cp_X(cp_X), cp_Y_X(cp_Y_X), gam_vb(gam_vb), log_Phi_theta_plus_zeta(log_Phi_theta_plus_zeta),
+      log_1_min_Phi_theta_plus_zeta(log_1_min_Phi_theta_plus_zeta), log_sig2_inv_vb(log_sig2_inv_vb), log_tau_vb(log_tau_vb),
+      m1_beta(m1_beta), cp_betaX_X(cp_betaX_X), mu_beta_vb(mu_beta_vb), sig2_beta_vb(sig2_beta_vb), tau_vb(tau_vb),
+      shuffled_ind(shuffled_ind), sample_q(sample_q), c(c){}
+  
+  // main
+  void operator()(std::size_t begin, std::size_t end) {
+    const Arr1D cst = -(log_tau_vb + log_sig2_inv_vb + log(sig2_beta_vb) )/ 2;
+    
+    for (size_t a = begin; a < end; a++){
+      int k = sample_q[a];
+      
+      for (int b = 0; b < shuffled_ind.size(); b++) {
+        int j = shuffled_ind[b];
+        
+        double m1_beta_jk = m1_beta(j, k);
+        //double cp_betaX_X_kj = cp_betaX_X(k, j) - m1_beta_jk * cp_X(j,j);
+        double cp_betaX_X_jk = cp_betaX_X(j, k) - m1_beta_jk * cp_X(j,j);
+        
+        mu_beta_vb(j, k) = c * sig2_beta_vb[k] * tau_vb[k] * (cp_Y_X(k, j) - cp_betaX_X_jk);
+        
+        gam_vb(j, k) = exp(-logOnePlusExp(c * (log_1_min_Phi_theta_plus_zeta(j, k) - log_Phi_theta_plus_zeta(j, k)
+                                                 - mu_beta_vb(j, k)*mu_beta_vb(j, k) / (2 * sig2_beta_vb[k])
+                                                 + cst[k])));
+                                                 
+                                                 m1_beta(j, k) = gam_vb(j, k) * mu_beta_vb(j, k);
+                                                 
+                                                 cp_betaX_X.col(k) += (m1_beta(j, k) - m1_beta_jk) * cp_X.col(j);
+                                                 
+      }
+    }
+  }
+};
+
+
+// [[Rcpp::export]]
+void coreDualLoopParResp(const MapMat cp_X,
+                         const MapMat cp_Y_X,
+                         MapArr2D gam_vb,
+                         const MapArr2D log_Phi_theta_plus_zeta,
+                         const MapArr2D log_1_min_Phi_theta_plus_zeta,
+                         const double log_sig2_inv_vb,
+                         const MapArr1D log_tau_vb,
+                         MapMat m1_beta,
+                         MapMat cp_betaX_X,
+                         MapArr2D mu_beta_vb,
+                         const MapArr1D sig2_beta_vb,
+                         const MapArr1D tau_vb,
+                         const Eigen::VectorXi shuffled_ind,
+                         const Eigen::VectorXi sample_q,
+                         const double c = 1) {
+  
+  // functor
+  coreDualLoopResp coredualloopparresp(cp_X, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta, log_1_min_Phi_theta_plus_zeta,
+                                       log_sig2_inv_vb, log_tau_vb, m1_beta, cp_betaX_X, mu_beta_vb, sig2_beta_vb,
+                                       tau_vb, shuffled_ind, sample_q, c);
+  
+  parallelFor(0, sample_q.size(), coredualloopparresp);
+}
+
+// // not working - imbalanced stack
+// struct coreDualMisLoopResp : public Worker
+// {
+//   const MapMat cp_X;
+//   const List cp_X_rm; // stack imbalance
+//   const MapMat cp_Y_X;
+//   MapArr2D gam_vb;
+//   const MapArr2D log_Phi_theta_plus_zeta;
+//   const MapArr2D log_1_min_Phi_theta_plus_zeta;
+//   const double log_sig2_inv_vb;
+//   const MapArr1D log_tau_vb;
+//   MapMat m1_beta;
+//   MapMat cp_betaX_X;
+//   MapArr2D mu_beta_vb;
+//   const MapArr2D sig2_beta_vb;
+//   const MapArr1D tau_vb;
+//   const Eigen::VectorXi shuffled_ind;
+//   const Eigen::VectorXi sample_q;
+//   const double c;
+// 
+// 
+//   // initialize with source and destination
+//   coreDualMisLoopResp(const MapMat cp_X,
+//                       const List cp_X_rm,
+//                       const MapMat cp_Y_X,
+//                       MapArr2D gam_vb,
+//                       const MapArr2D log_Phi_theta_plus_zeta,
+//                       const MapArr2D log_1_min_Phi_theta_plus_zeta,
+//                       const double log_sig2_inv_vb,
+//                       const MapArr1D log_tau_vb,
+//                       MapMat m1_beta,
+//                       MapMat cp_betaX_X,
+//                       MapArr2D mu_beta_vb,
+//                       const MapArr2D sig2_beta_vb,
+//                       const MapArr1D tau_vb,
+//                       const Eigen::VectorXi shuffled_ind,
+//                       const Eigen::VectorXi sample_q,
+//                       const double c)
+//      : cp_X(cp_X), cp_X_rm(cp_X_rm), cp_Y_X(cp_Y_X), gam_vb(gam_vb), log_Phi_theta_plus_zeta(log_Phi_theta_plus_zeta),
+//       log_1_min_Phi_theta_plus_zeta(log_1_min_Phi_theta_plus_zeta), log_sig2_inv_vb(log_sig2_inv_vb), log_tau_vb(log_tau_vb),
+//       m1_beta(m1_beta), cp_betaX_X(cp_betaX_X), mu_beta_vb(mu_beta_vb), sig2_beta_vb(sig2_beta_vb), tau_vb(tau_vb),
+//       shuffled_ind(shuffled_ind), sample_q(sample_q), c(c){}
+// 
+//   // main
+//   void operator()(std::size_t begin, std::size_t end) {
+// 
+//     const Arr1D cst = -(log_tau_vb + log_sig2_inv_vb)/ 2;
+//     // + log(sig2_beta_vb)
+//     for (size_t a = begin; a < end; a++){
+//       int k = sample_q[a];
+// 
+//       MapMat cp_X_rm_k = as<MapMat>(cp_X_rm[k]);
+//       
+//       for (int b = 0; b < shuffled_ind.size(); b++) {
+//         int j = shuffled_ind[b];
+// 
+//         double m1_beta_jk = m1_beta(j, k);
+//         //double cp_betaX_X_kj = cp_betaX_X(k, j) - m1_beta_jk * (cp_X(j, j) - cp_X_rm_k(j, j));
+//         double cp_betaX_X_jk = cp_betaX_X(j, k) - m1_beta_jk * (cp_X(j, j) - cp_X_rm_k(j, j));
+// 
+//         mu_beta_vb(j, k) = c * sig2_beta_vb(j,k) * tau_vb[k] * (cp_Y_X(k, j) - cp_betaX_X_jk);
+// 
+//         gam_vb(j, k) = exp(-logOnePlusExp(c * (log_1_min_Phi_theta_plus_zeta(j, k) - log_Phi_theta_plus_zeta(j, k) -
+//           mu_beta_vb(j, k) * mu_beta_vb(j, k) / (2 * sig2_beta_vb(j,k)) -
+//           log(sig2_beta_vb(j, k)) / 2 + cst[k])));
+//         m1_beta(j, k) = gam_vb(j, k) * mu_beta_vb(j, k);
+//         cp_betaX_X.col(k) += (m1_beta(j, k) - m1_beta_jk) *  (cp_X.col(j) - cp_X_rm_k.col(j));
+// 
+//       }
+//     }
+//   }
+// };
+// 
+// 
+// // [[Rcpp::export]]
+// void coreDualMisLoopParResp(const MapMat cp_X,
+//                             const List cp_X_rm,
+//                             const MapMat cp_Y_X,
+//                             MapArr2D gam_vb,
+//                             const MapArr2D log_Phi_theta_plus_zeta,
+//                             const MapArr2D log_1_min_Phi_theta_plus_zeta,
+//                             const double log_sig2_inv_vb,
+//                             const MapArr1D log_tau_vb,
+//                             MapMat m1_beta,
+//                             MapMat cp_betaX_X,
+//                             MapArr2D mu_beta_vb,
+//                             const MapArr2D sig2_beta_vb,
+//                             const MapArr1D tau_vb,
+//                             const Eigen::VectorXi shuffled_ind,
+//                             const Eigen::VectorXi sample_q,
+//                             const double c = 1) {
+// 
+//   // functor
+//   coreDualMisLoopResp coredualmisloopparresp(cp_X, cp_X_rm, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta, log_1_min_Phi_theta_plus_zeta,
+//                                              log_sig2_inv_vb, log_tau_vb, m1_beta, cp_betaX_X, mu_beta_vb, sig2_beta_vb,
+//                                              tau_vb, shuffled_ind, sample_q, c);
+// 
+//   parallelFor(0, sample_q.size(), coredualmisloopparresp);
+// }
+// 

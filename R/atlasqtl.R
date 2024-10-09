@@ -33,6 +33,7 @@
 #' @param list_init An object of class "\code{init}" containing the initial
 #'   variational parameters. Must be specified using the \code{\link{set_init}} 
 #'   function or set to \code{NULL} for a default initialization.
+#' @param n_cores number of cores. 
 #' @param save_hyper If \code{TRUE}, the hyperparameters used for the model are
 #'   returned.
 #' @param save_init If \code{TRUE}, the initial variational parameters used for
@@ -178,7 +179,7 @@
 #'
 atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000, 
                      user_seed = NULL, verbose = 1, list_hyper = NULL, 
-                     list_init = NULL, save_hyper = FALSE, save_init = FALSE, 
+                     list_init = NULL, n_cores = 1, save_hyper = FALSE, save_init = FALSE, 
                      full_output = FALSE, thinned_elbo_eval = TRUE, 
                      checkpoint_path = NULL, trace_path = NULL, 
                      add_collinear_back = FALSE) {
@@ -273,7 +274,8 @@ atlasqtl <- function(Y, X, p0, anneal = c(1, 2, 10), tol = 0.1, maxit = 1000,
 
     res_atlas <- atlasqtl_global_local_core_(Y, X, shr_fac_inv, anneal, df, tol, 
                                              maxit, verbose, list_hyper, 
-                                             list_init, checkpoint_path,
+                                             list_init, n_cores,
+                                             checkpoint_path,
                                              trace_path, full_output, 
                                              thinned_elbo_eval, debug)
     

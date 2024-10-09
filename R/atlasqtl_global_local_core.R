@@ -6,10 +6,10 @@
 # See help of `atlasqtl` function for details.
 #
 atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol, 
-                                        maxit, verbose, list_hyper, list_init, 
+                                        maxit, verbose, list_hyper, list_init, n_cores,
                                         checkpoint_path = NULL, 
                                         trace_path = NULL, full_output = FALSE, 
-                                        thinned_elbo_eval = TRUE,
+                                        thinned_elbo_eval = TRUE,   
                                         debug = FALSE, batch = "y") {
   
   n <- nrow(Y)
@@ -41,6 +41,11 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
   cp_X <- crossprod(X)
   cp_Y_X <- crossprod(Y, X)
   
+  cat(n_cores, " cores are used. \n")
+  
+  if(n_cores!=1){
+    RcppParallel::setThreadOptions(numThreads = n_cores)
+  }
   
   # Gathering initial variational parameters. Do it explicitly.
   # with() function not used here as the objects will be modified later.
@@ -162,23 +167,37 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
         shuffled_ind <- as.integer(0:(p-1)) # Zero-based index in C++
         sample_q <- as.integer(0:(q-1)) # Zero-based index in C++
         
-        
-        if (is.null(mis_pat)) {
-          coreDualLoop(cp_X, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta,
-                       log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb,
-                       beta_vb, cp_X_Xbeta, mu_beta_vb, sig2_beta_vb, tau_vb,
-                       shuffled_ind, sample_q = sample_q, c = c)
-        } else {
-          coreDualMisLoop(cp_X, cp_X_rm, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta, 
-                          log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb, 
-                          beta_vb, cp_X_Xbeta, mu_beta_vb, sig2_beta_vb, tau_vb, 
-                          shuffled_ind, sample_q = sample_q, c = c)
+        if(n_cores == 1){
+          if (is.null(mis_pat)) {
+            coreDualLoop(cp_X, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta,
+                         log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb,
+                         beta_vb, cp_X_Xbeta, mu_beta_vb, sig2_beta_vb, tau_vb,
+                         shuffled_ind, sample_q = sample_q, c = c)
+          } else {
+            coreDualMisLoop(cp_X, cp_X_rm, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta, 
+                            log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb, 
+                            beta_vb, cp_X_Xbeta, mu_beta_vb, sig2_beta_vb, tau_vb, 
+                            shuffled_ind, sample_q = sample_q, c = c)
+          }
+        }else{
+          if (is.null(mis_pat)) {
+            coreDualLoopParResp(cp_X, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta,
+                                log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb,
+                                beta_vb, cp_X_Xbeta, mu_beta_vb, sig2_beta_vb, tau_vb,
+                                shuffled_ind, sample_q = sample_q, c = c)
+          }else{
+            coreDualMisLoopParResp(cp_X, cp_X_rm, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta, 
+                                   log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb, 
+                                   beta_vb, cp_X_Xbeta, mu_beta_vb, sig2_beta_vb, tau_vb, 
+                                   shuffled_ind, sample_q = sample_q, c = c)
+          }
         }
         
         
+        
       } else if (batch == "0"){ # no batch, used only internally (slower)
-                                # schemes "x" of "x-y" are not batch concave
-                                # hence not implemented as they may diverge
+        # schemes "x" of "x-y" are not batch concave
+        # hence not implemented as they may diverge
         
         for (k in sample(1:q)) {
           
@@ -188,17 +207,17 @@ atlasqtl_global_local_core_ <- function(Y, X, shr_fac_inv, anneal, df, tol,
             for (j in sample(1:p)) {
               
               cp_X_Xbeta[,k] <- cp_X_Xbeta[,k] - beta_vb[j, k] * cp_X[j, ]
-
+              
               mu_beta_vb[j, k] <- c * sig2_beta_vb[k] * tau_vb[k] * (cp_Y_X[k, j] - cp_X_Xbeta[j, k])
-
+              
               gam_vb[j, k] <- exp(-log_one_plus_exp_(c * (pnorm(theta_vb[j] + zeta_vb[k], lower.tail = FALSE, log.p = TRUE) -
                                                             pnorm(theta_vb[j] + zeta_vb[k], log.p = TRUE) -
                                                             log_tau_vb[k] / 2 - log_sig2_inv_vb / 2 -
                                                             mu_beta_vb[j, k] ^ 2 / (2 * sig2_beta_vb[k]) -
                                                             log(sig2_beta_vb[k]) / 2)))
-
+              
               beta_vb[j, k] <- gam_vb[j, k] * mu_beta_vb[j, k]
-
+              
               cp_X_Xbeta[,k] <- cp_X_Xbeta[,k] + beta_vb[j, k] * cp_X[j, ]
               
             }

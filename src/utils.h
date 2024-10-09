@@ -2,9 +2,11 @@
 #define ATLASQTL_UTILS_H_
 
 #include <RcppEigen.h>
+#include <RcppParallel.h>
 #include "atlasqtl_types.h"
 
 // [[Rcpp::depends(RcppEigen)]]
+// [[Rcpp::depends(RcppParallel)]]
 
 using namespace Rcpp;
 

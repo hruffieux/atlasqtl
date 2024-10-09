@@ -9,3 +9,7 @@ coreDualMisLoop <- function(cp_X, cp_X_rm, cp_Y_X, gam_vb, log_Phi_theta_plus_ze
     invisible(.Call(`_atlasqtl_coreDualMisLoop`, cp_X, cp_X_rm, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta, log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb, m1_beta, cp_betaX_X, mu_beta_vb, sig2_beta_vb, tau_vb, shuffled_ind, sample_q, c))
 }
 
+coreDualLoopParResp <- function(cp_X, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta, log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb, m1_beta, cp_betaX_X, mu_beta_vb, sig2_beta_vb, tau_vb, shuffled_ind, sample_q, c = 1) {
+    invisible(.Call(`_atlasqtl_coreDualLoopParResp`, cp_X, cp_Y_X, gam_vb, log_Phi_theta_plus_zeta, log_1_min_Phi_theta_plus_zeta, log_sig2_inv_vb, log_tau_vb, m1_beta, cp_betaX_X, mu_beta_vb, sig2_beta_vb, tau_vb, shuffled_ind, sample_q, c))
+}
+

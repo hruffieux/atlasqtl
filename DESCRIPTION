@@ -33,8 +33,10 @@ Imports:
     parallel,
     PowerTOST (>= 1.4-6),
     Rcpp (>= 0.12.9),
-    RcppEigen (>= 0.3.2.9.0)
+    RcppEigen (>= 0.3.2.9.0),
+    RcppParallel
 RoxygenNote: 7.2.3
 Suggests: testthat
-LinkingTo: Rcpp, RcppEigen
+LinkingTo: Rcpp, RcppEigen, RcppParallel
 Encoding: UTF-8
+SystemRequirements: GNU make

@@ -3,6 +3,7 @@
 
 ## strips debug symbols (smaller .so size)
 PKG_LIBS = -Wl,-S
+PKG_LIBS += $(shell ${R_HOME}/bin/Rscript -e "RcppParallel::RcppParallelLibs()")
 
 ## With R 3.1.0 or later, you can uncomment the following line to tell R to
 ## enable compilation with C++11 (or even C++14) where available
