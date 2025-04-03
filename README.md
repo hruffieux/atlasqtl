@@ -64,6 +64,13 @@ if(!require(remotes)) install.packages("remotes")
 remotes::install_github("hruffieux/atlasqtl")
 ```
 
+## Example repository
+
+For a hands-on introduction to *atlasqtl*, check out our [example
+repository](https://github.com/hruffieux/software_corner_ibs_bulletin),
+which contains a step-by-step illustration of the method in a QTL
+mapping setting.
+
 ## License and authors
 
 This software uses the GPL v3 license, see [LICENSE](LICENSE). Authors
