@@ -1,12 +1,15 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+
 <!-- First time: run usethis::use_readme_rmd() to create a pre-commit hook that 
 prevents from committing if the README.Rmd has changed, but has not been 
 re-knitted to generate an updated README.md -->
 
-## atlasqtl - variable selection in sparse regression with hierarchically-related responses <img src="man/figures/atlasqtl_logo.png" align="right" height="150"/>
+## atlasqtl - a fully joint QTL mapping method for detecting weak genetic effects <img src="man/figures/atlasqtl_logo.png" align="right" height="150"/>
 
 <!-- Run for the R CMD checks, run usethis::use_github_actions() to set up the pipeline, possibly modify the .yaml file and then: -->
+
 <!-- [![R build status](https://github.com/hruffieux/atlasqtl/workflows/R-CMD-check/badge.svg)](https://github.com/hruffieux/atlasqtl/actions) # TODO. not enabled yet, needs pre-install of GSL lib for windows -->
+
 <!-- [![](https://travis-ci.org/hruffieux/atlasqtl.svg?branch=master)](https://travis-ci.org/hruffieux/atlasqtl) -->
 
 [![License: GPL
@@ -17,25 +20,20 @@ v3](https://img.shields.io/badge/license-GPL%20v3-blue.svg)](https://www.gnu.org
 
 ## Overview
 
-**atlasqtl** is an R package implementing a scalable hierarchical
-modelling framework for variable selection in regression problems with
-many predictors and many responses. The method is tailored to the
-detection of hotspots, i.e., predictors associated with several
-responses. The *hotspot propensity* of each candidate predictor is
-modelled using a horseshoe distribution (Carvalho et al.  2009), whose
-local scale flexibly models the large hotspot effects and whose global
-scale adapts to the overall signal sparsity. Inference is performed
-using efficient batch variational inference updates which are coupled
-with simulated annealing schemes to improve the exploration of
-multimodal parameter spaces.
+*atlasqtl* is an R package for joint molecular QTL mapping in eQTL, pQTL
+or mQTL studies. The method is tailored to the detection of weak genetic
+effects, including pleiotropic effects, exerted by QTL hotspots that
+control multiple molecular traits. It implements a scalable Bayesian
+hierarchical model for variable selection in high-dimensional
+multi-response regression.
 
-The method can be employed in any sparse multiple-response regression
-setting, and is particularly suited to large molecular quantitative
-trait locus (QTL) problems, in which hotspot genetic variants,
-controlling many molecular levels at once, may be responsible for
-decisive regulatory mechanisms. Hence, our approach is a tool that can
-help towards understanding the functional architecture underlying
-complex traits and outlining a *hotspot atlas* of the human genome.
+The model uses a horseshoe shrinkage formulation to share information
+across co-regulated traits, thereby flexibly adapting to the sparse
+nature of genetic signals. It efficiently handles thousands of genetic
+variants and molecular phenotypes through batch variational inference,
+coupled with simulated annealing to better explore complex parameter
+landscapes. The R package calls C++ subroutines for computational
+efficiency.
 
 Reference: H. Ruffieux, A. C. Davison, J. Hager, J. Inshaw, B. Fairfax,
 S. Richardson, and L. Bottolo. A global-local approach for detecting
